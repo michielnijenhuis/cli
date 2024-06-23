@@ -321,7 +321,7 @@ func (c *Command) GetProcessedHelp() string {
 }
 
 func (c *Command) validateName(name string) {
-	re := regexp.MustCompile("/^[^:]+(:[^:]+)*/")
+	re := regexp.MustCompile("^[^:]+(:[^:]+)*")
 	if !re.MatchString(name) {
 		panic(fmt.Sprintf("Command name \"%s\" is invalid.", name))
 	}
