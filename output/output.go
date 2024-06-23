@@ -77,7 +77,7 @@ func (o *Output) Writeln(s string, options uint) {
 }
 
 func (o *Output) Writelns(s []string, options uint) {
-	panic("TODO: Output.Writelns()")
+	o.WriteMany(s, true, options)
 }
 
 func (o *Output) Write(message string, newLine bool, options uint) {
