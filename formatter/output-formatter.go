@@ -1,5 +1,10 @@
 package formatter
 
+import (
+	"regexp"
+	"strings"
+)
+
 type OutputFormatter struct{}
 
 func NewOutputFormatter() *OutputFormatter {
@@ -31,5 +36,25 @@ func (o *OutputFormatter) Clone() OutputFormatterInferface {
 }
 
 func Escape(s string) string {
-	panic("TODO: OutputFormatter.Escape()")
+	re := regexp.MustCompile(`([^\\]|^)([<>])`)
+	s = re.ReplaceAllString(s, "\\$1")
+
+	return EscapeTrailingBackslash(s)
+}
+
+func EscapeTrailingBackslash(s string) string {
+	if strings.HasSuffix(s, "\\") {
+		length := len(s)
+		currentLength := length
+
+		for strings.HasSuffix(s, "\\") {
+			s = s[:currentLength - 1]
+			currentLength--
+		}
+
+		s = strings.Replace(s, `\0`, "", 1)
+		s += strings.Repeat(`\0`, length - len(s))
+	}
+
+	return s
 }
