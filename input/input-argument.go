@@ -53,7 +53,7 @@ func (a *InputArgument) IsArray() bool {
 }
 
 func (a *InputArgument) SetDefaultValue(value InputType) {
-	if a.IsRequired() {
+	if a.IsRequired() && value != "" && value != nil {
 		panic("Cannot set a default value except for OPTIONAL mode.")
 	}
 

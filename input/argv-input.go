@@ -17,7 +17,6 @@ type ArgvInput struct {
 }
 
 func NewArgvInput(argv []string, definition *InputDefinition) (*ArgvInput, error) {
-
 	if argv == nil {
 		argv = os.Args[1:]
 	}
