@@ -1,8 +1,8 @@
 package input
 
 import (
-	"flag"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 
@@ -19,8 +19,7 @@ type ArgvInput struct {
 func NewArgvInput(argv []string, definition *InputDefinition) (*ArgvInput, error) {
 
 	if argv == nil {
-		flag.Parse()
-		argv = flag.Args()[1:]
+		argv = os.Args[1:]
 	}
 
 	baseInput, err := NewInput(definition)
