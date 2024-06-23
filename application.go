@@ -196,7 +196,7 @@ func (app *Application) SetAutoExit(boolean bool) {
 	app.autoExit = boolean
 }
 
-func (app *Application) getName() string {
+func (app *Application) GetName() string {
 	return app.name
 }
 
@@ -204,7 +204,7 @@ func (app *Application) SetName(name string) {
 	app.name = name
 }
 
-func (app *Application) getVersion() string {
+func (app *Application) GetVersion() string {
 	return app.version
 }
 
@@ -213,12 +213,12 @@ func (app *Application) SetVersion(version string) {
 }
 
 func (app *Application) getLongVersion() string {
-	if app.getName() == "" || app.getName() == "UNKNOWN" {
-		if app.getVersion() == "" || app.getVersion() == "UNKNOWN" {
-			return fmt.Sprintf("%s <highlight>%s</highlight>", app.getName(), app.getVersion())
+	if app.GetName() == "" || app.GetName() == "UNKNOWN" {
+		if app.GetVersion() == "" || app.GetVersion() == "UNKNOWN" {
+			return fmt.Sprintf("%s <highlight>%s</highlight>", app.GetName(), app.GetVersion())
 		}
 
-		return app.getName()
+		return app.GetName()
 	}
 
 	return "Console Tool"
@@ -345,7 +345,7 @@ func (app *Application) RenderError(output Output.OutputInterface, err error) {
 
 	if app.runningCommand != nil {
 		output.Writeln(
-			fmt.Sprintf("<highlight>%s %s</highlight>", app.getName(), app.runningCommand.GetSynopsis(false)),
+			fmt.Sprintf("<highlight>%s %s</highlight>", app.GetName(), app.runningCommand.GetSynopsis(false)),
 			Output.VERBOSITY_QUIET,
 		)
 		output.Writeln("", Output.VERBOSITY_QUIET)
