@@ -326,3 +326,17 @@ func (c *Command) validateName(name string) {
 		panic(fmt.Sprintf("Command name \"%s\" is invalid.", name))
 	}
 }
+
+func (c *Command) Input() Input.InputInterface {
+	if c.input == nil {
+		panic("Command.Input() can only be called inside the scope of the command handle.")
+	}
+	return c.input
+}
+
+func (c *Command) Output() Output.OutputInterface {
+	if c.output == nil {
+		panic("Command.Output() can only be called inside the scope of the command handle.")
+	}
+	return c.output
+}
