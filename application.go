@@ -470,12 +470,12 @@ func (app *Application) getDefaultInputDefinition() *Input.InputDefinition {
 	commandArgument := Input.NewInputArgument("command", Input.INPUT_ARGUMENT_REQUIRED, "The command to execute", "", nil)
 	arguments := []*Input.InputArgument{commandArgument}
 
-	helpOption := Input.NewInputOption("--help", "-h", Input.INPUT_OPTION_BOOLEAN, fmt.Sprintf("Dispaly help for the given command, or the <highlight>%s</highlight> command (if no command is given)", app.defaultCommand), false, nil)
-	quietOption := Input.NewInputOption("--quiet", "-q", Input.INPUT_OPTION_BOOLEAN, "Do not output any message", false, nil)
-	verboseoption := Input.NewInputOption("--verbose", "-v|vv|vvv", Input.INPUT_OPTION_BOOLEAN, "Increase the verbosity of messages: normal (1), verbose (2) or debug (3)", false, nil)
-	versionOption := Input.NewInputOption("--version", "-V", Input.INPUT_OPTION_BOOLEAN, "Display this applicatino version", false, nil)
-	ansiOption := Input.NewInputOption("--ansi", "", Input.INPUT_OPTION_NEGATABLE, "Force (or disable --no-ansi) ANSI output", true, nil)
-	noInteractionOption := Input.NewInputOption("--no-interaction", "-n", Input.INPUT_OPTION_BOOLEAN, "Do not ask any interactive question", false, nil)
+	helpOption := Input.NewInputOption("--help", "-h", Input.INPUT_OPTION_BOOLEAN, fmt.Sprintf("Dispaly help for the given command, or the <highlight>%s</highlight> command (if no command is given)", app.defaultCommand), nil, nil)
+	quietOption := Input.NewInputOption("--quiet", "-q", Input.INPUT_OPTION_BOOLEAN, "Do not output any message", nil, nil)
+	verboseoption := Input.NewInputOption("--verbose", "-v|vv|vvv", Input.INPUT_OPTION_BOOLEAN, "Increase the verbosity of messages: normal (1), verbose (2) or debug (3)", nil, nil)
+	versionOption := Input.NewInputOption("--version", "-V", Input.INPUT_OPTION_BOOLEAN, "Display this applicatino version", nil, nil)
+	ansiOption := Input.NewInputOption("--ansi", "", Input.INPUT_OPTION_NEGATABLE, "Force (or disable --no-ansi) ANSI output", nil, nil)
+	noInteractionOption := Input.NewInputOption("--no-interaction", "-n", Input.INPUT_OPTION_BOOLEAN, "Do not ask any interactive question", nil, nil)
 
 	options := []*Input.InputOption{
 		helpOption,

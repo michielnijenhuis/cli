@@ -99,7 +99,7 @@ func (o *InputOption) AcceptValue() bool {
 }
 
 func (o *InputOption) SetDefaultValue(value InputType) {
-	if (o.mode&INPUT_OPTION_BOOLEAN) == INPUT_OPTION_BOOLEAN && value != nil && value != "" {
+	if (o.mode&INPUT_OPTION_BOOLEAN) == INPUT_OPTION_BOOLEAN {
 		panic("Cannot set a default value when using InputOption.BOOLEAN mode.")
 	}
 
