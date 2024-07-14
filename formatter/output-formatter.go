@@ -28,7 +28,7 @@ func (o *OutputFormatter) GetStyle(name string) OutputFormatterStyleInterface {
 }
 
 func (o *OutputFormatter) Format(message string) string {
-	return ""
+	return message
 }
 
 func (o *OutputFormatter) Clone() OutputFormatterInferface {

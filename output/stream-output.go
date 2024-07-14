@@ -13,22 +13,24 @@ type StreamOutput struct {
 }
 
 func NewStreamOutput(stream *os.File, verbosity uint, decorated bool, formatter Formatter.OutputFormatterInferface) *StreamOutput {
-	return &StreamOutput{
+	so := &StreamOutput{
 		stream: stream,
 		Output: *NewOutput(verbosity, decorated, formatter),
 	}
+
+	so.outputter = func(message string, newLine bool) {
+		if newLine {
+			message += "\n"
+		}
+	
+		so.stream.WriteString(message)
+	}
+
+	return so
 }
 
 func (o *StreamOutput) GetStream() *os.File {
 	return o.stream
-}
-
-func (o *StreamOutput) DoWrite(message string, newLine bool) {
-	if newLine {
-		message += "\n"
-	}
-
-	o.stream.WriteString(message)
 }
 
 func HasColorSupport() bool {

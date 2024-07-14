@@ -18,6 +18,16 @@ func NewTrimmedBufferOutput(maxLength uint, verbosity uint, decorated bool, form
 		Output:    *output,
 	}
 
+	trimmedBufferOutput.outputter = func(message string, newLine bool) {
+		trimmedBufferOutput.buffer += message
+
+		if newLine {
+			trimmedBufferOutput.buffer += "\n"
+		}
+
+		trimmedBufferOutput.buffer = trimmedBufferOutput.buffer[0:trimmedBufferOutput.maxLength]
+	}
+
 	return trimmedBufferOutput
 }
 
@@ -26,14 +36,4 @@ func (o *TrimmedBufferOutput) Fetch() string {
 	o.buffer = ""
 
 	return content
-}
-
-func (o *TrimmedBufferOutput) DoWrite(message string, newLine bool) {
-	o.buffer += message
-
-	if newLine {
-		o.buffer += "\n"
-	}
-
-	o.buffer = o.buffer[0:o.maxLength]
 }

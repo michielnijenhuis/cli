@@ -99,7 +99,7 @@ func (app *Application) Run(input Input.InputInterface, output Output.OutputInte
 		os.Exit(exitCode)
 	}
 
-	return exitCode, nil
+	return exitCode, err
 }
 
 func (app *Application) doRun(input Input.InputInterface, output Output.OutputInterface) (int, error) {
@@ -112,6 +112,7 @@ func (app *Application) doRun(input Input.InputInterface, output Output.OutputIn
 	// Makes ArgvInput.GetFirstArgument() able to distinguish an option from an argument.
 	// Errors must be ignored, full binding/validation happens later when the command is known.
 	input.Bind(app.getDefinition())
+	input.Parse()
 
 	name := app.getCommandName(input)
 	if input.HasParameterOption("--help", true) || input.HasParameterOption("-h", true) {
@@ -233,7 +234,7 @@ func (app *Application) AddCommands(commands []*Command.Command) {
 func (app *Application) Add(command *Command.Command) *Command.Command {
 	app.init()
 
-	command.MergeApplication(app.GetHelperSet(), app.definition, true)
+	command.MergeApplication(app.GetHelperSet(), app.getDefinition(), true)
 
 	if !command.IsEnabled() {
 		command.MergeApplication(nil, nil, false)
@@ -241,7 +242,7 @@ func (app *Application) Add(command *Command.Command) *Command.Command {
 	}
 
 	if command.GetName() == "" {
-		panic(fmt.Sprintf("Commands must have a name."))
+		panic("Commands must have a name.")
 	}
 
 	app.commands[command.GetName()] = command
@@ -367,7 +368,6 @@ func (app *Application) doRenderError(output Output.OutputInterface, err error) 
 		for _, line := range splitMessage {
 			lineLength := len(line) + 4
 			lines = append(lines, line)
-			//lint:ignore SA4010 - incorrect warning
 			linesLength = append(linesLength, lineLength)
 
 			length = int(math.Max(float64(lineLength), float64(length)))
@@ -447,10 +447,14 @@ func (app *Application) configureIO(input Input.InputInterface, output Output.Ou
 }
 
 func (app *Application) doRunCommand(command *Command.Command, input Input.InputInterface, output Output.OutputInterface) (int, error) {
-	for _, helper := range command.GetHelperSet().Iterate() {
-		inputAware, isInputAware := helper.(Input.InputAwareInterface)
-		if isInputAware {
-			inputAware.SetInput(input)
+	helperSet := command.GetHelperSet()
+
+	if helperSet != nil {
+		for _, helper := range helperSet.Iterate() {
+			inputAware, isInputAware := helper.(Input.InputAwareInterface)
+			if isInputAware {
+				inputAware.SetInput(input)
+			}
 		}
 	}
 
@@ -610,7 +614,8 @@ func splitStringByWidth(s string, w int) []string {
 
 	result := make([]string, 0)
 	for i := 0; i < len(s); i += w {
-		result = append(result, s[i:i+w])
+		m := min(i+w, len(s))
+		result = append(result, s[i:m])
 	}
 
 	return result

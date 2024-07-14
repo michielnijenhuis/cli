@@ -4,7 +4,8 @@ type InputInterface interface {
 	GetFirstArgument() InputType
 	HasParameterOption(value string, onlyParams bool) bool
 	GetParameterOption(value string, defaultValue InputType, onlyParams bool) InputType
-	Bind(definition *InputDefinition) error
+	Bind(definition *InputDefinition)
+	Parse() error
 	Validate() error
 	GetArguments() map[string]InputType
 	GetStringArgument(name string) (string, error)

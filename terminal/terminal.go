@@ -12,7 +12,7 @@ func GetWidth() (int, error) {
 	width, _, err = Terminal.GetSize(0)
 
 	if err != nil {
-		return 0, err
+		return 80, err
 	}
 
 	return width, nil
@@ -24,7 +24,7 @@ func GetHeight() (int, error) {
 	_, height, err = Terminal.GetSize(0)
 
 	if err != nil {
-		return 0, err
+		return 80, err
 	}
 
 	return height, nil

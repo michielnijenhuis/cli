@@ -172,7 +172,8 @@ func (c *Command) Run(input Input.InputInterface, output Output.OutputInterface)
 		output = Output.NewConsoleOutput(0, true, nil)
 	}
 
-	err := input.Bind(c.GetDefinition())
+	input.Bind(c.GetDefinition())
+	err := input.Parse()
 	if err != nil && !c.ignoreValidationErrors {
 		return 1, err
 	}

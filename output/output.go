@@ -6,10 +6,13 @@ import (
 	Formatter "github.com/michielnijenhuis/cli/formatter"
 )
 
+type Outputter func(message string, newLine bool)
+
 type Output struct {
 	verbosity uint
 	decorated bool
 	formatter Formatter.OutputFormatterInferface
+	outputter Outputter
 }
 
 func NewOutput(verbosity uint, decorated bool, formatter Formatter.OutputFormatterInferface) *Output {
@@ -27,6 +30,7 @@ func NewOutput(verbosity uint, decorated bool, formatter Formatter.OutputFormatt
 		verbosity: verbosity,
 		decorated: decorated,
 		formatter: formatter,
+		outputter: nil,
 	}
 
 	return output
@@ -113,11 +117,15 @@ func (o *Output) WriteMany(messages []string, newLine bool, options uint) {
 		case OUTPUT_PLAIN:
 			message = re.ReplaceAllString(o.formatter.Format(message), "")
 		}
-
+		
 		o.DoWrite(message, newLine)
 	}
 }
 
 func (o *Output) DoWrite(message string, newLine bool) {
-	panic("Abstract method Output.DoWrite() is not implemented.")
+	if o.outputter == nil {
+		panic("Outputter not found")
+	}
+
+	o.outputter(message, newLine)
 }

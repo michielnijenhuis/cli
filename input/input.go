@@ -10,6 +10,8 @@ import (
 	err "github.com/michielnijenhuis/cli/error"
 )
 
+type InputParser func(self interface{}) error
+
 type Input struct {
 	definition  *InputDefinition
 	stream      *os.File
@@ -27,53 +29,48 @@ func NewInput(definition *InputDefinition) (*Input, error) {
 		interactive: true,
 	}
 
-	var err error = nil
-
 	if definition == nil {
 		input.definition = NewInputDefinition(nil, nil)
 	} else {
+		input.definition = definition;
 		input.Bind(definition)
+		err := input.Parse()
+		if err != nil {
+			return input, err
+		}
+
 		err = input.Validate()
+		if err != nil {
+			return input, err
+		}
 	}
 
-	return input, err
+	return input, nil
 }
 
-func (input *Input) SetDefinition(definition *InputDefinition) {
+func (input *Input) SetDefinition(definition *InputDefinition) error {
 	if definition == nil {
 		input.definition = NewInputDefinition(nil, nil)
+		return nil
 	} else {
 		input.Bind(definition)
-		input.Validate()
+		err := input.Parse()
+		if err != nil {
+			return err
+		}
+		
+		return input.Validate()
 	}
 }
 
-func (input *Input) GetFirstArgument() InputType {
-	panic("Abstract method Input.GetFirstArgument() is not implemented.")
-}
-
-func (input *Input) HasParameterOption(value string, onlyParams bool) bool {
-	panic("Abstract method Input.HasParameterOption() is not implemented.")
-}
-
-func (input *Input) GetParameterOption(value string, defaultValue InputType, onlyParams bool) InputType {
-	panic("Abstract method Input.GetParameterOption() is not implemented.")
-}
-
-func (input *Input) ToString() string {
-	panic("Abstract method Input.ToString() is not implemented.")
-}
-
-func (input *Input) Bind(definition *InputDefinition) error {
+func (input *Input) Bind(definition *InputDefinition) {
 	input.arguments = make(map[string]InputType)
 	input.options = make(map[string]InputType)
 	input.definition = definition
-
-	return input.Parse()
 }
 
 func (input *Input) Parse() error {
-	panic("Abstract method Input.Parse() is not implemented.")
+	panic("Abstract method Input.Parse() not implemented")
 }
 
 func (input *Input) Validate() error {

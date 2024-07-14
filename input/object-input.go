@@ -10,7 +10,6 @@ import (
 type ObjectInput struct {
 	Input
 	parameters map[string]InputType
-	definition *InputDefinition
 }
 
 func NewObjectInput(parameters map[string]InputType, definition *InputDefinition) (*ObjectInput, error) {
