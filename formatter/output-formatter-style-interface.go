@@ -6,6 +6,6 @@ type OutputFormatterStyleInterface interface {
 	SetOption(option string)
 	UnsetOption(option string)
 	SetOptions(options []string)
-	Apply(text string)
+	Apply(text string) string
 	Clone() OutputFormatterStyleInterface
 }

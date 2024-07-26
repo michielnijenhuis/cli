@@ -1,8 +1,9 @@
-package output
+package style
 
 import (
 	"fmt"
 	"math"
+	"os"
 	"strconv"
 	"strings"
 
@@ -82,4 +83,30 @@ func degradeHexColorToAnsi8(r int64, g int64, b int64) int {
 	} else {
 		return 16 + 36 + int(math.Round(float64((r/255)*5))) + 6*int(math.Round(float64((g/255)*5))) + int(math.Round(float64((b/255)*5)))
 	}
+}
+
+var colorMode uint8 = 0
+
+func ColorMode() uint8 {
+	if colorMode > 0 {
+		return colorMode
+	}
+
+	envColorTerm := os.Getenv("COLOR_TERM")
+	if envColorTerm != "" {
+		envColorTerm = strings.ToLower(envColorTerm)
+
+		if strings.Contains(envColorTerm, "truecolor") {
+			colorMode = ANSI_24
+			return colorMode
+		}
+
+		if strings.Contains(envColorTerm, "256color") {
+			colorMode = ANSI_8
+			return colorMode
+		}
+	}
+
+	colorMode = ANSI_4
+	return colorMode
 }

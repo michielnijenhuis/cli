@@ -187,18 +187,21 @@ func (definition *InputDefinition) AddOption(option *InputOption) {
 		panic(fmt.Sprintf("An option named \"%s\" already exists.", name))
 	}
 
-	shortcuts := strings.Split(option.GetShortcut(), "|")
-	for _, s := range shortcuts {
-		if definition.shortcuts[s] != "" && !option.Equals(definition.options[definition.shortcuts[s]]) {
-			panic(fmt.Sprintf("An option with shortcut \"%s\" already exists.", s))
+	shortcut := option.GetShortcut()
+	if shortcut != "" {
+		shortcuts := strings.Split(shortcut, "|")
+		for _, s := range shortcuts {
+			if definition.shortcuts[s] != "" && !option.Equals(definition.options[definition.shortcuts[s]]) {
+				panic(fmt.Sprintf("An option with shortcut \"%s\" already exists.", s))
+			}
+		}
+
+		for _, s := range shortcuts {
+			definition.shortcuts[s] = name
 		}
 	}
 
 	definition.options[name] = option
-
-	for _, s := range shortcuts {
-		definition.shortcuts[s] = name
-	}
 
 	if option.IsNegatable() {
 		negatedName := fmt.Sprintf("no-%s", name)

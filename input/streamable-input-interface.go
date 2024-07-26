@@ -1,6 +1,8 @@
 package input
 
+import "os"
+
 type StreamableInputInterface interface {
-	SetStream(stream interface{})
-	GetStream() interface{}
+	SetStream(stream *os.File)
+	GetStream() *os.File
 }

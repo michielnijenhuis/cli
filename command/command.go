@@ -2,57 +2,62 @@ package command
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 
 	Error "github.com/michielnijenhuis/cli/error"
-	Helper "github.com/michielnijenhuis/cli/helper"
 	Input "github.com/michielnijenhuis/cli/input"
 	Output "github.com/michielnijenhuis/cli/output"
 )
 
 type CommandHandle func(self *Command) (int, error)
+type CommandInitializer func(input Input.InputInterface, output Output.OutputInterface)
+type CommandInteracter func(input Input.InputInterface, output Output.OutputInterface)
 
 type Command struct {
-	handle CommandHandle
+	handle      CommandHandle
+	initializer CommandInitializer
+	interacter  CommandInteracter
 
 	name        string
 	description string
 	aliases     []string
 	help        string
 
-	// application *Application.Application
 	definition             *Input.InputDefinition
+	applicationDefinition  *Input.InputDefinition
+	isSingleCommand        bool
 	hidden                 bool
 	fullDefinition         *Input.InputDefinition
 	ignoreValidationErrors bool
 	synopsis               map[string]string
 	usages                 []string
-	helperSet              *Helper.HelperSet
 	input                  Input.InputInterface
 	output                 Output.OutputInterface
 }
 
 func NewCommand(name string, handle CommandHandle) *Command {
 	c := &Command{
-		handle: handle,
+		handle:      handle,
+		initializer: nil,
+		interacter:  nil,
 
 		name:                   name,
 		description:            "",
 		aliases:                make([]string, 0),
 		help:                   "",
 		definition:             Input.NewInputDefinition(nil, nil),
-		hidden:                 false,
+		applicationDefinition:  nil,
 		fullDefinition:         nil,
+		hidden:                 false,
+		isSingleCommand:        false,
 		ignoreValidationErrors: false,
 		synopsis:               make(map[string]string),
 		usages:                 make([]string, 0),
-		helperSet:              nil,
 		input:                  nil,
 		output:                 nil,
 	}
-
-	c.configure()
 
 	if name != "" {
 		aliases := strings.Split(name, "|")
@@ -67,24 +72,38 @@ func NewCommand(name string, handle CommandHandle) *Command {
 	return c
 }
 
+func (c *Command) SetInitializer(initializer CommandInitializer) {
+	c.initializer = initializer
+}
+
+func (c *Command) SetInteracter(interactor CommandInteracter) {
+	c.interacter = interactor
+}
+
 func (c *Command) IgnoreValidationErrors() {
 	c.ignoreValidationErrors = true
 }
 
-func (c *Command) MergeApplication(helperSet *Helper.HelperSet, definition *Input.InputDefinition, mergeArgs bool) {
-	c.helperSet = helperSet
+func (c *Command) SetApplicationDefinition(definition *Input.InputDefinition) {
+	c.applicationDefinition = definition
+	c.fullDefinition = nil
+}
+
+func (c *Command) ApplicationDefinition() *Input.InputDefinition {
+	return c.applicationDefinition
+}
+
+func (c *Command) MergeApplication(mergeArgs bool) {
+	if c.applicationDefinition == nil {
+		return
+	}
 
 	fullDefinition := Input.NewInputDefinition(nil, nil)
 	fullDefinition.SetOptions(c.definition.GetOptionsArray())
-
-	if definition != nil {
-		fullDefinition.AddOptions(definition.GetOptionsArray())
-	}
+	fullDefinition.AddOptions(c.applicationDefinition.GetOptionsArray())
 
 	if mergeArgs {
-		if definition != nil {
-			fullDefinition.SetArguments(definition.GetArgumentsArray())
-		}
+		fullDefinition.SetArguments(c.applicationDefinition.GetArgumentsArray())
 		fullDefinition.AddArguments(c.definition.GetArgumentsArray())
 	} else {
 		fullDefinition.SetArguments(c.definition.GetArgumentsArray())
@@ -93,19 +112,9 @@ func (c *Command) MergeApplication(helperSet *Helper.HelperSet, definition *Inpu
 	c.fullDefinition = fullDefinition
 }
 
-func (c *Command) SetHelperSet(helperSet *Helper.HelperSet) {
-	c.helperSet = helperSet
-}
-
-func (c *Command) GetHelperSet() *Helper.HelperSet {
-	return c.helperSet
-}
-
 func (c *Command) IsEnabled() bool {
 	return true
 }
-
-func (c *Command) configure() {}
 
 func (c *Command) execute(input Input.InputInterface, output Output.OutputInterface) (int, error) {
 	c.input = input
@@ -155,10 +164,6 @@ func (c *Command) Options() map[string]Input.InputType {
 	return c.input.GetOptions()
 }
 
-func (c *Command) interact(input Input.InputInterface, output Output.OutputInterface) {}
-
-func (c *Command) initialize(input Input.InputInterface, output Output.OutputInterface) {}
-
 func (c *Command) Run(input Input.InputInterface, output Output.OutputInterface) (int, error) {
 	if input == nil {
 		argvInput, err := Input.NewArgvInput(nil, nil)
@@ -172,16 +177,20 @@ func (c *Command) Run(input Input.InputInterface, output Output.OutputInterface)
 		output = Output.NewConsoleOutput(0, true, nil)
 	}
 
+	c.MergeApplication(true)
+
 	input.Bind(c.GetDefinition())
 	err := input.Parse()
 	if err != nil && !c.ignoreValidationErrors {
 		return 1, err
 	}
 
-	c.initialize(input, output)
+	if c.initializer != nil {
+		c.initializer(input, output)
+	}
 
-	if input.IsInteractive() {
-		c.interact(input, output)
+	if c.interacter != nil && input.IsInteractive() {
+		c.interacter(input, output)
 	}
 
 	if input.HasArgument("command") {
@@ -221,11 +230,27 @@ func (c *Command) GetNativeDefinition() *Input.InputDefinition {
 	return c.definition
 }
 
-func (c *Command) AddArgument(name string, mode uint, description string, defaultValue Input.InputType, validator Input.InputValidator) *Command {
+func (c *Command) AddArgument(name string, mode Input.InputArgumentMode, description string, defaultValue Input.InputType, validator Input.InputValidator) *Command {
+	if c.definition != nil {
+		c.definition.AddArgument(Input.NewInputArgument(name, mode, description, defaultValue, validator))
+	}
+
+	if c.fullDefinition != nil {
+		c.definition.AddArgument(Input.NewInputArgument(name, mode, description, defaultValue, validator))
+	}
+
 	return c
 }
 
-func (c *Command) AddOption(name string, shortcut []string, mode uint, description string, defaultValue Input.InputType, validator Input.InputValidator) *Command {
+func (c *Command) AddOption(name string, shortcut string, mode Input.InputOptionMode, description string, defaultValue Input.InputType, validator Input.InputValidator) *Command {
+	if c.definition != nil {
+		c.definition.AddOption(Input.NewInputOption(name, shortcut, mode, description, defaultValue, validator))
+	}
+
+	if c.fullDefinition != nil {
+		c.fullDefinition.AddOption(Input.NewInputOption(name, shortcut, mode, description, defaultValue, validator))
+	}
+
 	return c
 }
 
@@ -309,16 +334,34 @@ func (c *Command) GetUsages() []string {
 	return c.usages
 }
 
-func (c *Command) GetHelper(name string) (Helper.HelperInterface, error) {
-	if c.helperSet == nil {
-		return nil, Error.NewInvalidArgumentError("Cannot retrieve helper because there is no HelperSet defined. Did you forget to add your command to the application or to set the application on the command using the MergeApplication() method? You can also set the HelperSet directly using the SetHelperSet() method.")
+func (c *Command) ProcessedHelp() string {
+	name := c.GetName()
+	isSingleCommand := c.isSingleCommand
+
+	placeholders := []string{`%command_name%`, `%command_full_name%`}
+
+	var title string
+	if !isSingleCommand {
+		executable, err := os.Executable()
+		if err != nil {
+			title = executable + " " + name
+		} else {
+			title = os.Args[0]
+		}
 	}
 
-	return c.helperSet.Get(name)
-}
+	replacements := []string{name, title}
 
-func (c *Command) GetProcessedHelp() string {
-	return "TODO: Command.GetProcessedHelp()"
+	help := c.GetHelp()
+	if help == "" {
+		help = c.GetDescription()
+	}
+
+	for i, placeholder := range placeholders {
+		help = strings.Replace(help, placeholder, replacements[i], -1)
+	}
+
+	return help
 }
 
 func (c *Command) validateName(name string) {
@@ -340,4 +383,8 @@ func (c *Command) Output() Output.OutputInterface {
 		panic("Command.Output() can only be called inside the scope of the command handle.")
 	}
 	return c.output
+}
+
+func (c *Command) Describe(output Output.OutputInterface, options uint) {
+
 }

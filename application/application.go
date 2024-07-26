@@ -1,6 +1,7 @@
-package cli
+package application
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -10,7 +11,6 @@ import (
 	Command "github.com/michielnijenhuis/cli/command"
 	Error "github.com/michielnijenhuis/cli/error"
 	Formatter "github.com/michielnijenhuis/cli/formatter"
-	Helper "github.com/michielnijenhuis/cli/helper"
 	Input "github.com/michielnijenhuis/cli/input"
 	Output "github.com/michielnijenhuis/cli/output"
 	Terminal "github.com/michielnijenhuis/cli/terminal"
@@ -28,7 +28,6 @@ type Application struct {
 	runningCommand *Command.Command
 	definition     *Input.InputDefinition
 	commands       map[string]*Command.Command
-	helperSet      *Helper.HelperSet
 }
 
 func NewApplication(name string, version string) *Application {
@@ -51,12 +50,11 @@ func NewApplication(name string, version string) *Application {
 		initialized:    false,
 		runningCommand: nil,
 		definition:     nil,
-		helperSet:      nil,
-		commands:       make(map[string]*Command.Command), // VERIFY: should this be a pointer?
+		commands:       make(map[string]*Command.Command),
 	}
 }
 
-func (app *Application) Run(input Input.InputInterface, output Output.OutputInterface) (int, error) {
+func (app *Application) Run(input Input.InputInterface, output Output.OutputInterface) (exitCode int, err error) {
 	width, height, err := Terminal.GetSize()
 	if err == nil {
 		os.Setenv("LINES", fmt.Sprint(height))
@@ -74,9 +72,28 @@ func (app *Application) Run(input Input.InputInterface, output Output.OutputInte
 		output = Output.NewConsoleOutput(0, true, nil)
 	}
 
-	app.configureIO(input, output)
+	if app.catchErrors {
+		defer func() {
+			if r := recover(); r != nil {
+				recoveredErr, isErr := r.(error)
+				exitCode = 1
 
-	var exitCode int
+				if !isErr {
+					msg, isStr := r.(string)
+					if isStr && msg != "" {
+						recoveredErr = errors.New(msg)
+					} else {
+						recoveredErr = errors.New("an unknown error occurred")
+					}
+				}
+
+				err = recoveredErr
+				app.RenderError(output, err)
+			}
+		}()
+	}
+
+	app.configureIO(input, output)
 
 	code, err := app.doRun(input, output)
 
@@ -146,16 +163,10 @@ func (app *Application) doRun(input Input.InputInterface, output Output.OutputIn
 	}
 
 	app.runningCommand = command
-	exitCode, runCommandErr := app.doRunCommand(command, input, output)
+	exitCode, runCommandErr := command.Run(input, output)
 	app.runningCommand = nil
 
 	return exitCode, runCommandErr
-}
-
-func (app *Application) SetHelperSet(helperSet *Helper.HelperSet) {}
-
-func (app *Application) GetHelperSet() *Helper.HelperSet {
-	return nil
 }
 
 func (app *Application) SetDefinition(definition *Input.InputDefinition) {
@@ -234,10 +245,10 @@ func (app *Application) AddCommands(commands []*Command.Command) {
 func (app *Application) Add(command *Command.Command) *Command.Command {
 	app.init()
 
-	command.MergeApplication(app.GetHelperSet(), app.getDefinition(), true)
+	command.SetApplicationDefinition(app.getDefinition())
 
 	if !command.IsEnabled() {
-		command.MergeApplication(nil, nil, false)
+		command.SetApplicationDefinition(nil)
 		return nil
 	}
 
@@ -446,21 +457,6 @@ func (app *Application) configureIO(input Input.InputInterface, output Output.Ou
 	}
 }
 
-func (app *Application) doRunCommand(command *Command.Command, input Input.InputInterface, output Output.OutputInterface) (int, error) {
-	helperSet := command.GetHelperSet()
-
-	if helperSet != nil {
-		for _, helper := range helperSet.Iterate() {
-			inputAware, isInputAware := helper.(Input.InputAwareInterface)
-			if isInputAware {
-				inputAware.SetInput(input)
-			}
-		}
-	}
-
-	return command.Run(input, output)
-}
-
 func (app *Application) getCommandName(input Input.InputInterface) string {
 	if app.singleCommand {
 		return app.defaultCommand
@@ -496,11 +492,91 @@ func (app *Application) getDefaultInputDefinition() *Input.InputDefinition {
 }
 
 func (app *Application) getDefaultCommands() []*Command.Command {
-	return []*Command.Command{} // TODO: HelpCommand, ListCommand
+	return []*Command.Command{
+		app.newHelpCommand(),
+		app.newListCommand(),
+	}
 }
 
-func (app *Application) getDefaultHelperSet() *Helper.HelperSet {
-	return &Helper.HelperSet{} // TODO: FormatterHelper, DebugFormatterHelper, QuestionHelper
+func (app *Application) newHelpCommand() *Command.Command {
+	command := Command.NewCommand("help", func(self *Command.Command) (int, error) {
+		commandName, err := self.StringArgument("command_name")
+		if err != nil {
+			return 1, err
+		}
+
+		targetCommand, err := app.Find(commandName)
+		if err != nil {
+			return 1, err
+		}
+
+		// TODO: describe command
+		self.Output().Writeln(fmt.Sprintf("TODO: Describe command \"%s\"", targetCommand.GetName()), 0)
+
+		return 0, nil
+	})
+
+	command.IgnoreValidationErrors()
+	command.SetDefinition(Input.NewInputDefinition(
+		[]*Input.InputArgument{
+			Input.NewInputArgument("command_name", Input.INPUT_ARGUMENT_OPTIONAL, "The command name", "help", nil),
+		},
+		[]*Input.InputOption{
+			Input.NewInputOption("raw", "", Input.INPUT_OPTION_BOOLEAN, "To output raw command help", nil, nil),
+		},
+	))
+	command.SetDescription("Display help for a command")
+	command.SetHelp(`
+The <highlight>%command.name%</highlight> command displays help for a given command:
+
+  <highlight>%command.full_name% list</highlight>
+
+You can also output the help in other formats by using the <highlight>--format</highlight> option:
+
+  <highlight>%command.full_name% --format=json list</highlight>
+
+To display the list of available commands, please use the <highlight>list</highlight> command.
+`)
+
+	return command
+}
+
+func (app *Application) newListCommand() *Command.Command {
+	command := Command.NewCommand("list", func(self *Command.Command) (int, error) {
+		panic("TODO: List command handle")
+	})
+
+	command.IgnoreValidationErrors()
+	command.SetDefinition(Input.NewInputDefinition(
+		[]*Input.InputArgument{
+			Input.NewInputArgument("namespace", Input.INPUT_ARGUMENT_OPTIONAL, "The namespace name", nil, nil),
+		},
+		[]*Input.InputOption{
+			Input.NewInputOption("raw", "", Input.INPUT_OPTION_BOOLEAN, "To output raw command list", nil, nil),
+			Input.NewInputOption("format", "", Input.INPUT_OPTION_REQUIRED, "The output format (txt or json)", "txt", nil),
+			Input.NewInputOption("short", "", Input.INPUT_OPTION_BOOLEAN, "To skip describing commands' arguments", nil, nil),
+		},
+	))
+	command.SetDescription("List commands")
+	command.SetHelp(`
+The <highlight>%command.name%</highlight> command lists all commands:
+
+  <highlight>%command.full_name%</highlight>
+
+You can also display the commands for a specific namespace:
+
+  <highlight>%command.full_name% test</highlight>
+
+You can also output the information in other formats by using the <highlight>--format</highlight> option:
+
+  <highlight>%command.full_name% --format=json</highlight>
+
+It's also possible to get raw list of commands (useful for embedding command runner):
+
+  <highlight>%command.full_name% --raw</highlight>
+`)
+
+	return command
 }
 
 func (app *Application) getAbbreviationSuggestions(abbrevs []string) string {
@@ -619,4 +695,9 @@ func splitStringByWidth(s string, w int) []string {
 	}
 
 	return result
+}
+
+func (a *Application) Describe(output Output.OutputInterface, options uint) {
+	descriptor := NewApplicationDescription(a, "", false)
+	descriptor.Describe(output, options)
 }

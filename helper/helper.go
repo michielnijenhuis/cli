@@ -80,3 +80,30 @@ func RemoveDecoration(formatter Formatter.OutputFormatterInferface, str string) 
 
 	return str
 }
+
+func Len(s string) int {
+	return len(s)
+}
+
+func Substring(s string, from int, length int) string {
+	if s == "" {
+		return s
+	}
+
+	return s[from:length]
+}
+
+// TODO: implement
+func DetectEncoding(formatter Formatter.OutputFormatterInferface, str string) string {
+	return ""
+}
+
+// TODO: implement
+func FormatMemory(memory int) string {
+	return ""
+}
+
+// TODO: implement
+func FormatTime(secs int, precision int) string {
+	return ""
+}

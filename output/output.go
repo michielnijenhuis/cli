@@ -21,7 +21,7 @@ func NewOutput(verbosity uint, decorated bool, formatter Formatter.OutputFormatt
 	}
 
 	if formatter == nil {
-		formatter = Formatter.NewOutputFormatter()
+		formatter = Formatter.NewOutputFormatter(false, nil)
 	}
 
 	formatter.SetDecorated(decorated)
@@ -117,7 +117,7 @@ func (o *Output) WriteMany(messages []string, newLine bool, options uint) {
 		case OUTPUT_PLAIN:
 			message = re.ReplaceAllString(o.formatter.Format(message), "")
 		}
-		
+
 		o.DoWrite(message, newLine)
 	}
 }
