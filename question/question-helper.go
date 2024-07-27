@@ -1,4 +1,4 @@
-package question_helper
+package question
 
 import (
 	"fmt"
@@ -11,7 +11,6 @@ import (
 	Helper "github.com/michielnijenhuis/cli/helper"
 	Input "github.com/michielnijenhuis/cli/input"
 	Output "github.com/michielnijenhuis/cli/output"
-	Question "github.com/michielnijenhuis/cli/question"
 	Style "github.com/michielnijenhuis/cli/style"
 	Terminal "github.com/michielnijenhuis/cli/terminal"
 )
@@ -77,7 +76,7 @@ func cast[T any](value any) T {
 
 type QuestionInterface[T any] interface {
 	Default() T
-	Normalizer() Question.QuestionNormalizer[T]
+	Normalizer() QuestionNormalizer[T]
 }
 
 // TODO: implement
@@ -97,7 +96,7 @@ func doAsk[T any](output Output.OutputInterface, question QuestionInterface[T], 
 		// 	outputStream = streamOutput.GetStream()
 		// }
 
-		// do ask
+		// TODO: do ask
 	}
 
 	str := any(ret).(string)
@@ -120,7 +119,7 @@ func doAsk[T any](output Output.OutputInterface, question QuestionInterface[T], 
 }
 
 func defaultAnswer[T any](question interface{}) any {
-	q, ok := question.(*Question.Question[T])
+	q, ok := question.(*Question[T])
 	if !ok {
 		var empty T
 		return empty
@@ -133,7 +132,7 @@ func defaultAnswer[T any](question interface{}) any {
 		return validator(defaultValue)
 	}
 
-	choiceQuestion, ok := question.(*Question.ChoiceQuestion)
+	choiceQuestion, ok := question.(*ChoiceQuestion)
 	if !ok {
 		return defaultValue
 	}
@@ -148,7 +147,7 @@ func defaultAnswer[T any](question interface{}) any {
 }
 
 func writePrompt[T any](output Output.OutputInterface, question interface{}) {
-	q, ok := question.(*Question.Question[T])
+	q, ok := question.(*Question[T])
 	if !ok {
 		return
 	}
@@ -161,14 +160,14 @@ func writePrompt[T any](output Output.OutputInterface, question interface{}) {
 
 	if str, ok := any(q.Default()).(string); ok && str == "" {
 		text = fmt.Sprintf(" <info>%s</info>", text)
-	} else if cq, ok := question.(*Question.ConfirmationQuestion); ok {
+	} else if cq, ok := question.(*ConfirmationQuestion); ok {
 		highlight := "yes"
 		if !cq.Default() {
 			highlight = "no"
 		}
 
 		text = fmt.Sprintf(" <info>%s (yes/no)</info> [<highlight>%s</highlight>]", text, highlight)
-	} else if cq, ok := question.(*Question.ChoiceQuestion); ok {
+	} else if cq, ok := question.(*ChoiceQuestion); ok {
 		choices := cq.Choices()
 		str, isStr := any(q.Default()).(string)
 		comment := str
@@ -185,7 +184,7 @@ func writePrompt[T any](output Output.OutputInterface, question interface{}) {
 
 	prompt := " > "
 
-	choice, ok := question.(*Question.ChoiceQuestion)
+	choice, ok := question.(*ChoiceQuestion)
 	if ok {
 		output.Writelns(formatChoiceQuestionChoices(choice, "comment"), 0)
 		prompt = choice.Prompt()
@@ -194,7 +193,7 @@ func writePrompt[T any](output Output.OutputInterface, question interface{}) {
 	output.Write(prompt, false, 0)
 }
 
-func formatChoiceQuestionChoices(question *Question.ChoiceQuestion, tag string) []string {
+func formatChoiceQuestionChoices(question *ChoiceQuestion, tag string) []string {
 	messages := make([]string, 0)
 	choices := question.Choices()
 
@@ -220,7 +219,7 @@ func writeError(output Output.OutputInterface, err error) {
 		return
 	}
 
-	message := Helper.FormatBlock([]string{err.Error()}, "error", false)
+	message := Formatter.FormatBlock([]string{err.Error()}, "error", false)
 
 	output.Writeln(message, 0)
 }

@@ -232,5 +232,5 @@ func (o *ConsoleSectionOutput) popStreamContentUntilCurrentSection(numberOfLines
 }
 
 func (o *ConsoleSectionOutput) getDisplayLength(text string) int {
-	return helper.Width(helper.RemoveDecoration(o.GetFormatter(), strings.Replace(text, "\t", "        ", 1)))
+	return helper.Width(formatter.RemoveDecoration(o.GetFormatter(), strings.Replace(text, "\t", "        ", 1)))
 }

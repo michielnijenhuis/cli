@@ -1,10 +1,7 @@
 package helper
 
 import (
-	"regexp"
 	"unicode/utf8"
-
-	Formatter "github.com/michielnijenhuis/cli/formatter"
 )
 
 func Width(str string) int {
@@ -64,23 +61,6 @@ func Width(str string) int {
 	return length
 }
 
-func RemoveDecoration(formatter Formatter.OutputFormatterInferface, str string) string {
-	isDecorated := formatter.IsDecorated()
-	formatter.SetDecorated(false)
-
-	str = formatter.Format(str)
-
-	re1 := regexp.MustCompile(`\033\[[^m]*m`)
-	str = re1.ReplaceAllString(str, "")
-
-	re2 := regexp.MustCompile(`\\033]8;[^;]*;[^\\033]*\\033\\\\`)
-	str = re2.ReplaceAllString(str, "")
-
-	formatter.SetDecorated(isDecorated)
-
-	return str
-}
-
 func Len(s string) int {
 	return len(s)
 }
@@ -91,11 +71,6 @@ func Substring(s string, from int, length int) string {
 	}
 
 	return s[from:length]
-}
-
-// TODO: implement
-func DetectEncoding(formatter Formatter.OutputFormatterInferface, str string) string {
-	return ""
 }
 
 // TODO: implement

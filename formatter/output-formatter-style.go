@@ -1,6 +1,8 @@
 package formatter
 
 import (
+	"fmt"
+
 	Color "github.com/michielnijenhuis/cli/color"
 )
 
@@ -79,7 +81,10 @@ func (s *OutputFormatterStyle) SetOptions(options []string) {
 	s.color = *Color.NewColor(s.foreground, s.background, options)
 }
 
-// TODO: implement
 func (s *OutputFormatterStyle) Apply(text string) string {
+	if s.href != "" && s.handlesHrefGracefully {
+		text = fmt.Sprintf("\x1b]8;;%s\x1b\\%s\x1b]8;;\x1b\\", s.href, text)
+	}
+
 	return s.color.Apply(text)
 }

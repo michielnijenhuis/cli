@@ -1,10 +1,11 @@
-package helper
+package formatter
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
-	formatter "github.com/michielnijenhuis/cli/formatter"
+	"github.com/michielnijenhuis/cli/helper"
 )
 
 func FormatSection(section string, message string, style string) string {
@@ -16,7 +17,7 @@ func FormatBlock(messages []string, style string, large bool) string {
 	lines := make([]string, len(messages))
 
 	for _, message := range messages {
-		message = formatter.Escape(message)
+		message = Escape(message)
 		if large {
 			lines = append(lines, fmt.Sprintf("  %s  ", message))
 		} else {
@@ -24,14 +25,14 @@ func FormatBlock(messages []string, style string, large bool) string {
 		}
 
 		if large {
-			length = max(Width(message)+4, length)
+			length = max(helper.Width(message)+4, length)
 		} else {
-			length = max(Width(message)+2, length)
+			length = max(helper.Width(message)+2, length)
 		}
 	}
 
 	for _, line := range lines {
-		messages = append(messages, line+strings.Repeat(" ", length-Width(line)))
+		messages = append(messages, line+strings.Repeat(" ", length-helper.Width(line)))
 	}
 
 	if large {
@@ -50,10 +51,32 @@ func Truncate(message string, length int, suffix string) string {
 		suffix = "..."
 	}
 
-	computedLength := length - Width(suffix)
-	if computedLength > Width(message) {
+	computedLength := length - helper.Width(suffix)
+	if computedLength > helper.Width(message) {
 		return message + suffix
 	}
 
 	return message[:length-1] + suffix
+}
+
+// TODO: implement
+func DetectEncoding(formatter OutputFormatterInferface, str string) string {
+	return ""
+}
+
+func RemoveDecoration(formatter OutputFormatterInferface, str string) string {
+	isDecorated := formatter.IsDecorated()
+	formatter.SetDecorated(false)
+
+	str = formatter.Format(str)
+
+	re1 := regexp.MustCompile(`\033\[[^m]*m`)
+	str = re1.ReplaceAllString(str, "")
+
+	re2 := regexp.MustCompile(`\\033]8;[^;]*;[^\\033]*\\033\\\\`)
+	str = re2.ReplaceAllString(str, "")
+
+	formatter.SetDecorated(isDecorated)
+
+	return str
 }

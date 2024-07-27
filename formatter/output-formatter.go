@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	err "github.com/michielnijenhuis/cli/error"
+	"github.com/michielnijenhuis/cli/helper"
 )
 
 type OutputFormatter struct {
@@ -22,7 +23,7 @@ func NewOutputFormatter(decorated bool, styles map[string]OutputFormatterStyleIn
 	of := &OutputFormatter{
 		decorated:  decorated,
 		styles:     styles,
-		styleStack: NewOutputFormatterStyleStack(),
+		styleStack: NewOutputFormatterStyleStack(nil),
 	}
 
 	of.SetStyle("error", NewOutputFormatterStyle("white", "red", nil))
@@ -73,13 +74,67 @@ func (o *OutputFormatter) Format(message string) string {
 	return o.FormatAndWrap(message, 0)
 }
 
-// TODO: implement
 func (o *OutputFormatter) FormatAndWrap(message string, width int) string {
 	if message == "" {
 		return message
 	}
 
-	return message
+	var offset int
+	var output string
+	var currentLineLength int
+
+	re := regexp.MustCompile(`<\/?([a-z]+)(?:=([a-zA-Z-]+(?:;[a-zA-Z-]+=[a-zA-Z-]+)*))?>|<\/>`)
+	matches := re.FindAllStringSubmatchIndex(message, -1)
+
+	for _, match := range matches {
+		pos := match[0]
+		text := message[pos:match[1]]
+
+		if pos != 0 && message[pos-1] == '\\' {
+			continue
+		}
+
+		output += o.applyCurrentStyle(message[offset:pos], output, width, currentLineLength)
+		offset = pos + len(text)
+
+		open := text[1] != '/'
+		tag := ""
+		if open {
+			if strings.Contains(text, "=") {
+				tag = fmt.Sprintf("%s=%s", message[match[2]:match[3]], message[match[4]:match[5]])
+			} else {
+				tag = message[match[2]:match[3]]
+			}
+		} else {
+			if match[4] != -1 {
+				tag = message[match[4]:match[5]]
+			}
+		}
+
+		if !open && tag == "" {
+			// </>
+			o.styleStack.Pop(nil)
+		} else {
+			style := o.createStyleFromString(tag)
+
+			if style == nil {
+				output += o.applyCurrentStyle(text, output, width, currentLineLength)
+			} else if open {
+				o.styleStack.Push(style)
+			} else {
+				o.styleStack.Pop(style)
+			}
+		}
+	}
+
+	str := message[offset:]
+	output += o.applyCurrentStyle(str, output, width, currentLineLength)
+
+	output = strings.ReplaceAll(output, "\x00", "\\")
+	output = strings.ReplaceAll(output, "\\<", "<")
+	output = strings.ReplaceAll(output, "\\>", ">")
+
+	return output
 }
 
 func (o *OutputFormatter) StyleStack() *OutputFormatterStyleStack {
@@ -121,4 +176,127 @@ func EscapeTrailingBackslash(s string) string {
 	}
 
 	return s
+}
+
+func (o *OutputFormatter) createStyleFromString(s string) OutputFormatterStyleInterface {
+	if style, ok := o.styles[s]; ok {
+		return style
+	}
+
+	re := regexp.MustCompile(`([^;=]+)=([a-zA-Z-]+)(;|$)`)
+	matches := re.FindAllStringSubmatch(s, -1)
+	if matches == nil {
+		return nil
+	}
+
+	style := NewOutputFormatterStyle("", "", nil)
+	for _, match := range matches {
+		key := strings.ToLower(match[1])
+		value := strings.ToLower(match[2])
+
+		switch key {
+		case "fg":
+			style.SetForeground(value)
+		case "bg":
+			style.SetBackground(value)
+		case "href":
+			url := strings.ReplaceAll(value, `\`, "")
+			style.SetHref(url)
+		case "options":
+			options := strings.Split(value, ",")
+			for _, option := range options {
+				style.SetOption(option)
+			}
+		default:
+			return nil
+		}
+	}
+
+	return style
+}
+
+func (o *OutputFormatter) applyCurrentStyle(text string, current string, width int, currentLineLength int) string {
+	if text == "" {
+		return ""
+	}
+
+	if width == 0 {
+		if o.decorated {
+			return o.styleStack.Current().Apply(text)
+		}
+		return text
+	}
+
+	if currentLineLength == 0 && current != "" {
+		text = strings.TrimLeft(text, " ")
+	}
+
+	prefix := ""
+	if currentLineLength != 0 {
+		prefixLength := width - currentLineLength
+		if len(text) > prefixLength {
+			prefix = text[:prefixLength] + "\n"
+			text = text[prefixLength:]
+		}
+	}
+
+	text = prefix + o.addLineBreaks(text, width)
+	text = strings.TrimRight(text, " ")
+	if currentLineLength == 0 && current != "" && !strings.HasSuffix(current, "\n") {
+		text = "\n" + text
+	}
+
+	lines := strings.Split(text, "\n")
+	for _, line := range lines {
+		currentLineLength += len(line)
+		if width <= currentLineLength {
+			currentLineLength = 0
+		}
+	}
+
+	if o.decorated {
+		for i, line := range lines {
+			lines[i] = o.styleStack.Current().Apply(line)
+		}
+	}
+
+	return strings.Join(lines, "\n")
+}
+
+func (o *OutputFormatter) addLineBreaks(text string, width int) string {
+	words := []string{}
+	wordStartIndex := 0
+
+	for i := 0; i < len(text); i++ {
+		charWidth := helper.Width(string(text[i]))
+		if charWidth == 0 || charWidth > 1 {
+			if i > wordStartIndex {
+				words = append(words, text[wordStartIndex:i])
+			}
+			words = append(words, string(text[i]))
+			wordStartIndex = i + 1
+		} else if i == len(text)-1 {
+			words = append(words, text[wordStartIndex:])
+		}
+	}
+
+	result := ""
+	lineLength := 0
+
+	for _, word := range words {
+		wordLength := helper.Len(word)
+		if lineLength+wordLength > width {
+			result += "\n" + word
+			lineLength = wordLength
+		} else {
+			if result != "" {
+				result += " "
+				lineLength++
+			}
+			result += word
+			lineLength += wordLength
+		}
+	}
+
+	return result
 }

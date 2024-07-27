@@ -9,6 +9,7 @@ import (
 	Error "github.com/michielnijenhuis/cli/error"
 	Input "github.com/michielnijenhuis/cli/input"
 	Output "github.com/michielnijenhuis/cli/output"
+	Style "github.com/michielnijenhuis/cli/style"
 )
 
 type CommandHandle func(self *Command) (int, error)
@@ -118,7 +119,7 @@ func (c *Command) IsEnabled() bool {
 
 func (c *Command) execute(input Input.InputInterface, output Output.OutputInterface) (int, error) {
 	c.input = input
-	c.output = output // TODO: Style
+	c.output = Style.NewStyle(input, output)
 
 	exitCode, err := c.handle(c)
 	if err != nil {
