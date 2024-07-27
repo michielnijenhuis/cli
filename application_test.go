@@ -127,6 +127,25 @@ func TestApplicationCanRecover(t *testing.T) {
 	}
 }
 
+func TestApplicationCanShowHelp(t *testing.T) {
+	app := Application.NewApplication("app", "v1.0.0")
+	app.SetCatchErrors(true)
+	app.SetAutoExit(false)
+
+	argv := map[string]Input.InputType{
+		"command": "help",
+	}
+
+	input, _ := Input.NewObjectInput(argv, nil)
+	parseError := input.Validate()
+
+	if parseError != nil {
+		fmt.Print(parseError.Error())
+	}
+
+	app.Run(input, nil)
+}
+
 func TestApplicationCanListCommands(t *testing.T) {
 	app := Application.NewApplication("app", "v1.0.0")
 	app.SetCatchErrors(true)

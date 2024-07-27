@@ -128,7 +128,42 @@ func (d *TextDescriptor) DescribeApplication(app DescribeableApplication, option
 }
 
 func (d *TextDescriptor) DescribeCommand(command *command.Command, options *DescriptorOptions) {
+	command.MergeApplication(false)
 
+	description := command.GetDescription()
+	if description != "" {
+		d.writeText("<header>Description:</header>", options)
+		d.writeText("\n", nil)
+		d.writeText("  "+description, nil)
+		d.writeText("\n\n", nil)
+	}
+
+	d.writeText("<header>Usage:</header>", options)
+	usages := make([]string, 0)
+	usages = append(usages, command.GetSynopsis(true))
+	usages = append(usages, command.GetAliases()...)
+	usages = append(usages, command.GetUsages()...)
+	for _, usage := range usages {
+		d.writeText("\n", nil)
+		d.writeText("  "+formatter.Escape(usage), options)
+	}
+	d.writeText("\n", nil)
+
+	definition := command.GetDefinition()
+	if len(definition.GetOptions()) > 0 || len(definition.GetArguments()) > 0 {
+		d.writeText("\n", nil)
+		d.DescribeInputDefinition(definition, options)
+		d.writeText("\n", nil)
+	}
+
+	help := command.ProcessedHelp()
+	if help != "" && help != description {
+		d.writeText("\n", nil)
+		d.writeText("<header>Help:</header>", options)
+		d.writeText("\n", nil)
+		d.writeText("  "+strings.ReplaceAll(help, "\n", "\n  "), options)
+		d.writeText("\n", nil)
+	}
 }
 
 func (d *TextDescriptor) DescribeInputDefinition(definition *input.InputDefinition, options *DescriptorOptions) {

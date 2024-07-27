@@ -341,7 +341,7 @@ func (c *Command) ProcessedHelp() string {
 	name := c.GetName()
 	isSingleCommand := c.isSingleCommand
 
-	placeholders := []string{`%command_name%`, `%command_full_name%`}
+	placeholders := []string{`%command.name%`, `%command.full_name%`}
 
 	var title string
 	if !isSingleCommand {

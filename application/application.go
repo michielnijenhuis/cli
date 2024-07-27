@@ -557,9 +557,6 @@ func (app *Application) newHelpCommand() *Command.Command {
 			target = targetCommand
 		}
 
-		// TODO: describe command
-		self.Output().Writeln(fmt.Sprintf("TODO: Describe command \"%s\"", target.GetName()), 0)
-
 		descriptor := Descriptor.NewTextDescriptor(self.Output())
 		raw, _ := self.BoolOption("raw")
 		descriptor.DescribeCommand(target, Descriptor.NewDescriptorOptions("", raw, false, 0))
@@ -577,14 +574,9 @@ func (app *Application) newHelpCommand() *Command.Command {
 		},
 	))
 	command.SetDescription("Display help for a command")
-	command.SetHelp(`
-The <highlight>%command.name%</highlight> command displays help for a given command:
+	command.SetHelp(`The <highlight>%command.name%</highlight> command displays help for a given command:
 
   <highlight>%command.full_name% list</highlight>
-
-You can also output the help in other formats by using the <highlight>--format</highlight> option:
-
-  <highlight>%command.full_name% --format=json list</highlight>
 
 To display the list of available commands, please use the <highlight>list</highlight> command.
 `)
@@ -614,18 +606,13 @@ func (app *Application) newListCommand() *Command.Command {
 		},
 	))
 	command.SetDescription("List commands")
-	command.SetHelp(`
-The <highlight>%command.name%</highlight> command lists all commands:
+	command.SetHelp(`The <highlight>%command.name%</highlight> command lists all commands:
 
   <highlight>%command.full_name%</highlight>
 
 You can also display the commands for a specific namespace:
 
   <highlight>%command.full_name% test</highlight>
-
-You can also output the information in other formats by using the <highlight>--format</highlight> option:
-
-  <highlight>%command.full_name% --format=json</highlight>
 
 It's also possible to get raw list of commands (useful for embedding command runner):
 
