@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
 	Command "github.com/michielnijenhuis/cli/command"
+	Descriptor "github.com/michielnijenhuis/cli/descriptor"
 	Error "github.com/michielnijenhuis/cli/error"
 	Formatter "github.com/michielnijenhuis/cli/formatter"
 	Input "github.com/michielnijenhuis/cli/input"
@@ -128,7 +130,7 @@ func (app *Application) doRun(input Input.InputInterface, output Output.OutputIn
 
 	// Makes ArgvInput.GetFirstArgument() able to distinguish an option from an argument.
 	// Errors must be ignored, full binding/validation happens later when the command is known.
-	input.Bind(app.getDefinition())
+	input.Bind(app.GetDefinition())
 	input.Parse()
 
 	name := app.getCommandName(input)
@@ -149,7 +151,7 @@ func (app *Application) doRun(input Input.InputInterface, output Output.OutputIn
 
 	if name == "" {
 		name = app.defaultCommand
-		definition := app.getDefinition()
+		definition := app.GetDefinition()
 		definition.SetArguments(nil)
 	}
 
@@ -173,7 +175,7 @@ func (app *Application) SetDefinition(definition *Input.InputDefinition) {
 	app.definition = definition
 }
 
-func (app *Application) getDefinition() *Input.InputDefinition {
+func (app *Application) GetDefinition() *Input.InputDefinition {
 	if app.definition == nil {
 		app.definition = app.getDefaultInputDefinition()
 	}
@@ -245,7 +247,7 @@ func (app *Application) AddCommands(commands []*Command.Command) {
 func (app *Application) Add(command *Command.Command) *Command.Command {
 	app.init()
 
-	command.SetApplicationDefinition(app.getDefinition())
+	command.SetApplicationDefinition(app.GetDefinition())
 
 	if !command.IsEnabled() {
 		command.SetApplicationDefinition(nil)
@@ -282,7 +284,9 @@ func (app *Application) Get(name string) (*Command.Command, error) {
 		app.wantsHelp = false
 
 		helpCommand, _ := app.Get("help")
-		// helpCommand.SetCommand(command) TODO: HelpCommand
+		helpCommand.SetMeta(map[string]any{
+			"command": command,
+		})
 
 		return helpCommand, nil
 	}
@@ -297,7 +301,28 @@ func (app *Application) Has(name string) bool {
 }
 
 func (app *Application) GetNamespaces() []string {
-	panic("TODO: Application.GetNamespaces()")
+	namespacesMap := make(map[string]int)
+
+	for _, command := range app.All("") {
+		if command.IsHidden() || command.GetName() == "" {
+			continue
+		}
+
+		for _, namespace := range app.extractAllNamespace(command.GetName()) {
+			namespacesMap[namespace] = 0
+		}
+
+		for _, alias := range command.GetAliases() {
+			namespacesMap[app.ExtractNamespace(alias, -1)] = 0
+		}
+	}
+
+	namespaces := make([]string, len(namespacesMap))
+	for ns := range namespacesMap {
+		namespaces = append(namespaces, ns)
+	}
+
+	return namespaces
 }
 
 func (app *Application) FindNamespaces(namespace string) string {
@@ -329,7 +354,18 @@ func (app *Application) All(namespace string) map[string]*Command.Command {
 		return app.commands
 	}
 
-	panic("TODO: namespace handling in app.All()")
+	re := regexp.MustCompile(`\:`)
+	commands := make(map[string]*Command.Command)
+
+	for name, command := range app.commands {
+		limit := len(re.FindAllStringSubmatchIndex(name, -1)) + 1
+
+		if namespace == app.ExtractNamespace(name, limit) {
+			commands[name] = command
+		}
+	}
+
+	return commands
 }
 
 func (app *Application) GetAbbreviations(names []string) map[string][]string {
@@ -470,10 +506,10 @@ func (app *Application) getDefaultInputDefinition() *Input.InputDefinition {
 	commandArgument := Input.NewInputArgument("command", Input.INPUT_ARGUMENT_REQUIRED, "The command to execute", "", nil)
 	arguments := []*Input.InputArgument{commandArgument}
 
-	helpOption := Input.NewInputOption("--help", "-h", Input.INPUT_OPTION_BOOLEAN, fmt.Sprintf("Dispaly help for the given command, or the <highlight>%s</highlight> command (if no command is given)", app.defaultCommand), nil, nil)
+	helpOption := Input.NewInputOption("--help", "-h", Input.INPUT_OPTION_BOOLEAN, fmt.Sprintf("Display help for the given command, or the <highlight>%s</highlight> command (if no command is given)", app.defaultCommand), nil, nil)
 	quietOption := Input.NewInputOption("--quiet", "-q", Input.INPUT_OPTION_BOOLEAN, "Do not output any message", nil, nil)
 	verboseoption := Input.NewInputOption("--verbose", "-v|vv|vvv", Input.INPUT_OPTION_BOOLEAN, "Increase the verbosity of messages: normal (1), verbose (2) or debug (3)", nil, nil)
-	versionOption := Input.NewInputOption("--version", "-V", Input.INPUT_OPTION_BOOLEAN, "Display this applicatino version", nil, nil)
+	versionOption := Input.NewInputOption("--version", "-V", Input.INPUT_OPTION_BOOLEAN, "Display this application version", nil, nil)
 	ansiOption := Input.NewInputOption("--ansi", "", Input.INPUT_OPTION_NEGATABLE, "Force (or disable --no-ansi) ANSI output", nil, nil)
 	noInteractionOption := Input.NewInputOption("--no-interaction", "-n", Input.INPUT_OPTION_BOOLEAN, "Do not ask any interactive question", nil, nil)
 
@@ -500,18 +536,33 @@ func (app *Application) getDefaultCommands() []*Command.Command {
 
 func (app *Application) newHelpCommand() *Command.Command {
 	command := Command.NewCommand("help", func(self *Command.Command) (int, error) {
-		commandName, err := self.StringArgument("command_name")
-		if err != nil {
-			return 1, err
+		var target *Command.Command = nil
+
+		meta := self.Meta()
+		if metaMap, ok := meta.(map[string]*Command.Command); ok {
+			target = metaMap["command"]
 		}
 
-		targetCommand, err := app.Find(commandName)
-		if err != nil {
-			return 1, err
+		if target == nil {
+			commandName, err := self.StringArgument("command_name")
+			if err != nil {
+				return 1, err
+			}
+
+			targetCommand, err := app.Find(commandName)
+			if err != nil {
+				return 1, err
+			}
+
+			target = targetCommand
 		}
 
 		// TODO: describe command
-		self.Output().Writeln(fmt.Sprintf("TODO: Describe command \"%s\"", targetCommand.GetName()), 0)
+		self.Output().Writeln(fmt.Sprintf("TODO: Describe command \"%s\"", target.GetName()), 0)
+
+		descriptor := Descriptor.NewTextDescriptor(self.Output())
+		raw, _ := self.BoolOption("raw")
+		descriptor.DescribeCommand(target, Descriptor.NewDescriptorOptions("", raw, false, 0))
 
 		return 0, nil
 	})
@@ -543,7 +594,13 @@ To display the list of available commands, please use the <highlight>list</highl
 
 func (app *Application) newListCommand() *Command.Command {
 	command := Command.NewCommand("list", func(self *Command.Command) (int, error) {
-		panic("TODO: List command handle")
+		descriptor := Descriptor.NewTextDescriptor(self.Output())
+		raw, _ := self.BoolOption("raw")
+		short, _ := self.BoolOption("short")
+		namespace, _ := self.StringArgument("namespace")
+		descriptor.DescribeApplication(app, Descriptor.NewDescriptorOptions(namespace, raw, short, 0))
+
+		return 0, nil
 	})
 
 	command.IgnoreValidationErrors()
@@ -553,7 +610,6 @@ func (app *Application) newListCommand() *Command.Command {
 		},
 		[]*Input.InputOption{
 			Input.NewInputOption("raw", "", Input.INPUT_OPTION_BOOLEAN, "To output raw command list", nil, nil),
-			Input.NewInputOption("format", "", Input.INPUT_OPTION_REQUIRED, "The output format (txt or json)", "txt", nil),
 			Input.NewInputOption("short", "", Input.INPUT_OPTION_BOOLEAN, "To skip describing commands' arguments", nil, nil),
 		},
 	))
@@ -695,9 +751,4 @@ func splitStringByWidth(s string, w int) []string {
 	}
 
 	return result
-}
-
-func (a *Application) Describe(output Output.OutputInterface, options uint) {
-	descriptor := NewApplicationDescription(a, "", false)
-	descriptor.Describe(output, options)
 }

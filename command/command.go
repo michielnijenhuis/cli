@@ -36,6 +36,7 @@ type Command struct {
 	usages                 []string
 	input                  Input.InputInterface
 	output                 Output.OutputInterface
+	meta                   any
 }
 
 func NewCommand(name string, handle CommandHandle) *Command {
@@ -58,6 +59,7 @@ func NewCommand(name string, handle CommandHandle) *Command {
 		usages:                 make([]string, 0),
 		input:                  nil,
 		output:                 nil,
+		meta:                   nil,
 	}
 
 	if name != "" {
@@ -388,4 +390,12 @@ func (c *Command) Output() Output.OutputInterface {
 
 func (c *Command) Describe(output Output.OutputInterface, options uint) {
 
+}
+
+func (c *Command) Meta() any {
+	return c.meta
+}
+
+func (c *Command) SetMeta(meta any) {
+	c.meta = meta
 }

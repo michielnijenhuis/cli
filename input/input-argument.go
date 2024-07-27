@@ -86,3 +86,7 @@ func (a *InputArgument) SetDefaultValue(value InputType) {
 func (a *InputArgument) GetDefaultValue() InputType {
 	return a.defaultValue
 }
+
+func (a *InputArgument) Description() string {
+	return a.description
+}

@@ -5,14 +5,16 @@ import (
 )
 
 type DescriptorOptions struct {
-	format     string
 	namespace  string
 	rawText    bool
-	rawOutput  bool
 	short      bool
 	totalWidth int
 }
 
 type DescriptorInterface interface {
 	Describe(output output.OutputInterface, options DescriptorOptions)
+}
+
+func NewDescriptorOptions(namespace string, rawText bool, short bool, totalWidth int) *DescriptorOptions {
+	return &DescriptorOptions{namespace: namespace, rawText: rawText, short: rawText, totalWidth: totalWidth}
 }

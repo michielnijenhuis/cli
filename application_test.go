@@ -126,3 +126,22 @@ func TestApplicationCanRecover(t *testing.T) {
 		t.Errorf("Expected error \"%s\", got: %s", expectedError, errMsg)
 	}
 }
+
+func TestApplicationCanListCommands(t *testing.T) {
+	app := Application.NewApplication("app", "v1.0.0")
+	app.SetCatchErrors(true)
+	app.SetAutoExit(false)
+
+	argv := map[string]Input.InputType{
+		"command": "list",
+	}
+
+	input, _ := Input.NewObjectInput(argv, nil)
+	parseError := input.Validate()
+
+	if parseError != nil {
+		fmt.Print(parseError.Error())
+	}
+
+	app.Run(input, nil)
+}

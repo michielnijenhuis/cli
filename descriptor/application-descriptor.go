@@ -1,12 +1,11 @@
-package application
+package descriptor
 
 import (
 	"fmt"
 	"sort"
 
-	command "github.com/michielnijenhuis/cli/command"
+	"github.com/michielnijenhuis/cli/command"
 	err "github.com/michielnijenhuis/cli/error"
-	"github.com/michielnijenhuis/cli/output"
 )
 
 type NamespaceCommands struct {
@@ -15,7 +14,7 @@ type NamespaceCommands struct {
 }
 
 type ApplicationDescription struct {
-	application *Application
+	application DescribeableApplication
 	namespace   string
 	showHidden  bool
 	namespaces  map[string]*NamespaceCommands
@@ -23,7 +22,7 @@ type ApplicationDescription struct {
 	aliases     map[string]*command.Command
 }
 
-func NewApplicationDescription(application *Application, namespace string, showHidden bool) *ApplicationDescription {
+func NewApplicationDescription(application DescribeableApplication, namespace string, showHidden bool) *ApplicationDescription {
 	return &ApplicationDescription{
 		application: application,
 		namespace:   namespace,
@@ -32,10 +31,6 @@ func NewApplicationDescription(application *Application, namespace string, showH
 		commands:    nil,
 		aliases:     nil,
 	}
-}
-
-func (e *ApplicationDescription) Describe(output output.OutputInterface, options uint) {
-
 }
 
 func (d *ApplicationDescription) Namespaces() map[string]*NamespaceCommands {
@@ -119,7 +114,7 @@ func (d *ApplicationDescription) sortCommands(commands map[string]*command.Comma
 	globalNamespace := "_global"
 
 	for name, cmd := range commands {
-		key := d.application.ExtractNamespace(name, 1)
+		key := d.application.ExtractNamespace(name, -1)
 		if key == "" || key == globalNamespace {
 			globalCommands[name] = cmd
 		} else {
