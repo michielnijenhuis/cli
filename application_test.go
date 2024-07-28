@@ -58,7 +58,7 @@ import (
 // }
 
 // func TestApplicationCanSuccesfullyExecuteCommand(t *testing.T) {
-// 	fmt.Println("--- begin APPLICATION CAN SUCCESFULLY EXECUTE COMMAND test ---")
+// 	fmt.Println("--- begin APPLICATION CAN SUCCESSFULLY EXECUTE COMMAND test ---")
 
 // 	app := Application.NewApplication("app", "v1.0.0")
 // 	app.SetCatchErrors(true)
@@ -96,7 +96,7 @@ import (
 // 		t.Errorf("Expected no error, got: %s", errMsg)
 // 	}
 
-// 	fmt.Println("--- end APPLICATION CAN SUCCESFULLY EXECUTE COMMAND test ---")
+// 	fmt.Println("--- end APPLICATION CAN SUCCESSFULLY EXECUTE COMMAND test ---")
 // 	fmt.Println("")
 // }
 

@@ -17,14 +17,14 @@ type CommandInitializer func(input Input.InputInterface, output Output.OutputInt
 type CommandInteracter func(input Input.InputInterface, output Output.OutputInterface)
 
 type Command struct {
-	handle      CommandHandle
+	Handle      CommandHandle
 	initializer CommandInitializer
 	interacter  CommandInteracter
 
-	name        string
-	description string
-	aliases     []string
-	help        string
+	Name        string
+	Description string
+	Aliases     []string
+	Help        string
 
 	definition             *Input.InputDefinition
 	applicationDefinition  *Input.InputDefinition
@@ -41,14 +41,14 @@ type Command struct {
 
 func NewCommand(name string, handle CommandHandle) *Command {
 	c := &Command{
-		handle:      handle,
+		Handle:      handle,
 		initializer: nil,
 		interacter:  nil,
 
-		name:                   name,
-		description:            "",
-		aliases:                make([]string, 0),
-		help:                   "",
+		Name:                   name,
+		Description:            "",
+		Aliases:                make([]string, 0),
+		Help:                   "",
 		definition:             Input.NewInputDefinition(nil, nil),
 		applicationDefinition:  nil,
 		fullDefinition:         nil,
@@ -123,7 +123,7 @@ func (c *Command) execute(input Input.InputInterface, output Output.OutputInterf
 	c.input = input
 	c.output = Style.NewStyle(input, output)
 
-	exitCode, err := c.handle(c)
+	exitCode, err := c.Handle(c)
 	if err != nil {
 		_, manuallyFailed := err.(Error.ManuallyFailedError)
 		if manuallyFailed {
@@ -259,15 +259,15 @@ func (c *Command) AddOption(name string, shortcut string, mode Input.InputOption
 
 func (c *Command) SetName(name string) *Command {
 	c.validateName(name)
-	c.name = name
+	c.Name = name
 	return c
 }
 
 func (c *Command) GetName() string {
-	if c.name == "" {
+	if c.Name == "" {
 		return "CLI Tool"
 	}
-	return c.name
+	return c.Name
 }
 
 func (c *Command) SetHidden(hidden bool) *Command {
@@ -280,21 +280,21 @@ func (c *Command) IsHidden() bool {
 }
 
 func (c *Command) SetDescription(description string) *Command {
-	c.description = description
+	c.Description = description
 	return c
 }
 
 func (c *Command) GetDescription() string {
-	return c.description
+	return c.Description
 }
 
 func (c *Command) SetHelp(help string) *Command {
-	c.help = help
+	c.Help = help
 	return c
 }
 
 func (c *Command) GetHelp() string {
-	return c.help
+	return c.Help
 }
 
 func (c *Command) SetAliases(aliases []string) *Command {
@@ -302,12 +302,12 @@ func (c *Command) SetAliases(aliases []string) *Command {
 		c.validateName(alias)
 	}
 
-	c.aliases = aliases
+	c.Aliases = aliases
 	return c
 }
 
 func (c *Command) GetAliases() []string {
-	return c.aliases
+	return c.Aliases
 }
 
 func (c *Command) GetSynopsis(short bool) string {
@@ -317,15 +317,15 @@ func (c *Command) GetSynopsis(short bool) string {
 	}
 
 	if c.synopsis[key] == "" {
-		c.synopsis[key] = strings.TrimSpace(fmt.Sprintf("%s %s", c.name, c.definition.GetSynopsis(short)))
+		c.synopsis[key] = strings.TrimSpace(fmt.Sprintf("%s %s", c.Name, c.definition.GetSynopsis(short)))
 	}
 
 	return c.synopsis[key]
 }
 
 func (c *Command) AddUsage(usage string) *Command {
-	if !strings.HasPrefix(usage, c.name) {
-		usage = c.name + " " + usage
+	if !strings.HasPrefix(usage, c.Name) {
+		usage = c.Name + " " + usage
 	}
 
 	c.usages = append(c.usages, usage)

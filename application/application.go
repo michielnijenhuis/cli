@@ -19,8 +19,8 @@ import (
 )
 
 type Application struct {
-	name           string
-	version        string
+	Name           string
+	Version        string
 	defaultCommand string
 	wantsHelp      bool
 	catchErrors    bool
@@ -42,8 +42,8 @@ func NewApplication(name string, version string) *Application {
 	}
 
 	return &Application{
-		name:           name,
-		version:        version,
+		Name:           name,
+		Version:        version,
 		defaultCommand: "list",
 		wantsHelp:      false,
 		catchErrors:    false,
@@ -211,19 +211,19 @@ func (app *Application) SetAutoExit(boolean bool) {
 }
 
 func (app *Application) GetName() string {
-	return app.name
+	return app.Name
 }
 
 func (app *Application) SetName(name string) {
-	app.name = name
+	app.Name = name
 }
 
 func (app *Application) GetVersion() string {
-	return app.version
+	return app.Version
 }
 
 func (app *Application) SetVersion(version string) {
-	app.version = version
+	app.Version = version
 }
 
 func (app *Application) getLongVersion() string {
@@ -484,13 +484,13 @@ func (app *Application) configureIO(input Input.InputInterface, output Output.Ou
 			output.SetVerbosity(Output.VERBOSITY_VERBOSE)
 			shellVerbosity = 1
 		}
-
-		if shellVerbosity == -1 {
-			input.SetInteractive(false)
-		}
-
-		os.Setenv("SHELL_VERBOSITY", fmt.Sprint(shellVerbosity))
 	}
+
+	if shellVerbosity == -1 {
+		input.SetInteractive(false)
+	}
+
+	os.Setenv("SHELL_VERBOSITY", fmt.Sprint(shellVerbosity))
 }
 
 func (app *Application) getCommandName(input Input.InputInterface) string {

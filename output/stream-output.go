@@ -22,7 +22,7 @@ func NewStreamOutput(stream *os.File, verbosity uint, decorated bool, formatter 
 		if newLine {
 			message += "\n"
 		}
-	
+
 		so.stream.WriteString(message)
 	}
 

@@ -32,7 +32,7 @@ func NewInput(definition *InputDefinition) (*Input, error) {
 	if definition == nil {
 		input.definition = NewInputDefinition(nil, nil)
 	} else {
-		input.definition = definition;
+		input.definition = definition
 		input.Bind(definition)
 		err := input.Parse()
 		if err != nil {
@@ -58,7 +58,7 @@ func (input *Input) SetDefinition(definition *InputDefinition) error {
 		if err != nil {
 			return err
 		}
-		
+
 		return input.Validate()
 	}
 }

@@ -140,10 +140,8 @@ func (input *ArgvInput) parseArgument(token string) error {
 			commandValue := input.arguments["command"]
 			str, isStr := commandValue.(string)
 
-			if !isStr {
-				commandValue = ""
-			} else {
-				commandValue = str
+			if isStr {
+				commandName = str
 			}
 
 			delete(input.arguments, "command")

@@ -152,7 +152,7 @@ func (c *Cursor) GetCurrentPosition() (int, int) {
 
 	var code string
 	if n > 0 {
-		code := string(buffer[:n])
+		code = string(buffer[:n])
 		code = strings.TrimSpace(code)
 	}
 

@@ -42,7 +42,7 @@ var BRIGHT_COLORS = map[string]int{
 	"bright-white":   7,
 }
 
-var AVAILBLE_OPTIONS = map[string]AvailableOption{
+var AVAILABLE_OPTIONS = map[string]AvailableOption{
 	"bold":       {set: 1, unset: 22},
 	"underscore": {set: 4, unset: 24},
 	"blink":      {set: 5, unset: 25},
@@ -54,9 +54,9 @@ func NewColor(foreground string, background string, options []string) *Color {
 	opts := make(map[string]AvailableOption)
 
 	for _, opt := range options {
-		_, exists := AVAILBLE_OPTIONS[opt]
+		_, exists := AVAILABLE_OPTIONS[opt]
 		if exists {
-			opts[opt] = AVAILBLE_OPTIONS[opt]
+			opts[opt] = AVAILABLE_OPTIONS[opt]
 		}
 	}
 
