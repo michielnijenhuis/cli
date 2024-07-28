@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"math"
 	"strings"
-
-	Error "github.com/michielnijenhuis/cli/error"
 )
 
 type InputType interface{}
@@ -97,9 +95,7 @@ func (input *InputDefinition) HasArgument(name string) bool {
 
 func (definition *InputDefinition) GetArgument(name string) (*InputArgument, error) {
 	if !definition.HasArgument(name) {
-		return nil, Error.NewInvalidArgumentError(
-			fmt.Sprintf("The \"%s\" argument does not exist.", name),
-		)
+		return nil, fmt.Errorf("the \"%s\" argument does not exist", name)
 	}
 
 	return definition.arguments[name], nil
@@ -110,7 +106,7 @@ func (definition *InputDefinition) GetArgumentByIndex(index uint) (*InputArgumen
 	count := uint(len(args))
 
 	if index >= count {
-		return nil, Error.NewInvalidArgumentError(fmt.Sprintf("Argument index out of bounds. Received \"%d\", but only \"%d\" arguments are found.", index, count))
+		return nil, fmt.Errorf("argument index out of bounds. Received \"%d\", but only \"%d\" arguments are found", index, count)
 	}
 
 	var i uint = 0
@@ -220,7 +216,7 @@ func (definition *InputDefinition) HasOption(name string) bool {
 
 func (definition *InputDefinition) GetOption(name string) (*InputOption, error) {
 	if !definition.HasOption(name) {
-		return nil, Error.NewInvalidArgumentError(fmt.Sprintf("The \"--%s\" option does not exist.", name))
+		return nil, fmt.Errorf("the \"--%s\" option does not exist", name)
 	}
 
 	return definition.options[name], nil
@@ -249,7 +245,7 @@ func (definition *InputDefinition) HasNegation(name string) bool {
 func (definition *InputDefinition) GetOptionForShortcut(shortcut string) (*InputOption, error) {
 	opt, err := definition.GetOption(definition.ShortcutToName(shortcut))
 	if err != nil {
-		return nil, Error.NewRuntimeError(fmt.Sprintf("The \"-%s\" option does not exist.", shortcut))
+		return nil, fmt.Errorf("the \"-%s\" option does not exist.", shortcut)
 	}
 	return opt, nil
 }

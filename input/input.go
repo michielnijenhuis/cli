@@ -6,8 +6,6 @@ import (
 	"os"
 	"regexp"
 	"strings"
-
-	err "github.com/michielnijenhuis/cli/error"
 )
 
 type InputParser func(self interface{}) error
@@ -102,9 +100,7 @@ func (input *Input) Validate() error {
 	}
 
 	if len(missingArguments) > 0 {
-		return err.NewRuntimeError(
-			fmt.Sprintf("Not enough arguments (missing: \"%s\").", strings.Join(missingArguments, ", ")),
-		)
+		return fmt.Errorf("not enough arguments (missing: \"%s\")", strings.Join(missingArguments, ", "))
 	}
 
 	validationError := input.runOptionValidators()
@@ -143,11 +139,11 @@ func (input *Input) GetArguments() map[string]InputType {
 func (input *Input) GetStringArgument(name string) (string, error) {
 	definition := input.definition
 	if definition == nil {
-		return "", err.NewRuntimeError("no InputDefinition found")
+		return "", errors.New("no InputDefinition found")
 	}
 
 	if !definition.HasArgument(name) {
-		return "", err.NewInvalidArgumentError(fmt.Sprintf("The \"%s\" argument does not exist.", name))
+		return "", fmt.Errorf("the \"%s\" argument does not exist", name)
 	}
 
 	if input.arguments[name] == nil {
@@ -177,11 +173,11 @@ func (input *Input) GetStringArgument(name string) (string, error) {
 func (input *Input) GetArrayArgument(name string) ([]string, error) {
 	definition := input.definition
 	if definition == nil {
-		return []string{}, err.NewRuntimeError("No InputDefinition found")
+		return []string{}, errors.New("no InputDefinition found")
 	}
 
 	if !definition.HasArgument(name) {
-		return []string{}, err.NewInvalidArgumentError(fmt.Sprintf("The \"%s\" argument does not exist.", name))
+		return []string{}, fmt.Errorf("the \"%s\" argument does not exist", name)
 	}
 
 	if input.arguments[name] == nil {
@@ -211,11 +207,11 @@ func (input *Input) GetArrayArgument(name string) ([]string, error) {
 func (input *Input) SetArgument(name string, value InputType) error {
 	definition := input.definition
 	if definition == nil {
-		return err.NewRuntimeError("No InputDefinition found.")
+		return errors.New("no InputDefinition found")
 	}
 
 	if !definition.HasArgument(name) {
-		return err.NewInvalidArgumentError(fmt.Sprintf("The \"%s\" argument does not exist.", name))
+		return fmt.Errorf("the \"%s\" argument does not exist", name)
 	}
 
 	input.arguments[name] = value
@@ -251,11 +247,11 @@ func (input *Input) GetOptions() map[string]InputType {
 func (input *Input) GetBoolOption(name string) (bool, error) {
 	definition := input.definition
 	if definition == nil {
-		return false, err.NewRuntimeError("No InputDefinition found")
+		return false, errors.New("no InputDefinition found")
 	}
 
 	if !definition.HasOption(name) {
-		return false, err.NewInvalidArgumentError(fmt.Sprintf("The \"%s\" option does not exist.", name))
+		return false, fmt.Errorf("the \"%s\" option does not exist", name)
 	}
 
 	if input.options[name] == nil {
@@ -293,11 +289,11 @@ func (input *Input) GetBoolOption(name string) (bool, error) {
 func (input *Input) GetStringOption(name string) (string, error) {
 	definition := input.definition
 	if definition == nil {
-		return "", err.NewRuntimeError("No InputDefinition found")
+		return "", errors.New("no InputDefinition found")
 	}
 
 	if !definition.HasOption(name) {
-		return "", err.NewInvalidArgumentError(fmt.Sprintf("The \"%s\" option does not exist.", name))
+		return "", fmt.Errorf("the \"%s\" option does not exist", name)
 	}
 
 	if input.options[name] == nil {
@@ -327,11 +323,11 @@ func (input *Input) GetStringOption(name string) (string, error) {
 func (input *Input) GetArrayOption(name string) ([]string, error) {
 	definition := input.definition
 	if definition == nil {
-		return []string{}, err.NewRuntimeError("No InputDefinition found")
+		return []string{}, errors.New("no InputDefinition found")
 	}
 
 	if !definition.HasOption(name) {
-		return []string{}, err.NewInvalidArgumentError(fmt.Sprintf("The \"%s\" option does not exist.", name))
+		return []string{}, fmt.Errorf("the \"%s\" option does not exist", name)
 	}
 
 	if input.options[name] == nil {
@@ -361,7 +357,7 @@ func (input *Input) GetArrayOption(name string) ([]string, error) {
 func (input *Input) SetOption(name string, value InputType) error {
 	definition := input.definition
 	if definition == nil {
-		return err.NewRuntimeError("No InputDefinition found.")
+		return errors.New("no InputDefinition found")
 	}
 
 	if definition.HasNegation(name) {
@@ -370,7 +366,7 @@ func (input *Input) SetOption(name string, value InputType) error {
 	}
 
 	if !definition.HasOption(name) {
-		return err.NewInvalidArgumentError(fmt.Sprintf("The \"%s\" option does not exist.", name))
+		return fmt.Errorf("the \"%s\" option does not exist", name)
 	}
 
 	input.options[name] = value
@@ -397,7 +393,7 @@ func (input *Input) GetStream() *os.File {
 func (input *Input) runArgumentValidators() error {
 	definition := input.definition
 	if definition == nil {
-		return err.NewRuntimeError("No InputDefinition found.")
+		return errors.New("no InputDefinition found")
 	}
 
 	args := definition.GetArguments()
@@ -421,7 +417,7 @@ func (input *Input) runArgumentValidators() error {
 func (input *Input) runOptionValidators() error {
 	definition := input.definition
 	if definition == nil {
-		return err.NewRuntimeError("No InputDefinition found.")
+		return errors.New("no InputDefinition found")
 	}
 
 	opts := definition.GetOptions()

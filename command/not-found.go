@@ -1,25 +1,25 @@
-package error
+package command
 
 type CommandNotFoundError struct {
 	message      string
 	alternatives []string
 }
 
-func NewCommandNotFoundError(message string, alternatives []string) CommandNotFoundError {
+func NotFound(message string, alternatives []string) *CommandNotFoundError {
 	if message == "" {
 		message = "Command not found."
 	}
 
-	return CommandNotFoundError{
+	return &CommandNotFoundError{
 		message:      message,
 		alternatives: alternatives,
 	}
 }
 
-func (e CommandNotFoundError) Error() string {
+func (e *CommandNotFoundError) Error() string {
 	return e.message
 }
 
-func (e CommandNotFoundError) GetAlternatives() []string {
+func (e *CommandNotFoundError) GetAlternatives() []string {
 	return e.alternatives
 }

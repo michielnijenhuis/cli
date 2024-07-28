@@ -1,12 +1,12 @@
 package command
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
 	"strings"
 
-	Error "github.com/michielnijenhuis/cli/error"
 	Input "github.com/michielnijenhuis/cli/input"
 	Output "github.com/michielnijenhuis/cli/output"
 	Style "github.com/michielnijenhuis/cli/style"
@@ -37,14 +37,14 @@ type Command struct {
 	input                  Input.InputInterface
 	output                 Output.OutputInterface
 	meta                   any
+	validatedName          bool
 }
 
 func NewCommand(name string, handle CommandHandle) *Command {
 	c := &Command{
-		Handle:      handle,
-		initializer: nil,
-		interacter:  nil,
-
+		Handle:                 handle,
+		initializer:            nil,
+		interacter:             nil,
 		Name:                   name,
 		Description:            "",
 		Aliases:                make([]string, 0),
@@ -60,6 +60,7 @@ func NewCommand(name string, handle CommandHandle) *Command {
 		input:                  nil,
 		output:                 nil,
 		meta:                   nil,
+		validatedName:          false,
 	}
 
 	if name != "" {
@@ -102,14 +103,14 @@ func (c *Command) MergeApplication(mergeArgs bool) {
 	}
 
 	fullDefinition := Input.NewInputDefinition(nil, nil)
-	fullDefinition.SetOptions(c.definition.GetOptionsArray())
+	fullDefinition.SetOptions(c.GetNativeDefinition().GetOptionsArray())
 	fullDefinition.AddOptions(c.applicationDefinition.GetOptionsArray())
 
 	if mergeArgs {
 		fullDefinition.SetArguments(c.applicationDefinition.GetArgumentsArray())
-		fullDefinition.AddArguments(c.definition.GetArgumentsArray())
+		fullDefinition.AddArguments(c.GetNativeDefinition().GetArgumentsArray())
 	} else {
-		fullDefinition.SetArguments(c.definition.GetArgumentsArray())
+		fullDefinition.SetArguments(c.GetNativeDefinition().GetArgumentsArray())
 	}
 
 	c.fullDefinition = fullDefinition
@@ -123,20 +124,11 @@ func (c *Command) execute(input Input.InputInterface, output Output.OutputInterf
 	c.input = input
 	c.output = Style.NewStyle(input, output)
 
-	exitCode, err := c.Handle(c)
-	if err != nil {
-		_, manuallyFailed := err.(Error.ManuallyFailedError)
-		if manuallyFailed {
-			output.Writeln(err.Error(), 0)
-			return 1, err
-		}
-	}
-
-	return exitCode, err
+	return c.Handle(c)
 }
 
-func (c *Command) Fail(err string) (int, error) {
-	return 1, Error.NewManuallyFailedError(err)
+func (c *Command) Fail(e string) (int, error) {
+	return 1, errors.New(e)
 }
 
 func (c *Command) StringArgument(name string) (string, error) {
@@ -213,7 +205,12 @@ func (c *Command) Run(input Input.InputInterface, output Output.OutputInterface)
 }
 
 func (c *Command) SetDefinition(definition *Input.InputDefinition) {
-	c.definition = definition
+	if definition != nil {
+		c.definition = definition
+	} else {
+		c.definition = Input.NewInputDefinition(nil, nil)
+	}
+
 	c.fullDefinition = nil
 }
 
@@ -227,7 +224,7 @@ func (c *Command) GetDefinition() *Input.InputDefinition {
 
 func (c *Command) GetNativeDefinition() *Input.InputDefinition {
 	if c.definition == nil {
-		panic("Command is not correctly initialized. Create a new command using the \"NewCommand()\" function.")
+		c.definition = Input.NewInputDefinition(nil, nil)
 	}
 
 	return c.definition
@@ -235,11 +232,11 @@ func (c *Command) GetNativeDefinition() *Input.InputDefinition {
 
 func (c *Command) AddArgument(name string, mode Input.InputArgumentMode, description string, defaultValue Input.InputType, validator Input.InputValidator) *Command {
 	if c.definition != nil {
-		c.definition.AddArgument(Input.NewInputArgument(name, mode, description, defaultValue, validator))
+		c.GetNativeDefinition().AddArgument(Input.NewInputArgument(name, mode, description, defaultValue, validator))
 	}
 
 	if c.fullDefinition != nil {
-		c.definition.AddArgument(Input.NewInputArgument(name, mode, description, defaultValue, validator))
+		c.GetNativeDefinition().AddArgument(Input.NewInputArgument(name, mode, description, defaultValue, validator))
 	}
 
 	return c
@@ -247,7 +244,7 @@ func (c *Command) AddArgument(name string, mode Input.InputArgumentMode, descrip
 
 func (c *Command) AddOption(name string, shortcut string, mode Input.InputOptionMode, description string, defaultValue Input.InputType, validator Input.InputValidator) *Command {
 	if c.definition != nil {
-		c.definition.AddOption(Input.NewInputOption(name, shortcut, mode, description, defaultValue, validator))
+		c.GetNativeDefinition().AddOption(Input.NewInputOption(name, shortcut, mode, description, defaultValue, validator))
 	}
 
 	if c.fullDefinition != nil {
@@ -267,6 +264,7 @@ func (c *Command) GetName() string {
 	if c.Name == "" {
 		return "CLI Tool"
 	}
+
 	return c.Name
 }
 
@@ -298,15 +296,24 @@ func (c *Command) GetHelp() string {
 }
 
 func (c *Command) SetAliases(aliases []string) *Command {
-	for _, alias := range aliases {
-		c.validateName(alias)
+	if aliases != nil {
+		for _, alias := range aliases {
+			c.validateName(alias)
+		}
+
+		c.Aliases = aliases
+	} else {
+		c.Aliases = []string{}
 	}
 
-	c.Aliases = aliases
 	return c
 }
 
 func (c *Command) GetAliases() []string {
+	if c.Aliases == nil {
+		c.Aliases = []string{}
+	}
+
 	return c.Aliases
 }
 
@@ -316,8 +323,12 @@ func (c *Command) GetSynopsis(short bool) string {
 		key = "short"
 	}
 
+	if c.synopsis == nil {
+		c.synopsis = make(map[string]string)
+	}
+
 	if c.synopsis[key] == "" {
-		c.synopsis[key] = strings.TrimSpace(fmt.Sprintf("%s %s", c.Name, c.definition.GetSynopsis(short)))
+		c.synopsis[key] = strings.TrimSpace(fmt.Sprintf("%s %s", c.Name, c.GetNativeDefinition().GetSynopsis(short)))
 	}
 
 	return c.synopsis[key]
@@ -328,12 +339,20 @@ func (c *Command) AddUsage(usage string) *Command {
 		usage = c.Name + " " + usage
 	}
 
+	if c.usages == nil {
+		c.usages = make([]string, 0)
+	}
+
 	c.usages = append(c.usages, usage)
 
 	return c
 }
 
 func (c *Command) GetUsages() []string {
+	if c.usages == nil {
+		c.usages = make([]string, 0)
+	}
+
 	return c.usages
 }
 

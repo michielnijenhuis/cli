@@ -9,13 +9,12 @@ import (
 	"strconv"
 	"strings"
 
-	Command "github.com/michielnijenhuis/cli/command"
-	Descriptor "github.com/michielnijenhuis/cli/descriptor"
-	Error "github.com/michielnijenhuis/cli/error"
-	Formatter "github.com/michielnijenhuis/cli/formatter"
-	Input "github.com/michielnijenhuis/cli/input"
-	Output "github.com/michielnijenhuis/cli/output"
-	Terminal "github.com/michielnijenhuis/cli/terminal"
+	"github.com/michielnijenhuis/cli/command"
+	"github.com/michielnijenhuis/cli/descriptor"
+	"github.com/michielnijenhuis/cli/formatter"
+	"github.com/michielnijenhuis/cli/input"
+	"github.com/michielnijenhuis/cli/output"
+	"github.com/michielnijenhuis/cli/terminal"
 )
 
 type Application struct {
@@ -27,9 +26,9 @@ type Application struct {
 	autoExit       bool
 	singleCommand  bool
 	initialized    bool
-	runningCommand *Command.Command
-	definition     *Input.InputDefinition
-	commands       map[string]*Command.Command
+	runningCommand *command.Command
+	definition     *input.InputDefinition
+	commands       map[string]*command.Command
 }
 
 func NewApplication(name string, version string) *Application {
@@ -52,26 +51,26 @@ func NewApplication(name string, version string) *Application {
 		initialized:    false,
 		runningCommand: nil,
 		definition:     nil,
-		commands:       make(map[string]*Command.Command),
+		commands:       make(map[string]*command.Command),
 	}
 }
 
-func (app *Application) Run(input Input.InputInterface, output Output.OutputInterface) (exitCode int, err error) {
-	width, height, err := Terminal.GetSize()
+func (app *Application) Run(i input.InputInterface, o output.OutputInterface) (exitCode int, err error) {
+	width, height, err := terminal.GetSize()
 	if err == nil {
 		os.Setenv("LINES", fmt.Sprint(height))
 		os.Setenv("COLUMNS", fmt.Sprint(width))
 	}
 
-	if input == nil {
-		input, err = Input.NewArgvInput(nil, nil)
+	if i == nil {
+		i, err = input.NewArgvInput(nil, nil)
 		if err != nil {
 			panic("Failed to initialize application input.")
 		}
 	}
 
-	if output == nil {
-		output = Output.NewConsoleOutput(0, true, nil)
+	if o == nil {
+		o = output.NewConsoleOutput(0, true, nil)
 	}
 
 	if app.catchErrors {
@@ -90,21 +89,21 @@ func (app *Application) Run(input Input.InputInterface, output Output.OutputInte
 				}
 
 				err = recoveredErr
-				app.RenderError(output, err)
+				app.RenderError(o, err)
 			}
 		}()
 	}
 
-	app.configureIO(input, output)
+	app.configureIO(i, o)
 
-	code, err := app.doRun(input, output)
+	code, err := app.doRun(i, o)
 
 	if err != nil {
 		if !app.catchErrors {
 			return 1, err
 		}
 
-		app.RenderError(output, err)
+		app.RenderError(o, err)
 		exitCode = 1
 	} else {
 		exitCode = code
@@ -121,25 +120,25 @@ func (app *Application) Run(input Input.InputInterface, output Output.OutputInte
 	return exitCode, err
 }
 
-func (app *Application) doRun(input Input.InputInterface, output Output.OutputInterface) (int, error) {
-	if input.HasParameterOption("--version", true) || input.HasParameterOption("-V", true) {
-		output.Writeln(app.getLongVersion(), 0)
+func (app *Application) doRun(i input.InputInterface, o output.OutputInterface) (int, error) {
+	if i.HasParameterOption("--version", true) || i.HasParameterOption("-V", true) {
+		o.Writeln(app.getLongVersion(), 0)
 
 		return 0, nil
 	}
 
 	// Makes ArgvInput.GetFirstArgument() able to distinguish an option from an argument.
 	// Errors must be ignored, full binding/validation happens later when the command is known.
-	input.Bind(app.GetDefinition())
-	input.Parse()
+	i.Bind(app.GetDefinition())
+	i.Parse()
 
-	name := app.getCommandName(input)
-	if input.HasParameterOption("--help", true) || input.HasParameterOption("-h", true) {
+	name := app.getCommandName(i)
+	if i.HasParameterOption("--help", true) || i.HasParameterOption("-h", true) {
 		if name == "" {
 			name = "help"
-			params := map[string]Input.InputType{"command_name": app.defaultCommand}
-			objectInput, err := Input.NewObjectInput(params, nil)
-			input = objectInput
+			params := map[string]input.InputType{"command_name": app.defaultCommand}
+			objectInput, err := input.NewObjectInput(params, nil)
+			i = objectInput
 
 			if err != nil {
 				return 1, err
@@ -165,17 +164,17 @@ func (app *Application) doRun(input Input.InputInterface, output Output.OutputIn
 	}
 
 	app.runningCommand = command
-	exitCode, runCommandErr := command.Run(input, output)
+	exitCode, runCommandErr := command.Run(i, o)
 	app.runningCommand = nil
 
 	return exitCode, runCommandErr
 }
 
-func (app *Application) SetDefinition(definition *Input.InputDefinition) {
+func (app *Application) SetDefinition(definition *input.InputDefinition) {
 	app.definition = definition
 }
 
-func (app *Application) GetDefinition() *Input.InputDefinition {
+func (app *Application) GetDefinition() *input.InputDefinition {
 	if app.definition == nil {
 		app.definition = app.getDefaultInputDefinition()
 	}
@@ -238,13 +237,13 @@ func (app *Application) getLongVersion() string {
 	return "Console Tool"
 }
 
-func (app *Application) AddCommands(commands []*Command.Command) {
+func (app *Application) AddCommands(commands []*command.Command) {
 	for _, c := range commands {
 		app.Add(c)
 	}
 }
 
-func (app *Application) Add(command *Command.Command) *Command.Command {
+func (app *Application) Add(command *command.Command) *command.Command {
 	app.init()
 
 	command.SetApplicationDefinition(app.GetDefinition())
@@ -267,15 +266,15 @@ func (app *Application) Add(command *Command.Command) *Command.Command {
 	return command
 }
 
-func (app *Application) Get(name string) (*Command.Command, error) {
+func (app *Application) Get(name string) (*command.Command, error) {
 	app.init()
 
 	if !app.Has(name) {
-		return nil, Error.NewCommandNotFoundError(fmt.Sprintf("The command \"%s\" does not exist.", name), nil)
+		return nil, command.NotFound(fmt.Sprintf("The command \"%s\" does not exist.", name), nil)
 	}
 
 	if app.commands[name] == nil {
-		return nil, Error.NewCommandNotFoundError(fmt.Sprintf("The \"%s\" commandcannot be found because it is registered under multiple names. Make sure you don't set a different name.", name), nil)
+		return nil, command.NotFound(fmt.Sprintf("The \"%s\" command cannot be found because it is registered under multiple names. Make sure you don't set a different name.", name), nil)
 	}
 
 	command := app.commands[name]
@@ -329,7 +328,7 @@ func (app *Application) FindNamespaces(namespace string) string {
 	panic("TODO: Application.FindNamespaces()")
 }
 
-func (app *Application) Find(name string) (*Command.Command, error) {
+func (app *Application) Find(name string) (*command.Command, error) {
 	app.init()
 
 	for _, command := range app.commands {
@@ -347,7 +346,7 @@ func (app *Application) Find(name string) (*Command.Command, error) {
 	panic("TODO: alternatives support in app.Find()")
 }
 
-func (app *Application) All(namespace string) map[string]*Command.Command {
+func (app *Application) All(namespace string) map[string]*command.Command {
 	app.init()
 
 	if namespace == "" {
@@ -355,7 +354,7 @@ func (app *Application) All(namespace string) map[string]*Command.Command {
 	}
 
 	re := regexp.MustCompile(`\:`)
-	commands := make(map[string]*Command.Command)
+	commands := make(map[string]*command.Command)
 
 	for name, command := range app.commands {
 		limit := len(re.FindAllStringSubmatchIndex(name, -1)) + 1
@@ -386,24 +385,24 @@ func (app *Application) GetAbbreviations(names []string) map[string][]string {
 	return abbrevs
 }
 
-func (app *Application) RenderError(output Output.OutputInterface, err error) {
-	output.Writeln("", Output.VERBOSITY_QUIET)
+func (app *Application) RenderError(o output.OutputInterface, err error) {
+	o.Writeln("", output.VERBOSITY_QUIET)
 
-	app.doRenderError(output, err)
+	app.doRenderError(o, err)
 
 	if app.runningCommand != nil {
-		output.Writeln(
+		o.Writeln(
 			fmt.Sprintf("<highlight>%s %s</highlight>", app.GetName(), app.runningCommand.GetSynopsis(false)),
-			Output.VERBOSITY_QUIET,
+			output.VERBOSITY_QUIET,
 		)
-		output.Writeln("", Output.VERBOSITY_QUIET)
+		o.Writeln("", output.VERBOSITY_QUIET)
 	}
 }
 
-func (app *Application) doRenderError(output Output.OutputInterface, err error) {
+func (app *Application) doRenderError(o output.OutputInterface, err error) {
 	message := strings.TrimSpace(err.Error())
 	length := 0
-	width, _ := Terminal.GetWidth()
+	width, _ := terminal.GetWidth()
 	lines := make([]string, 0)
 	linesLength := make([]int, 0)
 	messageLines := strings.Split(strings.ReplaceAll(message, "\r\n", "\n"), "\n")
@@ -426,24 +425,24 @@ func (app *Application) doRenderError(output Output.OutputInterface, err error) 
 	messages = append(messages, emptyLine)
 
 	for i, line := range lines {
-		formattedLine := fmt.Sprintf("<error>  %s  %s</error>", Formatter.Escape(line), strings.Repeat(" ", length-linesLength[i]))
+		formattedLine := fmt.Sprintf("<error>  %s  %s</error>", formatter.Escape(line), strings.Repeat(" ", length-linesLength[i]))
 		messages = append(messages, formattedLine)
 	}
 
 	messages = append(messages, emptyLine, "")
 
-	output.Writelns(messages, Output.VERBOSITY_QUIET)
+	o.Writelns(messages, output.VERBOSITY_QUIET)
 }
 
-func (app *Application) configureIO(input Input.InputInterface, output Output.OutputInterface) {
-	if input.HasParameterOption("--ansi", true) {
-		output.SetDecorated(true)
-	} else if input.HasParameterOption("--no-ansi", true) {
-		output.SetDecorated(false)
+func (app *Application) configureIO(i input.InputInterface, o output.OutputInterface) {
+	if i.HasParameterOption("--ansi", true) {
+		o.SetDecorated(true)
+	} else if i.HasParameterOption("--no-ansi", true) {
+		o.SetDecorated(false)
 	}
 
-	if input.HasParameterOption("--no-interaction", true) || input.HasParameterOption("-n", true) {
-		input.SetInteractive(false)
+	if i.HasParameterOption("--no-interaction", true) || i.HasParameterOption("-n", true) {
+		i.SetInteractive(false)
 	}
 
 	shellVerbosity, err := strconv.Atoi(os.Getenv("SHELL_VERBOSITY"))
@@ -453,47 +452,47 @@ func (app *Application) configureIO(input Input.InputInterface, output Output.Ou
 
 	switch shellVerbosity {
 	case -1:
-		output.SetVerbosity(Output.VERBOSITY_QUIET)
+		o.SetVerbosity(output.VERBOSITY_QUIET)
 	case 1:
-		output.SetVerbosity(Output.VERBOSITY_VERBOSE)
+		o.SetVerbosity(output.VERBOSITY_VERBOSE)
 	case 2:
-		output.SetVerbosity(Output.VERBOSITY_VERY_VERBOSE)
+		o.SetVerbosity(output.VERBOSITY_VERY_VERBOSE)
 	case 3:
-		output.SetVerbosity(Output.VERBOSITY_DEBUG)
+		o.SetVerbosity(output.VERBOSITY_DEBUG)
 	default:
 		shellVerbosity = 0
 	}
 
-	if input.HasParameterOption("--quiet", true) || input.HasParameterOption("-q", true) {
-		output.SetVerbosity(Output.VERBOSITY_QUIET)
+	if i.HasParameterOption("--quiet", true) || i.HasParameterOption("-q", true) {
+		o.SetVerbosity(output.VERBOSITY_QUIET)
 		shellVerbosity = -1
 	} else {
-		if input.HasParameterOption("-vvv", true) ||
-			input.HasParameterOption("--verbose=3", true) ||
-			input.GetParameterOption("--verbose", false, true) == "3" {
-			output.SetVerbosity(Output.VERBOSITY_DEBUG)
+		if i.HasParameterOption("-vvv", true) ||
+			i.HasParameterOption("--verbose=3", true) ||
+			i.GetParameterOption("--verbose", false, true) == "3" {
+			o.SetVerbosity(output.VERBOSITY_DEBUG)
 			shellVerbosity = 3
-		} else if input.HasParameterOption("-vv", true) ||
-			input.HasParameterOption("--verbose=2", true) ||
-			input.GetParameterOption("--verbose", false, true) == "2" {
-			output.SetVerbosity(Output.VERBOSITY_VERBOSE)
+		} else if i.HasParameterOption("-vv", true) ||
+			i.HasParameterOption("--verbose=2", true) ||
+			i.GetParameterOption("--verbose", false, true) == "2" {
+			o.SetVerbosity(output.VERBOSITY_VERBOSE)
 			shellVerbosity = 2
-		} else if input.HasParameterOption("-v", true) ||
-			input.HasParameterOption("--verbose=1", true) ||
-			input.HasParameterOption("--verbose", true) {
-			output.SetVerbosity(Output.VERBOSITY_VERBOSE)
+		} else if i.HasParameterOption("-v", true) ||
+			i.HasParameterOption("--verbose=1", true) ||
+			i.HasParameterOption("--verbose", true) {
+			o.SetVerbosity(output.VERBOSITY_VERBOSE)
 			shellVerbosity = 1
 		}
 	}
 
 	if shellVerbosity == -1 {
-		input.SetInteractive(false)
+		i.SetInteractive(false)
 	}
 
 	os.Setenv("SHELL_VERBOSITY", fmt.Sprint(shellVerbosity))
 }
 
-func (app *Application) getCommandName(input Input.InputInterface) string {
+func (app *Application) getCommandName(input input.InputInterface) string {
 	if app.singleCommand {
 		return app.defaultCommand
 	}
@@ -512,18 +511,18 @@ func (app *Application) getCommandName(input Input.InputInterface) string {
 	panic("Failed to retrieve first argument from input.")
 }
 
-func (app *Application) getDefaultInputDefinition() *Input.InputDefinition {
-	commandArgument := Input.NewInputArgument("command", Input.INPUT_ARGUMENT_REQUIRED, "The command to execute", "", nil)
-	arguments := []*Input.InputArgument{commandArgument}
+func (app *Application) getDefaultInputDefinition() *input.InputDefinition {
+	commandArgument := input.NewInputArgument("command", input.INPUT_ARGUMENT_REQUIRED, "The command to execute", "", nil)
+	arguments := []*input.InputArgument{commandArgument}
 
-	helpOption := Input.NewInputOption("--help", "-h", Input.INPUT_OPTION_BOOLEAN, fmt.Sprintf("Display help for the given command, or the <highlight>%s</highlight> command (if no command is given)", app.defaultCommand), nil, nil)
-	quietOption := Input.NewInputOption("--quiet", "-q", Input.INPUT_OPTION_BOOLEAN, "Do not output any message", nil, nil)
-	verboseoption := Input.NewInputOption("--verbose", "-v|vv|vvv", Input.INPUT_OPTION_BOOLEAN, "Increase the verbosity of messages: normal (1), verbose (2) or debug (3)", nil, nil)
-	versionOption := Input.NewInputOption("--version", "-V", Input.INPUT_OPTION_BOOLEAN, "Display this application version", nil, nil)
-	ansiOption := Input.NewInputOption("--ansi", "", Input.INPUT_OPTION_NEGATABLE, "Force (or disable --no-ansi) ANSI output", nil, nil)
-	noInteractionOption := Input.NewInputOption("--no-interaction", "-n", Input.INPUT_OPTION_BOOLEAN, "Do not ask any interactive question", nil, nil)
+	helpOption := input.NewInputOption("--help", "-h", input.INPUT_OPTION_BOOLEAN, fmt.Sprintf("Display help for the given command, or the <highlight>%s</highlight> command (if no command is given)", app.defaultCommand), nil, nil)
+	quietOption := input.NewInputOption("--quiet", "-q", input.INPUT_OPTION_BOOLEAN, "Do not output any message", nil, nil)
+	verboseoption := input.NewInputOption("--verbose", "-v|vv|vvv", input.INPUT_OPTION_BOOLEAN, "Increase the verbosity of messages: normal (1), verbose (2) or debug (3)", nil, nil)
+	versionOption := input.NewInputOption("--version", "-V", input.INPUT_OPTION_BOOLEAN, "Display this application version", nil, nil)
+	ansiOption := input.NewInputOption("--ansi", "", input.INPUT_OPTION_NEGATABLE, "Force (or disable --no-ansi) ANSI output", nil, nil)
+	noInteractionOption := input.NewInputOption("--no-interaction", "-n", input.INPUT_OPTION_BOOLEAN, "Do not ask any interactive question", nil, nil)
 
-	options := []*Input.InputOption{
+	options := []*input.InputOption{
 		helpOption,
 		quietOption,
 		verboseoption,
@@ -532,24 +531,24 @@ func (app *Application) getDefaultInputDefinition() *Input.InputDefinition {
 		noInteractionOption,
 	}
 
-	definition := Input.NewInputDefinition(arguments, options)
+	definition := input.NewInputDefinition(arguments, options)
 
 	return definition
 }
 
-func (app *Application) getDefaultCommands() []*Command.Command {
-	return []*Command.Command{
+func (app *Application) getDefaultCommands() []*command.Command {
+	return []*command.Command{
 		app.newHelpCommand(),
 		app.newListCommand(),
 	}
 }
 
-func (app *Application) newHelpCommand() *Command.Command {
-	command := Command.NewCommand("help", func(self *Command.Command) (int, error) {
-		var target *Command.Command = nil
+func (app *Application) newHelpCommand() *command.Command {
+	command := command.NewCommand("help", func(self *command.Command) (int, error) {
+		var target *command.Command = nil
 
 		meta := self.Meta()
-		if metaMap, ok := meta.(map[string]*Command.Command); ok {
+		if metaMap, ok := meta.(map[string]*command.Command); ok {
 			target = metaMap["command"]
 		}
 
@@ -567,20 +566,20 @@ func (app *Application) newHelpCommand() *Command.Command {
 			target = targetCommand
 		}
 
-		descriptor := Descriptor.NewTextDescriptor(self.Output())
+		d := descriptor.NewTextDescriptor(self.Output())
 		raw, _ := self.BoolOption("raw")
-		descriptor.DescribeCommand(target, Descriptor.NewDescriptorOptions("", raw, false, 0))
+		d.DescribeCommand(target, descriptor.NewDescriptorOptions("", raw, false, 0))
 
 		return 0, nil
 	})
 
 	command.IgnoreValidationErrors()
-	command.SetDefinition(Input.NewInputDefinition(
-		[]*Input.InputArgument{
-			Input.NewInputArgument("command_name", Input.INPUT_ARGUMENT_OPTIONAL, "The command name", "help", nil),
+	command.SetDefinition(input.NewInputDefinition(
+		[]*input.InputArgument{
+			input.NewInputArgument("command_name", input.INPUT_ARGUMENT_OPTIONAL, "The command name", "help", nil),
 		},
-		[]*Input.InputOption{
-			Input.NewInputOption("raw", "", Input.INPUT_OPTION_BOOLEAN, "To output raw command help", nil, nil),
+		[]*input.InputOption{
+			input.NewInputOption("raw", "", input.INPUT_OPTION_BOOLEAN, "To output raw command help", nil, nil),
 		},
 	))
 	command.SetDescription("Display help for a command")
@@ -594,25 +593,25 @@ To display the list of available commands, please use the <highlight>list</highl
 	return command
 }
 
-func (app *Application) newListCommand() *Command.Command {
-	command := Command.NewCommand("list", func(self *Command.Command) (int, error) {
-		descriptor := Descriptor.NewTextDescriptor(self.Output())
+func (app *Application) newListCommand() *command.Command {
+	command := command.NewCommand("list", func(self *command.Command) (int, error) {
+		d := descriptor.NewTextDescriptor(self.Output())
 		raw, _ := self.BoolOption("raw")
 		short, _ := self.BoolOption("short")
 		namespace, _ := self.StringArgument("namespace")
-		descriptor.DescribeApplication(app, Descriptor.NewDescriptorOptions(namespace, raw, short, 0))
+		d.DescribeApplication(app, descriptor.NewDescriptorOptions(namespace, raw, short, 0))
 
 		return 0, nil
 	})
 
 	command.IgnoreValidationErrors()
-	command.SetDefinition(Input.NewInputDefinition(
-		[]*Input.InputArgument{
-			Input.NewInputArgument("namespace", Input.INPUT_ARGUMENT_OPTIONAL, "The namespace name", nil, nil),
+	command.SetDefinition(input.NewInputDefinition(
+		[]*input.InputArgument{
+			input.NewInputArgument("namespace", input.INPUT_ARGUMENT_OPTIONAL, "The namespace name", nil, nil),
 		},
-		[]*Input.InputOption{
-			Input.NewInputOption("raw", "", Input.INPUT_OPTION_BOOLEAN, "To output raw command list", nil, nil),
-			Input.NewInputOption("short", "", Input.INPUT_OPTION_BOOLEAN, "To skip describing commands' arguments", nil, nil),
+		[]*input.InputOption{
+			input.NewInputOption("raw", "", input.INPUT_OPTION_BOOLEAN, "To output raw command list", nil, nil),
+			input.NewInputOption("short", "", input.INPUT_OPTION_BOOLEAN, "To skip describing commands' arguments", nil, nil),
 		},
 	))
 	command.SetDescription("List commands")

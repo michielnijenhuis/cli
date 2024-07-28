@@ -5,7 +5,6 @@ import (
 	"sort"
 
 	"github.com/michielnijenhuis/cli/command"
-	err "github.com/michielnijenhuis/cli/error"
 )
 
 type NamespaceCommands struct {
@@ -58,7 +57,7 @@ func (d *ApplicationDescription) Command(name string) (*command.Command, error) 
 	hasAlias := d.aliases != nil && d.aliases[name] != nil
 
 	if !hasCommand && !hasAlias {
-		return nil, err.NewCommandNotFoundError(fmt.Sprintf("Command \"%s\" does not exist.", name), nil)
+		return nil, fmt.Errorf("command \"%s\" does not exist", name)
 	}
 
 	if hasCommand {

@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
-	err "github.com/michielnijenhuis/cli/error"
 )
 
 type AvailableOption struct {
@@ -166,5 +164,5 @@ func parseColor(color string, background bool) (string, error) {
 	}
 
 	optsString := strings.Join(opts, ", ")
-	return "", err.NewInvalidArgumentError(fmt.Sprintf("Invalid \"%s\" color; expected one of (%s).", color, optsString))
+	return "", fmt.Errorf("invalid \"%s\" color; expected one of (%s)", color, optsString)
 }

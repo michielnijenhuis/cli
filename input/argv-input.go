@@ -1,12 +1,12 @@
 package input
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
 	"strings"
 
-	err "github.com/michielnijenhuis/cli/error"
 	helper "github.com/michielnijenhuis/cli/helper"
 )
 
@@ -165,7 +165,7 @@ func (input *ArgvInput) parseArgument(token string) error {
 			message = fmt.Sprintf("No arguments expected, got \"%s\".", token)
 		}
 
-		return err.NewRuntimeError(message)
+		return errors.New(message)
 	}
 }
 
@@ -212,7 +212,7 @@ func (input *ArgvInput) parseShortOptionSet(name string) error {
 	for i := 0; i < length; i++ {
 		char := name[i : i+1]
 		if !input.definition.HasShortcut(char) {
-			return err.NewRuntimeError(fmt.Sprintf("The \"-%s\" option does not exist.", char))
+			return fmt.Errorf("the \"-%s\" option does not exist", char)
 		}
 
 		opt, err := input.definition.GetOptionForShortcut(char)
@@ -247,7 +247,7 @@ func (input *ArgvInput) parseShortOptionSet(name string) error {
 
 func (input *ArgvInput) addShortOption(shortcut string, value InputType) error {
 	if !input.definition.HasShortcut(shortcut) {
-		return err.NewRuntimeError(fmt.Sprintf("The \"-%s\" option does not exist.", shortcut))
+		return fmt.Errorf("the \"-%s\" option does not exist", shortcut)
 	}
 
 	opt, err := input.definition.GetOptionForShortcut(shortcut)
@@ -261,14 +261,14 @@ func (input *ArgvInput) addShortOption(shortcut string, value InputType) error {
 func (input *ArgvInput) addLongOption(name string, value InputType) error {
 	if !input.definition.HasOption(name) {
 		if !input.definition.HasNegation(name) {
-			return err.NewRuntimeError(fmt.Sprintf("The \"--%s\" option does not exist.", name))
+			return fmt.Errorf("the \"--%s\" option does not exist", name)
 		}
 
 		optName := input.definition.NegationToName(name)
 		input.options[optName] = false
 
 		if value != nil && value != "" {
-			return err.NewRuntimeError(fmt.Sprintf("The \"--%s\" option does not accept a value.", name))
+			return fmt.Errorf("the \"--%s\" option does not accept a value", name)
 		}
 
 		return nil
@@ -280,7 +280,7 @@ func (input *ArgvInput) addLongOption(name string, value InputType) error {
 	}
 
 	if value != nil && value != "" && !opt.AcceptValue() {
-		return err.NewRuntimeError(fmt.Sprintf("The \"--%s\" option does not accept a value.", name))
+		return fmt.Errorf("the \"--%s\" option does not accept a value", name)
 	}
 
 	if (value == nil || value == "") && opt.AcceptValue() && len(input.parsed) > 0 {
@@ -296,7 +296,7 @@ func (input *ArgvInput) addLongOption(name string, value InputType) error {
 
 	if value == nil || value == "" {
 		if opt.IsValueOptional() {
-			return err.NewRuntimeError(fmt.Sprintf("The \"--%s\" option requires a value.", name))
+			return fmt.Errorf("the \"--%s\" option requires a value", name)
 		}
 
 		if !opt.IsArray() && !opt.IsValueOptional() {

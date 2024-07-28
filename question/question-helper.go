@@ -6,7 +6,6 @@ import (
 	"runtime"
 	"strings"
 
-	Err "github.com/michielnijenhuis/cli/error"
 	Formatter "github.com/michielnijenhuis/cli/formatter"
 	Helper "github.com/michielnijenhuis/cli/helper"
 	Input "github.com/michielnijenhuis/cli/input"
@@ -36,11 +35,6 @@ func Ask[T any](input Input.InputInterface, output Output.OutputInterface, quest
 
 	value, err := doAsk(output, question, inputStream)
 	if err != nil {
-		_, ok := err.(Err.MissingInputError)
-		if !ok {
-			return value, err
-		}
-
 		input.SetInteractive(false)
 		fallbackOutput := defaultAnswer[T](question)
 
@@ -50,7 +44,7 @@ func Ask[T any](input Input.InputInterface, output Output.OutputInterface, quest
 				return cast[T](str), err
 			}
 
-			return cast[T](str), nil
+			return cast[T](str), err
 		}
 
 		if fallbackOutput == nil {
@@ -58,7 +52,7 @@ func Ask[T any](input Input.InputInterface, output Output.OutputInterface, quest
 			return empty, err
 		}
 
-		return cast[T](fallbackOutput), nil
+		return cast[T](fallbackOutput), err
 	} else {
 		return value, nil
 	}

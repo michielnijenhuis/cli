@@ -5,7 +5,6 @@ import (
 	"regexp"
 	"strings"
 
-	err "github.com/michielnijenhuis/cli/error"
 	"github.com/michielnijenhuis/cli/helper"
 )
 
@@ -64,7 +63,7 @@ func (o *OutputFormatter) HasStyle(name string) bool {
 
 func (o *OutputFormatter) GetStyle(name string) (OutputFormatterStyleInterface, error) {
 	if !o.HasStyle(name) {
-		return nil, err.NewInvalidArgumentError(fmt.Sprintf("Undefined style: \"%s\".", name))
+		return nil, fmt.Errorf("undefined style: \"%s\"", name)
 	}
 
 	return o.styles[strings.ToLower(name)], nil

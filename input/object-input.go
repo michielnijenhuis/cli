@@ -3,8 +3,6 @@ package input
 import (
 	"fmt"
 	"strings"
-
-	err "github.com/michielnijenhuis/cli/error"
 )
 
 type ObjectInput struct {
@@ -139,7 +137,7 @@ func (input *ObjectInput) Parse() error {
 
 func (input *ObjectInput) addShortOption(shortcut string, value InputType) error {
 	if !input.definition.HasShortcut(shortcut) {
-		return err.NewInvalidOptionError(fmt.Sprintf("The \"-%s\" option does not exist.", shortcut))
+		return fmt.Errorf("the \"-%s\" option does not exist", shortcut)
 	}
 
 	opt, e := input.definition.GetOptionForShortcut(shortcut)
@@ -153,7 +151,7 @@ func (input *ObjectInput) addShortOption(shortcut string, value InputType) error
 func (input *ObjectInput) addLongOption(name string, value InputType) error {
 	if !input.definition.HasOption(name) {
 		if !input.definition.HasNegation(name) {
-			return err.NewInvalidOptionError(fmt.Sprintf("The \"--%s\" option does not exist.", name))
+			return fmt.Errorf("the \"--%s\" option does not exist", name)
 		}
 
 		optName := input.definition.NegationToName(name)
@@ -169,7 +167,7 @@ func (input *ObjectInput) addLongOption(name string, value InputType) error {
 
 	if value == "" || value == nil {
 		if opt.IsValueRequired() {
-			return err.NewInvalidOptionError(fmt.Sprintf("The \"--%s\" option requires a value.", name))
+			return fmt.Errorf("the \"--%s\" option requires a value", name)
 		}
 
 		if !opt.IsValueOptional() {
@@ -183,7 +181,7 @@ func (input *ObjectInput) addLongOption(name string, value InputType) error {
 
 func (input *ObjectInput) addArgument(name string, value InputType) error {
 	if !input.definition.HasArgument(name) {
-		return err.NewInvalidArgumentError(fmt.Sprintf("The \"%s\" argument does not exist.", name))
+		return fmt.Errorf("the \"%s\" argument does not exist", name)
 	}
 
 	input.arguments[name] = value
