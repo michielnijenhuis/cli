@@ -499,7 +499,17 @@ func (app *Application) getCommandName(input Input.InputInterface) string {
 	}
 
 	first := input.GetFirstArgument()
-	return first.(string)
+	str, ok := first.(string)
+	if ok {
+		return str
+	}
+
+	arr, ok := first.([]string)
+	if ok && len(arr) > 0 {
+		return arr[0]
+	}
+
+	panic("Failed to retrieve first argument from input.")
 }
 
 func (app *Application) getDefaultInputDefinition() *Input.InputDefinition {
