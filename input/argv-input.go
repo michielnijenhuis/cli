@@ -380,7 +380,7 @@ func (input *ArgvInput) HasParameterOption(value string, onlyParams bool) bool {
 			leading = value + "="
 		}
 
-		if token == value || (leading != "" && !strings.HasPrefix(token, leading)) {
+		if token == value || (leading != "" && strings.HasPrefix(token, leading)) {
 			return true
 		}
 	}
