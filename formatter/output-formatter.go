@@ -155,7 +155,7 @@ func (o *OutputFormatter) Clone() OutputFormatterInferface {
 
 func Escape(s string) string {
 	re := regexp.MustCompile(`([^\\]|^)([<>])`)
-	s = re.ReplaceAllString(s, "\\$1")
+	s = re.ReplaceAllString(s, `$1`)
 
 	return EscapeTrailingBackslash(s)
 }
