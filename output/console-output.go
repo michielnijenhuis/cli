@@ -19,7 +19,7 @@ func NewConsoleOutput(verbosity uint, decorated bool, formatter formatter.Output
 	if formatter == nil {
 		stderr = NewStreamOutput(OpenErrorStream(), verbosity, decorated, formatter)
 	} else {
-		stderr = NewStreamOutput(OpenErrorStream(), verbosity, decorated, streamOutput.GetFormatter())
+		stderr = NewStreamOutput(OpenErrorStream(), verbosity, decorated, streamOutput.Formatter())
 		streamOutput.SetDecorated(decorated)
 		stderr.SetDecorated(decorated)
 	}
@@ -50,7 +50,7 @@ func (o *ConsoleOutput) SetVerbosity(verbose uint) {
 	o.stderr.SetVerbosity(verbose)
 }
 
-func (o *ConsoleOutput) GetErrorOutput() OutputInterface {
+func (o *ConsoleOutput) ErrorOutput() OutputInterface {
 	return o.stderr
 }
 

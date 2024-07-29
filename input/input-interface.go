@@ -1,21 +1,21 @@
 package input
 
 type InputInterface interface {
-	GetFirstArgument() InputType
+	FirstArgument() InputType
 	HasParameterOption(value string, onlyParams bool) bool
-	GetParameterOption(value string, defaultValue InputType, onlyParams bool) InputType
+	ParameterOption(value string, defaultValue InputType, onlyParams bool) InputType
 	Bind(definition *InputDefinition)
 	Parse() error
 	Validate() error
-	GetArguments() map[string]InputType
-	GetStringArgument(name string) (string, error)
-	GetArrayArgument(name string) ([]string, error)
+	Arguments() map[string]InputType
+	StringArgument(name string) (string, error)
+	ArrayArgument(name string) ([]string, error)
 	SetArgument(name string, value InputType) error
 	HasArgument(name string) bool
-	GetOptions() map[string]InputType
-	GetStringOption(name string) (string, error)
-	GetBoolOption(name string) (bool, error)
-	GetArrayOption(name string) ([]string, error)
+	Options() map[string]InputType
+	StringOption(name string) (string, error)
+	BoolOption(name string) (bool, error)
+	ArrayOption(name string) ([]string, error)
 	SetOption(name string, value InputType) error
 	HasOption(name string) bool
 	IsInteractive() bool

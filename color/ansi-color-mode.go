@@ -23,7 +23,7 @@ func ConvertFromHexToAnsiColorCode(mode uint8, hexColor string) (string, error) 
 	}
 
 	if len(hexColor) != 6 {
-		return "", errors.New(fmt.Sprintf("Invalid \"#%s\" color.", hexColor))
+		return "", fmt.Errorf("invalid \"#%s\" color", hexColor)
 	}
 
 	color, e := strconv.ParseInt(hexColor, 16, 64)
@@ -47,7 +47,7 @@ func ConvertFromHexToAnsiColorCode(mode uint8, hexColor string) (string, error) 
 	case ANSI_24:
 		return ("8;2;" + strings.Join([]string{strconv.Itoa(int(r)), strconv.Itoa(int(g)), strconv.Itoa(int(b))}, ";")), nil
 	default:
-		return "", errors.New("Invalid Ansi color mode. Options: 4, 8, 24")
+		return "", errors.New("invalid Ansi color mode. Options: 4, 8, 24")
 	}
 }
 
@@ -58,9 +58,9 @@ func convertFromRGB(mode uint8, r int64, g int64, b int64) (string, error) {
 	case ANSI_8:
 		return strconv.Itoa(degradeHexColorToAnsi8(r, g, b)), nil
 	case ANSI_24:
-		return "", errors.New("RGB cannot be converted to Ansi24.")
+		return "", errors.New("rgb cannot be converted to Ansi24")
 	default:
-		return "", errors.New("Invalid Ansi color mode. Options: 4, 8, 24")
+		return "", errors.New("invalid Ansi color mode. Options: 4, 8, 24")
 	}
 }
 

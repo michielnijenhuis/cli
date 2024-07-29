@@ -61,7 +61,7 @@ func (o *OutputFormatter) HasStyle(name string) bool {
 	return o.styles[strings.ToLower(name)] != nil
 }
 
-func (o *OutputFormatter) GetStyle(name string) (OutputFormatterStyleInterface, error) {
+func (o *OutputFormatter) Style(name string) (OutputFormatterStyleInterface, error) {
 	if !o.HasStyle(name) {
 		return nil, fmt.Errorf("undefined style: \"%s\"", name)
 	}

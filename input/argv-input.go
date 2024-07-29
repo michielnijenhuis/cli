@@ -85,26 +85,26 @@ func (input *ArgvInput) parseToken(token string, parseOptions bool) (bool, error
 func (input *ArgvInput) parseArgument(token string) error {
 	definition := input.definition
 	currentCount := uint(len(input.arguments))
-	argsCount := uint(len(definition.GetArguments()))
+	argsCount := uint(len(definition.Arguments()))
 
 	if currentCount < argsCount {
 		// if input is expecting another argument, add it
-		arg, err := definition.GetArgumentByIndex(currentCount)
+		arg, err := definition.ArgumentByIndex(currentCount)
 
 		if err != nil {
 			return err
 		}
 
 		if arg.IsArray() {
-			input.arguments[arg.GetName()] = []string{token}
+			input.arguments[arg.Name()] = []string{token}
 		} else {
-			input.arguments[arg.GetName()] = token
+			input.arguments[arg.Name()] = token
 		}
 
 		return nil
 	} else {
 		if currentCount == argsCount {
-			arg, err := definition.GetArgumentByIndex(currentCount - 1)
+			arg, err := definition.ArgumentByIndex(currentCount - 1)
 
 			if err != nil {
 				return err
@@ -112,7 +112,7 @@ func (input *ArgvInput) parseArgument(token string) error {
 
 			// if last argument isArray(), append token to last argument
 			if arg.IsArray() {
-				name := arg.GetName()
+				name := arg.Name()
 				current := input.arguments[name]
 				arr, isArr := current.([]string)
 				if isArr {
@@ -125,7 +125,7 @@ func (input *ArgvInput) parseArgument(token string) error {
 			}
 		}
 
-		all := definition.GetArguments()
+		all := definition.Arguments()
 
 		var key string
 		for k := range all {
@@ -136,7 +136,7 @@ func (input *ArgvInput) parseArgument(token string) error {
 		var commandName string
 		inputArgument := all[key]
 
-		if inputArgument != nil && inputArgument.GetName() == "command" {
+		if inputArgument != nil && inputArgument.Name() == "command" {
 			commandValue := input.arguments["command"]
 			str, isStr := commandValue.(string)
 
@@ -190,7 +190,7 @@ func (input *ArgvInput) parseShortOption(token string) error {
 	if len(name) > 1 {
 		short := name[0:1]
 		if input.definition.HasShortcut(short) {
-			opt, err := input.definition.GetOptionForShortcut(short)
+			opt, err := input.definition.OptionForShortcut(short)
 			if err != nil {
 				return err
 			}
@@ -215,19 +215,19 @@ func (input *ArgvInput) parseShortOptionSet(name string) error {
 			return fmt.Errorf("the \"-%s\" option does not exist", char)
 		}
 
-		opt, err := input.definition.GetOptionForShortcut(char)
+		opt, err := input.definition.OptionForShortcut(char)
 		if err != nil {
 			return err
 		}
 
 		if opt.AcceptValue() {
 			if length-1 == i {
-				err := input.addLongOption(opt.GetName(), nil)
+				err := input.addLongOption(opt.Name(), nil)
 				if err != nil {
 					return err
 				}
 			} else {
-				err := input.addLongOption(opt.GetName(), name[i+1:])
+				err := input.addLongOption(opt.Name(), name[i+1:])
 				if err != nil {
 					return err
 				}
@@ -235,7 +235,7 @@ func (input *ArgvInput) parseShortOptionSet(name string) error {
 
 			break
 		} else {
-			err := input.addLongOption(opt.GetName(), nil)
+			err := input.addLongOption(opt.Name(), nil)
 			if err != nil {
 				return err
 			}
@@ -250,12 +250,12 @@ func (input *ArgvInput) addShortOption(shortcut string, value InputType) error {
 		return fmt.Errorf("the \"-%s\" option does not exist", shortcut)
 	}
 
-	opt, err := input.definition.GetOptionForShortcut(shortcut)
+	opt, err := input.definition.OptionForShortcut(shortcut)
 	if err != nil {
 		return err
 	}
 
-	return input.addLongOption(opt.GetName(), value)
+	return input.addLongOption(opt.Name(), value)
 }
 
 func (input *ArgvInput) addLongOption(name string, value InputType) error {
@@ -274,7 +274,7 @@ func (input *ArgvInput) addLongOption(name string, value InputType) error {
 		return nil
 	}
 
-	opt, e := input.definition.GetOption(name)
+	opt, e := input.definition.Option(name)
 	if e != nil {
 		return e
 	}
@@ -320,7 +320,7 @@ func (input *ArgvInput) addLongOption(name string, value InputType) error {
 	return nil
 }
 
-func (input *ArgvInput) GetFirstArgument() InputType {
+func (input *ArgvInput) FirstArgument() InputType {
 	isOption := false
 	tokenCount := len(input.tokens)
 
@@ -386,7 +386,7 @@ func (input *ArgvInput) HasParameterOption(value string, onlyParams bool) bool {
 	return false
 }
 
-func (input *ArgvInput) GetParameterOption(value string, defaultValue InputType, onlyParams bool) InputType {
+func (input *ArgvInput) ParameterOption(value string, defaultValue InputType, onlyParams bool) InputType {
 	tokens := make([]string, 0, len(input.tokens))
 	copy(tokens, input.tokens)
 

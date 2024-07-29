@@ -5,7 +5,7 @@ type OutputFormatterInferface interface {
 	IsDecorated() bool
 	SetStyle(name string, style OutputFormatterStyleInterface)
 	HasStyle(name string) bool
-	GetStyle(name string) (OutputFormatterStyleInterface, error)
+	Style(name string) (OutputFormatterStyleInterface, error)
 	Format(message string) string
 	Clone() OutputFormatterInferface
 }

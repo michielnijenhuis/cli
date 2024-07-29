@@ -17,7 +17,7 @@ import (
 func Ask[T any](i input.InputInterface, o output.OutputInterface, question QuestionInterface[T]) (T, error) {
 	consoleOutput, isConsoleOutput := o.(output.ConsoleOutputInterface)
 	if isConsoleOutput {
-		o = consoleOutput.GetErrorOutput()
+		o = consoleOutput.ErrorOutput()
 	}
 
 	if !i.IsInteractive() {
@@ -27,7 +27,7 @@ func Ask[T any](i input.InputInterface, o output.OutputInterface, question Quest
 	var inputStream *os.File
 	streamableInput, ok := i.(input.StreamableInputInterface)
 	if ok {
-		stream := streamableInput.GetStream()
+		stream := streamableInput.Stream()
 		if stream != nil {
 			inputStream = stream
 		}
@@ -87,7 +87,7 @@ func doAsk[T any](o output.OutputInterface, question QuestionInterface[T], input
 		// outputStream := os.Stdout
 		// streamOutput, ok := output.(*Output.StreamOutput)
 		// if ok {
-		// 	outputStream = streamOutput.GetStream()
+		// 	outputStream = streamOutput.Stream()
 		// }
 
 		// TODO: do ask
@@ -149,7 +149,7 @@ func writePrompt[T any](output output.OutputInterface, question interface{}) {
 	text := formatter.EscapeTrailingBackslash(q.Question())
 
 	if q.IsMultiline() {
-		text += fmt.Sprintf(" (press %s to continue)", getEofShortcut())
+		text += fmt.Sprintf(" (press %s to continue)", eofShortcut())
 	}
 
 	if str, ok := any(q.Default()).(string); ok && str == "" {
@@ -218,7 +218,7 @@ func writeError(output output.OutputInterface, err error) {
 	output.Writeln(message, 0)
 }
 
-func getEofShortcut() string {
+func eofShortcut() string {
 	if runtime.GOOS == "windows" {
 		return "<comment>Ctrl+Z</comment> then <comment>Enter</comment>"
 	}

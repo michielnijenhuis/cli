@@ -40,7 +40,7 @@ func (o *Output) SetFormatter(formatter formatter.OutputFormatterInferface) {
 	o.formatter = formatter
 }
 
-func (o *Output) GetFormatter() formatter.OutputFormatterInferface {
+func (o *Output) Formatter() formatter.OutputFormatterInferface {
 	return o.formatter
 }
 
@@ -56,7 +56,7 @@ func (o *Output) SetVerbosity(verbosity uint) {
 	o.verbosity = verbosity
 }
 
-func (o *Output) GetVerbosity() uint {
+func (o *Output) Verbosity() uint {
 	return o.verbosity
 }
 
@@ -102,7 +102,7 @@ func (o *Output) WriteMany(messages []string, newLine bool, options uint) {
 		verbosity = VERBOSITY_NORMAL
 	}
 
-	if verbosity > o.GetVerbosity() {
+	if verbosity > o.Verbosity() {
 		return
 	}
 

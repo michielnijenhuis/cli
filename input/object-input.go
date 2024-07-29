@@ -20,7 +20,7 @@ func NewObjectInput(parameters map[string]InputType, definition *InputDefinition
 	return objectInput, err
 }
 
-func (input *ObjectInput) GetFirstArgument() InputType {
+func (input *ObjectInput) FirstArgument() InputType {
 	for param, value := range input.parameters {
 		if strings.HasPrefix(param, "-") {
 			continue
@@ -46,7 +46,7 @@ func (input *ObjectInput) HasParameterOption(value string, onlyParams bool) bool
 	return false
 }
 
-func (input *ObjectInput) GetParameterOption(value string, defaultValue InputType, onlyParams bool) InputType {
+func (input *ObjectInput) ParameterOption(value string, defaultValue InputType, onlyParams bool) InputType {
 	for k, v := range input.parameters {
 		if onlyParams && k == "--" {
 			return defaultValue
@@ -140,12 +140,12 @@ func (input *ObjectInput) addShortOption(shortcut string, value InputType) error
 		return fmt.Errorf("the \"-%s\" option does not exist", shortcut)
 	}
 
-	opt, e := input.definition.GetOptionForShortcut(shortcut)
+	opt, e := input.definition.OptionForShortcut(shortcut)
 	if e != nil {
 		return e
 	}
 
-	return input.addLongOption(opt.GetName(), value)
+	return input.addLongOption(opt.Name(), value)
 }
 
 func (input *ObjectInput) addLongOption(name string, value InputType) error {
@@ -160,7 +160,7 @@ func (input *ObjectInput) addLongOption(name string, value InputType) error {
 		return nil
 	}
 
-	opt, e := input.definition.GetOption(name)
+	opt, e := input.definition.Option(name)
 	if e != nil {
 		return e
 	}

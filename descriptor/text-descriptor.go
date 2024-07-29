@@ -34,15 +34,15 @@ func (d *TextDescriptor) DescribeApplication(app DescribeableApplication, option
 
 	if options != nil && options.rawText {
 		commands := description.Commands()
-		width := getColumnWidth(commands)
+		width := columnWidth(commands)
 
 		for _, command := range commands {
-			name := command.GetName()
-			d.writeText(fmt.Sprintf("%s %s", name[0:width], command.GetDescription()), options)
+			name := command.Name
+			d.writeText(fmt.Sprintf("%s %s", name[0:width], command.Description), options)
 			d.writeText("\n", nil)
 		}
 	} else {
-		help := app.GetHelp()
+		help := app.Help()
 		if help != "" {
 			d.writeText("Help\n\n", options)
 		}
@@ -50,7 +50,7 @@ func (d *TextDescriptor) DescribeApplication(app DescribeableApplication, option
 		d.writeText("<header>Usage:</header>\n", options)
 		d.writeText("  command [options] [arguments]\n\n", options)
 
-		d.DescribeInputDefinition(input.NewInputDefinition(nil, app.GetDefinition().GetOptionsArray()), options)
+		d.DescribeInputDefinition(input.NewInputDefinition(nil, app.Definition().OptionsArray()), options)
 
 		d.writeText("\n", nil)
 		d.writeText("\n", nil)
@@ -84,7 +84,7 @@ func (d *TextDescriptor) DescribeApplication(app DescribeableApplication, option
 				}
 			}
 		}
-		width := getColumnWidth(availableCommands)
+		width := columnWidth(availableCommands)
 
 		if describedNamespace != "" {
 			d.writeText(fmt.Sprintf("<header>Available commands for the \"%s\" namespace:</header>", describedNamespace), options)
@@ -115,11 +115,11 @@ func (d *TextDescriptor) DescribeApplication(app DescribeableApplication, option
 				command := commands[name]
 
 				var commandAliases string
-				if name == command.GetName() {
-					commandAliases = d.getCommandAliasesText(command)
+				if name == command.Name {
+					commandAliases = d.commandAliasesText(command)
 				}
 
-				d.writeText(fmt.Sprintf("  <highlight>%s</highlight>%s%s%s", name, strings.Repeat(" ", max(spacingWidth, 2)), commandAliases, command.GetDescription()), options)
+				d.writeText(fmt.Sprintf("  <highlight>%s</highlight>%s%s%s", name, strings.Repeat(" ", max(spacingWidth, 2)), commandAliases, command.Description), options)
 			}
 		}
 
@@ -130,7 +130,7 @@ func (d *TextDescriptor) DescribeApplication(app DescribeableApplication, option
 func (d *TextDescriptor) DescribeCommand(command *command.Command, options *DescriptorOptions) {
 	command.MergeApplication(false)
 
-	description := command.GetDescription()
+	description := command.Description
 	if description != "" {
 		d.writeText("<header>Description:</header>", options)
 		d.writeText("\n", nil)
@@ -140,17 +140,19 @@ func (d *TextDescriptor) DescribeCommand(command *command.Command, options *Desc
 
 	d.writeText("<header>Usage:</header>", options)
 	usages := make([]string, 0)
-	usages = append(usages, command.GetSynopsis(true))
-	usages = append(usages, command.GetAliases()...)
-	usages = append(usages, command.GetUsages()...)
+	usages = append(usages, command.Synopsis(true))
+	if command.Aliases != nil {
+		usages = append(usages, command.Aliases...)
+	}
+	usages = append(usages, command.Usages()...)
 	for _, usage := range usages {
 		d.writeText("\n", nil)
 		d.writeText("  "+formatter.Escape(usage), options)
 	}
 	d.writeText("\n", nil)
 
-	definition := command.GetDefinition()
-	if len(definition.GetOptions()) > 0 || len(definition.GetArguments()) > 0 {
+	definition := command.Definition()
+	if len(definition.Options()) > 0 || len(definition.Arguments()) > 0 {
 		d.writeText("\n", nil)
 		d.DescribeInputDefinition(definition, options)
 		d.writeText("\n", nil)
@@ -167,19 +169,19 @@ func (d *TextDescriptor) DescribeCommand(command *command.Command, options *Desc
 }
 
 func (d *TextDescriptor) DescribeInputDefinition(definition *input.InputDefinition, options *DescriptorOptions) {
-	totalWidth := calculateTotalWidthForOptions(definition.GetOptionsArray())
-	for _, argument := range definition.GetArguments() {
-		totalWidth = max(totalWidth, helper.Width(argument.GetName()))
+	totalWidth := calculateTotalWidthForOptions(definition.OptionsArray())
+	for _, argument := range definition.Arguments() {
+		totalWidth = max(totalWidth, helper.Width(argument.Name()))
 	}
 
-	hasArgs := len(definition.GetArguments()) > 0
-	hasOptions := len(definition.GetOptions()) > 0
+	hasArgs := len(definition.Arguments()) > 0
+	hasOptions := len(definition.Options()) > 0
 
 	if hasArgs {
 		d.writeText("<header>Arguments:</header>", options)
 		d.writeText("\n", nil)
 
-		for _, argument := range definition.GetArguments() {
+		for _, argument := range definition.Arguments() {
 			d.DescribeInputArgument(argument, options)
 			d.writeText("\n", nil)
 		}
@@ -194,8 +196,8 @@ func (d *TextDescriptor) DescribeInputDefinition(definition *input.InputDefiniti
 
 		d.writeText("<header>Options:</header>", options)
 
-		for _, option := range definition.GetOptions() {
-			if len(option.GetShortcut()) > 1 {
+		for _, option := range definition.Options() {
+			if len(option.Shortcut()) > 1 {
 				laterOptions = append(laterOptions, option)
 				continue
 			}
@@ -223,11 +225,11 @@ func (d *TextDescriptor) DescribeInputDefinition(definition *input.InputDefiniti
 
 func (d *TextDescriptor) DescribeInputArgument(argument *input.InputArgument, options *DescriptorOptions) {
 	var defaultValue string
-	if hasDefaultValue(argument.GetDefaultValue()) {
-		defaultValue = fmt.Sprintf("<header> [default: %s]</header>", formatDefaultValue(argument.GetDefaultValue()))
+	if hasDefaultValue(argument.DefaultValue()) {
+		defaultValue = fmt.Sprintf("<header> [default: %s]</header>", formatDefaultValue(argument.DefaultValue()))
 	}
 
-	name := argument.GetName()
+	name := argument.Name()
 
 	var totalWidth int
 	if options != nil && options.totalWidth > 0 {
@@ -246,11 +248,11 @@ func (d *TextDescriptor) DescribeInputArgument(argument *input.InputArgument, op
 
 func (d *TextDescriptor) DescribeInputOption(option *input.InputOption, options *DescriptorOptions) {
 	var defaultValue string
-	if hasDefaultValue(option.GetDefaultValue()) {
-		defaultValue = fmt.Sprintf("<header> [default: %s]</header>", formatDefaultValue(option.GetDefaultValue()))
+	if hasDefaultValue(option.DefaultValue()) {
+		defaultValue = fmt.Sprintf("<header> [default: %s]</header>", formatDefaultValue(option.DefaultValue()))
 	}
 
-	name := option.GetName()
+	name := option.Name()
 
 	var value string
 	if option.AcceptValue() {
@@ -269,8 +271,8 @@ func (d *TextDescriptor) DescribeInputOption(option *input.InputOption, options 
 	}
 
 	var synopsis string
-	if option.GetShortcut() != "" {
-		synopsis = fmt.Sprintf("-%s, ", option.GetShortcut())
+	if option.Shortcut() != "" {
+		synopsis = fmt.Sprintf("-%s, ", option.Shortcut())
 	} else {
 		synopsis = "    "
 	}
@@ -286,7 +288,7 @@ func (d *TextDescriptor) DescribeInputOption(option *input.InputOption, options 
 	spacingWidth := max(0, totalWidth-helper.Width(synopsis))
 	width := strings.Repeat(" ", spacingWidth)
 	re := regexp.MustCompile(`\s*[\r\n]\s*`)
-	desc := re.ReplaceAllString(option.GetDescription(), strings.Repeat(" ", totalWidth+4))
+	desc := re.ReplaceAllString(option.Description(), strings.Repeat(" ", totalWidth+4))
 
 	var arr string
 	if option.IsArray() {
@@ -296,14 +298,16 @@ func (d *TextDescriptor) DescribeInputOption(option *input.InputOption, options 
 	d.writeText(fmt.Sprintf("  <highlight>%s</highlight>  %s%s%s%s", synopsis, width, desc, defaultValue, arr), options)
 }
 
-func getColumnWidth(commands map[string]*command.Command) int {
+func columnWidth(commands map[string]*command.Command) int {
 	width := 0
 
 	for _, command := range commands {
-		width = max(width, helper.Width(command.GetName()))
+		width = max(width, helper.Width(command.Name))
 
-		for _, alias := range command.GetAliases() {
-			width = max(width, helper.Width(alias))
+		if command.Aliases != nil {
+			for _, alias := range command.Aliases {
+				width = max(width, helper.Width(alias))
+			}
 		}
 	}
 
@@ -315,12 +319,12 @@ func calculateTotalWidthForOptions(options []*input.InputOption) int {
 
 	for _, option := range options {
 		// "-" + shortcut + ", --" + name
-		nameLength := max(helper.Width(option.GetShortcut()), 1) + 4 + helper.Width(option.GetName())
+		nameLength := max(helper.Width(option.Shortcut()), 1) + 4 + helper.Width(option.Name())
 
 		if option.IsNegatable() {
-			nameLength += 6 + helper.Width(option.GetName()) // |--no- + name
+			nameLength += 6 + helper.Width(option.Name()) // |--no- + name
 		} else if option.AcceptValue() {
-			valueLength := 1 + helper.Width(option.GetName()) // = + value
+			valueLength := 1 + helper.Width(option.Name()) // = + value
 			if option.IsValueOptional() {
 				valueLength += 2 // [ + ]
 			}
@@ -334,9 +338,14 @@ func calculateTotalWidthForOptions(options []*input.InputOption) int {
 	return totalWidth
 }
 
-func (d *TextDescriptor) getCommandAliasesText(command *command.Command) string {
+func (d *TextDescriptor) commandAliasesText(command *command.Command) string {
 	var text string
-	commandAliases := command.GetAliases()
+	commandAliases := command.Aliases
+
+	if commandAliases == nil {
+		return text
+	}
+
 	aliases := make([]string, len(commandAliases))
 
 	for _, alias := range commandAliases {

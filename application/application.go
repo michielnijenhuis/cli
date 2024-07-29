@@ -56,7 +56,7 @@ func NewApplication(name string, version string) *Application {
 }
 
 func (app *Application) Run(i input.InputInterface, o output.OutputInterface) (exitCode int, err error) {
-	width, height, err := terminal.GetSize()
+	width, height, err := terminal.Size()
 	if err == nil {
 		os.Setenv("LINES", fmt.Sprint(height))
 		os.Setenv("COLUMNS", fmt.Sprint(width))
@@ -122,17 +122,17 @@ func (app *Application) Run(i input.InputInterface, o output.OutputInterface) (e
 
 func (app *Application) doRun(i input.InputInterface, o output.OutputInterface) (int, error) {
 	if i.HasParameterOption("--version", true) || i.HasParameterOption("-V", true) {
-		o.Writeln(app.getLongVersion(), 0)
+		o.Writeln(app.longVersion(), 0)
 
 		return 0, nil
 	}
 
-	// Makes ArgvInput.GetFirstArgument() able to distinguish an option from an argument.
+	// Makes ArgvInput.FirstArgument() able to distinguish an option from an argument.
 	// Errors must be ignored, full binding/validation happens later when the command is known.
-	i.Bind(app.GetDefinition())
+	i.Bind(app.Definition())
 	i.Parse()
 
-	name := app.getCommandName(i)
+	name := app.commandName(i)
 	if i.HasParameterOption("--help", true) || i.HasParameterOption("-h", true) {
 		if name == "" {
 			name = "help"
@@ -150,7 +150,7 @@ func (app *Application) doRun(i input.InputInterface, o output.OutputInterface) 
 
 	if name == "" {
 		name = app.defaultCommand
-		definition := app.GetDefinition()
+		definition := app.Definition()
 		definition.SetArguments(nil)
 	}
 
@@ -174,9 +174,9 @@ func (app *Application) SetDefinition(definition *input.InputDefinition) {
 	app.definition = definition
 }
 
-func (app *Application) GetDefinition() *input.InputDefinition {
+func (app *Application) Definition() *input.InputDefinition {
 	if app.definition == nil {
-		app.definition = app.getDefaultInputDefinition()
+		app.definition = app.defaultInputDefinition()
 	}
 
 	if app.singleCommand {
@@ -189,8 +189,8 @@ func (app *Application) GetDefinition() *input.InputDefinition {
 	return app.definition
 }
 
-func (app *Application) GetHelp() string {
-	return app.getLongVersion()
+func (app *Application) Help() string {
+	return app.longVersion()
 }
 
 func (app *Application) AreErrorsCaught() bool {
@@ -209,29 +209,13 @@ func (app *Application) SetAutoExit(boolean bool) {
 	app.autoExit = boolean
 }
 
-func (app *Application) GetName() string {
-	return app.Name
-}
-
-func (app *Application) SetName(name string) {
-	app.Name = name
-}
-
-func (app *Application) GetVersion() string {
-	return app.Version
-}
-
-func (app *Application) SetVersion(version string) {
-	app.Version = version
-}
-
-func (app *Application) getLongVersion() string {
-	if app.GetName() == "" || app.GetName() == "UNKNOWN" {
-		if app.GetVersion() == "" || app.GetVersion() == "UNKNOWN" {
-			return fmt.Sprintf("%s <highlight>%s</highlight>", app.GetName(), app.GetVersion())
+func (app *Application) longVersion() string {
+	if app.Name == "" || app.Name == "UNKNOWN" {
+		if app.Version == "" || app.Version == "UNKNOWN" {
+			return fmt.Sprintf("%s <highlight>%s</highlight>", app.Name, app.Version)
 		}
 
-		return app.GetName()
+		return app.Name
 	}
 
 	return "Console Tool"
@@ -243,27 +227,29 @@ func (app *Application) AddCommands(commands []*command.Command) {
 	}
 }
 
-func (app *Application) Add(command *command.Command) *command.Command {
+func (app *Application) Add(commands ...*command.Command) {
 	app.init()
 
-	command.SetApplicationDefinition(app.GetDefinition())
+	for _, c := range commands {
+		c.SetApplicationDefinition(app.Definition())
 
-	if !command.IsEnabled() {
-		command.SetApplicationDefinition(nil)
-		return nil
+		if !c.IsEnabled() {
+			c.SetApplicationDefinition(nil)
+			continue
+		}
+
+		if c.Name == "" {
+			panic("Commands must have a name.")
+		}
+
+		app.commands[c.Name] = c
+
+		if c.Aliases != nil {
+			for _, alias := range c.Aliases {
+				app.commands[alias] = c
+			}
+		}
 	}
-
-	if command.GetName() == "" {
-		panic("Commands must have a name.")
-	}
-
-	app.commands[command.GetName()] = command
-
-	for _, alias := range command.GetAliases() {
-		app.commands[alias] = command
-	}
-
-	return command
 }
 
 func (app *Application) Get(name string) (*command.Command, error) {
@@ -299,20 +285,22 @@ func (app *Application) Has(name string) bool {
 	return app.commands[name] != nil
 }
 
-func (app *Application) GetNamespaces() []string {
+func (app *Application) Namespaces() []string {
 	namespacesMap := make(map[string]int)
 
 	for _, command := range app.All("") {
-		if command.IsHidden() || command.GetName() == "" {
+		if command.IsHidden() || command.Name == "" {
 			continue
 		}
 
-		for _, namespace := range app.extractAllNamespace(command.GetName()) {
+		for _, namespace := range app.extractAllNamespace(command.Name) {
 			namespacesMap[namespace] = 0
 		}
 
-		for _, alias := range command.GetAliases() {
-			namespacesMap[app.ExtractNamespace(alias, -1)] = 0
+		if command.Aliases != nil {
+			for _, alias := range command.Aliases {
+				namespacesMap[app.ExtractNamespace(alias, -1)] = 0
+			}
 		}
 	}
 
@@ -332,9 +320,11 @@ func (app *Application) Find(name string) (*command.Command, error) {
 	app.init()
 
 	for _, command := range app.commands {
-		for _, alias := range command.GetAliases() {
-			if !app.Has(alias) {
-				app.commands[alias] = command
+		if command.Aliases != nil {
+			for _, alias := range command.Aliases {
+				if !app.Has(alias) {
+					app.commands[alias] = command
+				}
 			}
 		}
 	}
@@ -367,7 +357,7 @@ func (app *Application) All(namespace string) map[string]*command.Command {
 	return commands
 }
 
-func (app *Application) GetAbbreviations(names []string) map[string][]string {
+func (app *Application) Abbreviations(names []string) map[string][]string {
 	abbrevs := make(map[string][]string)
 	for _, name := range names {
 		for len := len(name); len > 0; len-- {
@@ -392,7 +382,7 @@ func (app *Application) RenderError(o output.OutputInterface, err error) {
 
 	if app.runningCommand != nil {
 		o.Writeln(
-			fmt.Sprintf("<highlight>%s %s</highlight>", app.GetName(), app.runningCommand.GetSynopsis(false)),
+			fmt.Sprintf("<highlight>%s %s</highlight>", app.Name, app.runningCommand.Synopsis(false)),
 			output.VERBOSITY_QUIET,
 		)
 		o.Writeln("", output.VERBOSITY_QUIET)
@@ -402,7 +392,7 @@ func (app *Application) RenderError(o output.OutputInterface, err error) {
 func (app *Application) doRenderError(o output.OutputInterface, err error) {
 	message := strings.TrimSpace(err.Error())
 	length := 0
-	width, _ := terminal.GetWidth()
+	width, _ := terminal.Width()
 	lines := make([]string, 0)
 	linesLength := make([]int, 0)
 	messageLines := strings.Split(strings.ReplaceAll(message, "\r\n", "\n"), "\n")
@@ -469,12 +459,12 @@ func (app *Application) configureIO(i input.InputInterface, o output.OutputInter
 	} else {
 		if i.HasParameterOption("-vvv", true) ||
 			i.HasParameterOption("--verbose=3", true) ||
-			i.GetParameterOption("--verbose", false, true) == "3" {
+			i.ParameterOption("--verbose", false, true) == "3" {
 			o.SetVerbosity(output.VERBOSITY_DEBUG)
 			shellVerbosity = 3
 		} else if i.HasParameterOption("-vv", true) ||
 			i.HasParameterOption("--verbose=2", true) ||
-			i.GetParameterOption("--verbose", false, true) == "2" {
+			i.ParameterOption("--verbose", false, true) == "2" {
 			o.SetVerbosity(output.VERBOSITY_VERBOSE)
 			shellVerbosity = 2
 		} else if i.HasParameterOption("-v", true) ||
@@ -492,12 +482,12 @@ func (app *Application) configureIO(i input.InputInterface, o output.OutputInter
 	os.Setenv("SHELL_VERBOSITY", fmt.Sprint(shellVerbosity))
 }
 
-func (app *Application) getCommandName(input input.InputInterface) string {
+func (app *Application) commandName(input input.InputInterface) string {
 	if app.singleCommand {
 		return app.defaultCommand
 	}
 
-	first := input.GetFirstArgument()
+	first := input.FirstArgument()
 	str, ok := first.(string)
 	if ok {
 		return str
@@ -511,7 +501,7 @@ func (app *Application) getCommandName(input input.InputInterface) string {
 	panic("Failed to retrieve first argument from input.")
 }
 
-func (app *Application) getDefaultInputDefinition() *input.InputDefinition {
+func (app *Application) defaultInputDefinition() *input.InputDefinition {
 	commandArgument := input.NewInputArgument("command", input.INPUT_ARGUMENT_REQUIRED, "The command to execute", "", nil)
 	arguments := []*input.InputArgument{commandArgument}
 
@@ -536,7 +526,7 @@ func (app *Application) getDefaultInputDefinition() *input.InputDefinition {
 	return definition
 }
 
-func (app *Application) getDefaultCommands() []*command.Command {
+func (app *Application) defaultCommands() []*command.Command {
 	return []*command.Command{
 		app.newHelpCommand(),
 		app.newListCommand(),
@@ -631,7 +621,7 @@ It's also possible to get raw list of commands (useful for embedding command run
 	return command
 }
 
-func (app *Application) getAbbreviationSuggestions(abbrevs []string) string {
+func (app *Application) abbreviationSuggestions(abbrevs []string) string {
 	return "    " + strings.Join(abbrevs, "\n    ")
 }
 
@@ -694,7 +684,7 @@ func (app *Application) init() {
 
 	app.initialized = true
 
-	for _, command := range app.getDefaultCommands() {
+	for _, command := range app.defaultCommands() {
 		app.Add(command)
 	}
 }

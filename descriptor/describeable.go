@@ -9,6 +9,6 @@ type DescribeableApplication interface {
 	All(namespace string) map[string]*command.Command
 	ExtractNamespace(name string, limit int) string
 	FindNamespaces(namespace string) string
-	GetHelp() string
-	GetDefinition() *input.InputDefinition
+	Help() string
+	Definition() *input.InputDefinition
 }

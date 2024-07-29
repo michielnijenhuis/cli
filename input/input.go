@@ -82,7 +82,7 @@ func (input *Input) Validate() error {
 		return errors.New("given arguments not found")
 	}
 
-	arguments := definition.GetArguments()
+	arguments := definition.Arguments()
 	if arguments == nil {
 		return errors.New("input arguments not found")
 	}
@@ -93,7 +93,7 @@ func (input *Input) Validate() error {
 			continue
 		}
 
-		argument, _ := definition.GetArgument(name)
+		argument, _ := definition.Argument(name)
 		if argument != nil && argument.IsRequired() {
 			missingArguments = append(missingArguments, name)
 		}
@@ -119,12 +119,12 @@ func (input *Input) SetInteractive(interactive bool) {
 	input.interactive = interactive
 }
 
-func (input *Input) GetArguments() map[string]InputType {
+func (input *Input) Arguments() map[string]InputType {
 	definition := input.definition
 	args := make(map[string]InputType)
 
 	if definition != nil {
-		for k, v := range definition.GetArgumentDefaults() {
+		for k, v := range definition.ArgumentDefaults() {
 			args[k] = v
 		}
 	}
@@ -136,7 +136,7 @@ func (input *Input) GetArguments() map[string]InputType {
 	return args
 }
 
-func (input *Input) GetStringArgument(name string) (string, error) {
+func (input *Input) StringArgument(name string) (string, error) {
 	definition := input.definition
 	if definition == nil {
 		return "", errors.New("no InputDefinition found")
@@ -147,12 +147,12 @@ func (input *Input) GetStringArgument(name string) (string, error) {
 	}
 
 	if input.arguments[name] == nil {
-		arg, e := definition.GetArgument(name)
+		arg, e := definition.Argument(name)
 		if e != nil {
 			return "", e
 		}
 
-		value := arg.GetDefaultValue()
+		value := arg.DefaultValue()
 		str, isStr := value.(string)
 		if !isStr {
 			return "", nil
@@ -170,7 +170,7 @@ func (input *Input) GetStringArgument(name string) (string, error) {
 	return str, nil
 }
 
-func (input *Input) GetArrayArgument(name string) ([]string, error) {
+func (input *Input) ArrayArgument(name string) ([]string, error) {
 	definition := input.definition
 	if definition == nil {
 		return []string{}, errors.New("no InputDefinition found")
@@ -181,12 +181,12 @@ func (input *Input) GetArrayArgument(name string) ([]string, error) {
 	}
 
 	if input.arguments[name] == nil {
-		arg, e := definition.GetArgument(name)
+		arg, e := definition.Argument(name)
 		if e != nil {
 			return []string{}, e
 		}
 
-		value := arg.GetDefaultValue()
+		value := arg.DefaultValue()
 		arr, isArr := value.([]string)
 		if !isArr {
 			return []string{}, nil
@@ -227,12 +227,12 @@ func (input *Input) HasArgument(name string) bool {
 	return definition.HasArgument(name)
 }
 
-func (input *Input) GetOptions() map[string]InputType {
+func (input *Input) Options() map[string]InputType {
 	definition := input.definition
 	opts := make(map[string]InputType)
 
 	if definition != nil {
-		for k, v := range definition.GetOptionDefaults() {
+		for k, v := range definition.OptionDefaults() {
 			opts[k] = v
 		}
 	}
@@ -244,7 +244,7 @@ func (input *Input) GetOptions() map[string]InputType {
 	return opts
 }
 
-func (input *Input) GetBoolOption(name string) (bool, error) {
+func (input *Input) BoolOption(name string) (bool, error) {
 	definition := input.definition
 	if definition == nil {
 		return false, errors.New("no InputDefinition found")
@@ -255,12 +255,12 @@ func (input *Input) GetBoolOption(name string) (bool, error) {
 	}
 
 	if input.options[name] == nil {
-		opt, e := definition.GetOption(name)
+		opt, e := definition.Option(name)
 		if e != nil {
 			return false, e
 		}
 
-		value := opt.GetDefaultValue()
+		value := opt.DefaultValue()
 		boolval, isBool := value.(bool)
 		if !isBool {
 			return false, nil
@@ -286,7 +286,7 @@ func (input *Input) GetBoolOption(name string) (bool, error) {
 	return boolval, nil
 }
 
-func (input *Input) GetStringOption(name string) (string, error) {
+func (input *Input) StringOption(name string) (string, error) {
 	definition := input.definition
 	if definition == nil {
 		return "", errors.New("no InputDefinition found")
@@ -297,12 +297,12 @@ func (input *Input) GetStringOption(name string) (string, error) {
 	}
 
 	if input.options[name] == nil {
-		opt, e := definition.GetOption(name)
+		opt, e := definition.Option(name)
 		if e != nil {
 			return "", e
 		}
 
-		value := opt.GetDefaultValue()
+		value := opt.DefaultValue()
 		str, isStr := value.(string)
 		if !isStr {
 			return "", nil
@@ -320,7 +320,7 @@ func (input *Input) GetStringOption(name string) (string, error) {
 	return str, nil
 }
 
-func (input *Input) GetArrayOption(name string) ([]string, error) {
+func (input *Input) ArrayOption(name string) ([]string, error) {
 	definition := input.definition
 	if definition == nil {
 		return []string{}, errors.New("no InputDefinition found")
@@ -331,12 +331,12 @@ func (input *Input) GetArrayOption(name string) ([]string, error) {
 	}
 
 	if input.options[name] == nil {
-		opt, e := definition.GetOption(name)
+		opt, e := definition.Option(name)
 		if e != nil {
 			return []string{}, e
 		}
 
-		value := opt.GetDefaultValue()
+		value := opt.DefaultValue()
 		arr, isArr := value.([]string)
 		if !isArr {
 			return []string{}, nil
@@ -386,7 +386,7 @@ func (input *Input) SetStream(stream *os.File) {
 	input.stream = stream
 }
 
-func (input *Input) GetStream() *os.File {
+func (input *Input) Stream() *os.File {
 	return input.stream
 }
 
@@ -396,7 +396,7 @@ func (input *Input) runArgumentValidators() error {
 		return errors.New("no InputDefinition found")
 	}
 
-	args := definition.GetArguments()
+	args := definition.Arguments()
 	for name, arg := range args {
 		value := input.arguments[name]
 
@@ -420,7 +420,7 @@ func (input *Input) runOptionValidators() error {
 		return errors.New("no InputDefinition found")
 	}
 
-	opts := definition.GetOptions()
+	opts := definition.Options()
 	for name, opt := range opts {
 		value := input.options[name]
 

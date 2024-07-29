@@ -29,7 +29,7 @@ func NewStreamOutput(stream *os.File, verbosity uint, decorated bool, formatter 
 	return so
 }
 
-func (o *StreamOutput) GetStream() *os.File {
+func (o *StreamOutput) Stream() *os.File {
 	return o.stream
 }
 

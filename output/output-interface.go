@@ -20,11 +20,11 @@ const (
 
 type OutputInterface interface {
 	SetFormatter(formatter formatter.OutputFormatterInferface)
-	GetFormatter() formatter.OutputFormatterInferface
+	Formatter() formatter.OutputFormatterInferface
 	SetDecorated(decorated bool)
 	IsDecorated() bool
 	SetVerbosity(level uint)
-	GetVerbosity() uint
+	Verbosity() uint
 	IsQuiet() bool
 	IsVerbose() bool
 	IsVeryVerbose() bool

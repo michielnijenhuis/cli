@@ -40,7 +40,7 @@ func NewInputArgument(name string, mode InputArgumentMode, description string, d
 	return a
 }
 
-func (a *InputArgument) GetName() string {
+func (a *InputArgument) Name() string {
 	return a.name
 }
 
@@ -83,7 +83,7 @@ func (a *InputArgument) SetDefaultValue(value InputType) {
 	a.defaultValue = value
 }
 
-func (a *InputArgument) GetDefaultValue() InputType {
+func (a *InputArgument) DefaultValue() InputType {
 	return a.defaultValue
 }
 

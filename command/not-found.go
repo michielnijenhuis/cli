@@ -20,6 +20,6 @@ func (e *CommandNotFoundError) Error() string {
 	return e.message
 }
 
-func (e *CommandNotFoundError) GetAlternatives() []string {
+func (e *CommandNotFoundError) Alternatives() []string {
 	return e.alternatives
 }

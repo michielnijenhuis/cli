@@ -121,19 +121,19 @@ func (o *InputOption) SetDefaultValue(value InputType) {
 	}
 }
 
-func (o *InputOption) GetName() string {
+func (o *InputOption) Name() string {
 	return o.name
 }
 
-func (o *InputOption) GetShortcut() string {
+func (o *InputOption) Shortcut() string {
 	return o.shortcut
 }
 
-func (o *InputOption) GetDefaultValue() InputType {
+func (o *InputOption) DefaultValue() InputType {
 	return o.defaultValue
 }
 
-func (o *InputOption) GetDescription() string {
+func (o *InputOption) Description() string {
 	return o.description
 }
 
@@ -142,9 +142,9 @@ func (o *InputOption) Equals(opt *InputOption) bool {
 		return false
 	}
 
-	return opt.GetName() == o.GetName() &&
-		opt.GetShortcut() == o.GetShortcut() &&
-		opt.GetDefaultValue() == o.GetDefaultValue() &&
+	return opt.Name() == o.Name() &&
+		opt.Shortcut() == o.Shortcut() &&
+		opt.DefaultValue() == o.DefaultValue() &&
 		opt.IsNegatable() == o.IsNegatable() &&
 		opt.IsArray() == o.IsArray() &&
 		opt.IsValueRequired() == o.IsValueRequired() &&

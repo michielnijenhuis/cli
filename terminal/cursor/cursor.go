@@ -113,7 +113,7 @@ func (c *Cursor) ClearScreen() *Cursor {
 	return c
 }
 
-func (c *Cursor) GetCurrentPosition() (int, int) {
+func (c *Cursor) CurrentPosition() (int, int) {
 	var isTtySupported bool
 	if c.isTtySupported > 0 {
 		isTtySupported = c.isTtySupported == 1

@@ -6,7 +6,7 @@ import (
 	"golang.org/x/term"
 )
 
-func GetWidth() (int, error) {
+func Width() (int, error) {
 	var width int
 	var err error
 	width, _, err = term.GetSize(0)
@@ -18,7 +18,7 @@ func GetWidth() (int, error) {
 	return width, nil
 }
 
-func GetHeight() (int, error) {
+func Height() (int, error) {
 	var height int
 	var err error
 	_, height, err = term.GetSize(0)
@@ -30,7 +30,7 @@ func GetHeight() (int, error) {
 	return height, nil
 }
 
-func GetSize() (int, int, error) {
+func Size() (int, int, error) {
 	return term.GetSize(0)
 }
 

@@ -21,12 +21,12 @@ func NewStyle(i input.InputInterface, o output.OutputInterface) *Style {
 	s := &Style{
 		progressBar:    nil,
 		lineLength:     -1,
-		bufferedOutput: output.NewTrimmedBufferOutput(2, o.GetVerbosity(), o.IsDecorated(), o.GetFormatter().Clone()),
+		bufferedOutput: output.NewTrimmedBufferOutput(2, o.Verbosity(), o.IsDecorated(), o.Formatter().Clone()),
 		input:          i,
 		output:         o,
 	}
 
-	width, _ := terminal.GetWidth()
+	width, _ := terminal.Width()
 	if width == 0 {
 		width = MAX_LINE_LENGTH
 	}
@@ -40,8 +40,8 @@ func (s *Style) SetFormatter(formatter formatter.OutputFormatterInferface) {
 	s.output.SetFormatter(formatter)
 }
 
-func (s *Style) GetFormatter() formatter.OutputFormatterInferface {
-	return s.output.GetFormatter()
+func (s *Style) Formatter() formatter.OutputFormatterInferface {
+	return s.output.Formatter()
 }
 
 func (s *Style) SetDecorated(decorated bool) {
@@ -56,8 +56,8 @@ func (s *Style) SetVerbosity(level uint) {
 	s.output.SetVerbosity(level)
 }
 
-func (s *Style) GetVerbosity() uint {
-	return s.output.GetVerbosity()
+func (s *Style) Verbosity() uint {
+	return s.output.Verbosity()
 }
 
 func (s *Style) IsQuiet() bool {

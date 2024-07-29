@@ -45,7 +45,7 @@ func (o *ConsoleSectionOutput) SetMaxHeight(height int) {
 		existingContent = o.popStreamContentUntilCurrentSection(o.lines)
 	}
 
-	o.StreamOutput.DoWrite(o.GetVisibleContent(), false)
+	o.StreamOutput.DoWrite(o.VisibleContent(), false)
 	o.StreamOutput.DoWrite(existingContent, false)
 }
 
@@ -75,20 +75,20 @@ func (o *ConsoleSectionOutput) Overwrite(message string) {
 	o.Writeln(message, 0)
 }
 
-func (o *ConsoleSectionOutput) GetContent() string {
+func (o *ConsoleSectionOutput) Content() string {
 	return strings.Join(o.content, "")
 }
 
-func (o *ConsoleSectionOutput) GetVisibleContent() string {
+func (o *ConsoleSectionOutput) VisibleContent() string {
 	if o.maxHeight == 0 {
-		return o.GetContent()
+		return o.Content()
 	}
 
 	return strings.Join(o.content[-o.maxHeight:], "")
 }
 
 func (o *ConsoleSectionOutput) AddContent(input string, newLine bool) int {
-	width, _ := terminal.GetWidth()
+	width, _ := terminal.Width()
 	lines := strings.Split(input, "\n")
 	var linesAdded int
 	count := len(lines) - 1
@@ -113,7 +113,7 @@ func (o *ConsoleSectionOutput) AddContent(input string, newLine bool) int {
 		lastLine := o.content[len(o.content)-1]
 		if i == 0 && lastLine != "" && !strings.HasSuffix(lastLine, "\n") {
 			// deduct the line count of the previous line
-			deduction := o.getDisplayLength(lastLine) / width
+			deduction := o.displayLength(lastLine) / width
 			if deduction == 0 {
 				deduction = 1
 			}
@@ -206,7 +206,7 @@ func (o *ConsoleSectionOutput) popStreamContentUntilCurrentSection(numberOfLines
 			numberOfLinesToClear += section.lines
 		}
 
-		sectionContent := section.GetVisibleContent()
+		sectionContent := section.VisibleContent()
 		if sectionContent != "" {
 			if !strings.HasSuffix(sectionContent, "\n") {
 				sectionContent += "\n"
@@ -231,6 +231,6 @@ func (o *ConsoleSectionOutput) popStreamContentUntilCurrentSection(numberOfLines
 	return strings.Join(reversed, "")
 }
 
-func (o *ConsoleSectionOutput) getDisplayLength(text string) int {
-	return helper.Width(formatter.RemoveDecoration(o.GetFormatter(), strings.Replace(text, "\t", "        ", 1)))
+func (o *ConsoleSectionOutput) displayLength(text string) int {
+	return helper.Width(formatter.RemoveDecoration(o.Formatter(), strings.Replace(text, "\t", "        ", 1)))
 }
