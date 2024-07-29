@@ -31,31 +31,11 @@ type Application struct {
 	commands       map[string]*command.Command
 }
 
-func NewApplication(name string, version string) *Application {
-	if name == "" {
-		name = "UNKNOWN"
-	}
-
-	if version == "" {
-		version = "UNKNOWN"
-	}
-
-	return &Application{
-		Name:           name,
-		Version:        version,
-		defaultCommand: "list",
-		wantsHelp:      false,
-		catchErrors:    false,
-		autoExit:       true,
-		singleCommand:  false,
-		initialized:    false,
-		runningCommand: nil,
-		definition:     nil,
-		commands:       make(map[string]*command.Command),
-	}
+func (app *Application) Run() (exitCode int, err error) {
+	return app.RunWith(nil, nil)
 }
 
-func (app *Application) Run(i input.InputInterface, o output.OutputInterface) (exitCode int, err error) {
+func (app *Application) RunWith(i input.InputInterface, o output.OutputInterface) (exitCode int, err error) {
 	width, height, err := terminal.Size()
 	if err == nil {
 		os.Setenv("LINES", fmt.Sprint(height))
@@ -71,6 +51,10 @@ func (app *Application) Run(i input.InputInterface, o output.OutputInterface) (e
 
 	if o == nil {
 		o = output.NewConsoleOutput(0, true, nil)
+	}
+
+	if app.defaultCommand == "" {
+		app.defaultCommand = "list"
 	}
 
 	if app.catchErrors {
@@ -683,6 +667,10 @@ func (app *Application) init() {
 	}
 
 	app.initialized = true
+
+	if app.defaultCommand == "" {
+		app.defaultCommand = "list"
+	}
 
 	for _, command := range app.defaultCommands() {
 		app.Add(command)
