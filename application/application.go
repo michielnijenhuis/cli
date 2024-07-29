@@ -242,20 +242,20 @@ func (app *Application) Get(name string) (*command.Command, error) {
 		return nil, command.NotFound(fmt.Sprintf("The \"%s\" command cannot be found because it is registered under multiple names. Make sure you don't set a different name.", name), nil)
 	}
 
-	command := app.commands[name]
+	c := app.commands[name]
 
 	if app.wantsHelp {
 		app.wantsHelp = false
 
 		helpCommand, _ := app.Get("help")
-		helpCommand.SetMeta(map[string]any{
-			"command": command,
+		helpCommand.SetMeta(map[string]*command.Command{
+			"command": c,
 		})
 
 		return helpCommand, nil
 	}
 
-	return command, nil
+	return c, nil
 }
 
 func (app *Application) Has(name string) bool {
