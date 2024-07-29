@@ -182,7 +182,7 @@ func (d *TextDescriptor) DescribeInputDefinition(definition *input.InputDefiniti
 		d.writeText("\n", nil)
 
 		for _, argument := range definition.Arguments() {
-			d.DescribeInputArgument(argument, options)
+			d.DescribeInputArgument(argument, NewDescriptorOptions(options.namespace, options.rawText, options.short, totalWidth))
 			d.writeText("\n", nil)
 		}
 	}
@@ -203,22 +203,12 @@ func (d *TextDescriptor) DescribeInputDefinition(definition *input.InputDefiniti
 			}
 
 			d.writeText("\n", nil)
-			d.DescribeInputOption(option, &DescriptorOptions{
-				namespace:  options.namespace,
-				rawText:    options.rawText,
-				short:      options.short,
-				totalWidth: totalWidth,
-			})
+			d.DescribeInputOption(option, NewDescriptorOptions(options.namespace, options.rawText, options.short, totalWidth))
 		}
 
 		for _, option := range laterOptions {
 			d.writeText("\n", nil)
-			d.DescribeInputOption(option, &DescriptorOptions{
-				namespace:  options.namespace,
-				rawText:    options.rawText,
-				short:      options.short,
-				totalWidth: totalWidth,
-			})
+			d.DescribeInputOption(option, NewDescriptorOptions(options.namespace, options.rawText, options.short, totalWidth))
 		}
 	}
 }
@@ -319,7 +309,7 @@ func calculateTotalWidthForOptions(options []*input.InputOption) int {
 
 	for _, option := range options {
 		// "-" + shortcut + ", --" + name
-		nameLength := max(helper.Width(option.Shortcut), 1) + 4 + helper.Width(option.Name)
+		nameLength := 1 + max(helper.Width(option.Shortcut), 1) + 4 + helper.Width(option.Name)
 
 		if option.IsNegatable() {
 			nameLength += 6 + helper.Width(option.Name) // |--no- + name
