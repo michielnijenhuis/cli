@@ -14,14 +14,18 @@ import (
 func TestApplicationCanRenderError(t *testing.T) {
 	fmt.Println("--- begin APPLICATION CAN RENDER test ---")
 
-	app := application.NewApplication("app", "v1.0.0")
+	app := &application.Application{
+		Name: "app",
+	}
 	app.SetCatchErrors(true)
 	app.SetAutoExit(false)
 
-	cmd := command.NewCommand("test", func(self *command.Command) (int, error) {
-
-		return 1, errors.New("Test error")
-	})
+	cmd := &command.Command{
+		Name: "test",
+		Handle: func(self *command.Command) (int, error) {
+			return 1, errors.New("Test error")
+		},
+	}
 
 	app.Add(cmd)
 
@@ -36,7 +40,7 @@ func TestApplicationCanRenderError(t *testing.T) {
 		fmt.Print(parseError.Error())
 	}
 
-	code, err := app.Run(input, nil)
+	code, err := app.RunWith(input, nil)
 
 	var errMsg string
 	if err != nil {
@@ -58,13 +62,18 @@ func TestApplicationCanRenderError(t *testing.T) {
 func TestApplicationCanSuccesfullyExecuteCommand(t *testing.T) {
 	fmt.Println("--- begin APPLICATION CAN SUCCESSFULLY EXECUTE COMMAND test ---")
 
-	app := application.NewApplication("app", "v1.0.0")
+	app := &application.Application{
+		Name: "app",
+	}
 	app.SetCatchErrors(true)
 	app.SetAutoExit(false)
 
-	cmd := command.NewCommand("test", func(self *command.Command) (int, error) {
-		return 0, nil
-	})
+	cmd := &command.Command{
+		Name: "test",
+		Handle: func(self *command.Command) (int, error) {
+			return 0, nil
+		},
+	}
 
 	app.Add(cmd)
 
@@ -79,7 +88,7 @@ func TestApplicationCanSuccesfullyExecuteCommand(t *testing.T) {
 		fmt.Print(parseError.Error())
 	}
 
-	code, err := app.Run(input, nil)
+	code, err := app.RunWith(input, nil)
 
 	var errMsg string
 	if err != nil {
@@ -101,15 +110,20 @@ func TestApplicationCanSuccesfullyExecuteCommand(t *testing.T) {
 func TestApplicationCanRecover(t *testing.T) {
 	fmt.Println("--- begin APPLICATION CAN RECOVER test ---")
 
-	app := application.NewApplication("app", "v1.0.0")
+	app := &application.Application{
+		Name: "app",
+	}
 	app.SetCatchErrors(true)
 	app.SetAutoExit(false)
 
 	expectedError := "Oh no!"
 
-	cmd := command.NewCommand("test", func(self *command.Command) (int, error) {
-		panic(expectedError)
-	})
+	cmd := &command.Command{
+		Name: "test",
+		Handle: func(self *command.Command) (int, error) {
+			panic(expectedError)
+		},
+	}
 
 	app.Add(cmd)
 
@@ -124,7 +138,7 @@ func TestApplicationCanRecover(t *testing.T) {
 		fmt.Print(parseError.Error())
 	}
 
-	code, err := app.Run(input, nil)
+	code, err := app.RunWith(input, nil)
 
 	var errMsg string
 	if err != nil {
@@ -146,7 +160,9 @@ func TestApplicationCanRecover(t *testing.T) {
 func TestApplicationCanShowHelp(t *testing.T) {
 	fmt.Println("--- begin CAN SHOW HELP test ---")
 
-	app := application.NewApplication("app", "v1.0.0")
+	app := &application.Application{
+		Name: "app",
+	}
 	app.SetCatchErrors(true)
 	app.SetAutoExit(false)
 
@@ -161,14 +177,16 @@ func TestApplicationCanShowHelp(t *testing.T) {
 		fmt.Print(parseError.Error())
 	}
 
-	app.Run(input, nil)
+	app.RunWith(input, nil)
 	fmt.Println("--- end CAN SHOW HELP test ---")
 	fmt.Println("")
 }
 
 func TestApplicationCanListCommands(t *testing.T) {
 	fmt.Println("--- begin CAN LIST COMMANDS test ---")
-	app := application.NewApplication("app", "v1.0.0")
+	app := &application.Application{
+		Name: "app",
+	}
 	app.SetCatchErrors(true)
 	app.SetAutoExit(false)
 
@@ -183,36 +201,39 @@ func TestApplicationCanListCommands(t *testing.T) {
 		fmt.Print(parseError.Error())
 	}
 
-	app.Run(input, nil)
+	app.RunWith(input, nil)
 
 	fmt.Println("--- end CAN LIST COMMANDS test ---")
 	fmt.Println("")
 }
 
 func TestSumCommand(t *testing.T) {
-	cmd := command.NewCommand("sum", func(self *command.Command) (int, error) {
-		values, err := self.ArrayArgument("values")
-		if err != nil {
-			return 1, err
-		}
-
-		var sum int
-		for _, v := range values {
-			number, err := strconv.Atoi(v)
+	cmd := &command.Command{
+		Name: "sum",
+		Handle: func(self *command.Command) (int, error) {
+			values, err := self.ArrayArgument("values")
 			if err != nil {
 				return 1, err
 			}
 
-			sum += number
-		}
+			var sum int
+			for _, v := range values {
+				number, err := strconv.Atoi(v)
+				if err != nil {
+					return 1, err
+				}
 
-		msg := fmt.Sprintf("Sum: %d", sum)
+				sum += number
+			}
 
-		self.Output().Writeln(msg, 0)
-		return 0, nil
-	})
+			msg := fmt.Sprintf("Sum: %d", sum)
+
+			self.Output().Writeln(msg, 0)
+			return 0, nil
+		}}
+
 	cmd.SetDescription("Prints the sum of all given values.")
-	cmd.AddArgument("values", input.INPUT_ARGUMENT_IS_ARRAY, "The values to sum", nil, func(value input.InputType) error {
+	cmd.DefineArgument("values", input.INPUT_ARGUMENT_IS_ARRAY, "The values to sum", nil, func(value input.InputType) error {
 		arr, ok := value.([]string)
 		if ok {
 			for _, v := range arr {
@@ -229,18 +250,24 @@ func TestSumCommand(t *testing.T) {
 	})
 
 	input, _ := input.NewObjectInput(map[string]input.InputType{
-		"command":   "sum",
-		"values":    []string{"1", "2", "3", "4"},
-		"--verbose": "3",
+		"command": "sum",
+		"values":  []string{"1", "2", "3", "4"},
+		"-vvv":    true,
 	}, nil)
 
-	app := application.NewApplication("app", "v1.0.0")
+	app := &application.Application{
+		Name: "app",
+	}
 	app.SetCatchErrors(true)
 	app.SetAutoExit(false)
 	app.Add(cmd)
 
-	_, err := app.Run(input, nil)
+	_, err := app.RunWith(input, nil)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
+}
+
+func TestHelpCommandCanShowHelp(t *testing.T) {
+
 }

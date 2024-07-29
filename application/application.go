@@ -273,7 +273,7 @@ func (app *Application) Namespaces() []string {
 	namespacesMap := make(map[string]int)
 
 	for _, command := range app.All("") {
-		if command.IsHidden() || command.Name == "" {
+		if command.Hidden || command.Name == "" {
 			continue
 		}
 
@@ -486,15 +486,15 @@ func (app *Application) commandName(input input.InputInterface) string {
 }
 
 func (app *Application) defaultInputDefinition() *input.InputDefinition {
-	commandArgument := input.NewInputArgument("command", input.INPUT_ARGUMENT_REQUIRED, "The command to execute", "", nil)
+	commandArgument := input.NewInputArgument("command", input.INPUT_ARGUMENT_REQUIRED, "The command to execute")
 	arguments := []*input.InputArgument{commandArgument}
 
-	helpOption := input.NewInputOption("--help", "-h", input.INPUT_OPTION_BOOLEAN, fmt.Sprintf("Display help for the given command, or the <highlight>%s</highlight> command (if no command is given)", app.defaultCommand), nil, nil)
-	quietOption := input.NewInputOption("--quiet", "-q", input.INPUT_OPTION_BOOLEAN, "Do not output any message", nil, nil)
-	verboseoption := input.NewInputOption("--verbose", "-v|vv|vvv", input.INPUT_OPTION_BOOLEAN, "Increase the verbosity of messages: normal (1), verbose (2) or debug (3)", nil, nil)
-	versionOption := input.NewInputOption("--version", "-V", input.INPUT_OPTION_BOOLEAN, "Display this application version", nil, nil)
-	ansiOption := input.NewInputOption("--ansi", "", input.INPUT_OPTION_NEGATABLE, "Force (or disable --no-ansi) ANSI output", nil, nil)
-	noInteractionOption := input.NewInputOption("--no-interaction", "-n", input.INPUT_OPTION_BOOLEAN, "Do not ask any interactive question", nil, nil)
+	helpOption := input.NewInputOption("--help", "-h", input.INPUT_OPTION_BOOLEAN, fmt.Sprintf("Display help for the given command, or the <highlight>%s</highlight> command (if no command is given)", app.defaultCommand))
+	quietOption := input.NewInputOption("--quiet", "-q", input.INPUT_OPTION_BOOLEAN, "Do not output any message")
+	verboseoption := input.NewInputOption("--verbose", "-v|vv|vvv", input.INPUT_OPTION_BOOLEAN, "Increase the verbosity of messages: normal (1), verbose (2) or debug (3)")
+	versionOption := input.NewInputOption("--version", "-V", input.INPUT_OPTION_BOOLEAN, "Display this application version")
+	ansiOption := input.NewInputOption("--ansi", "", input.INPUT_OPTION_NEGATABLE, "Force (or disable --no-ansi) ANSI output")
+	noInteractionOption := input.NewInputOption("--no-interaction", "-n", input.INPUT_OPTION_BOOLEAN, "Do not ask any interactive question")
 
 	options := []*input.InputOption{
 		helpOption,
@@ -518,78 +518,63 @@ func (app *Application) defaultCommands() []*command.Command {
 }
 
 func (app *Application) newHelpCommand() *command.Command {
-	command := command.NewCommand("help", func(self *command.Command) (int, error) {
-		var target *command.Command = nil
-
-		meta := self.Meta()
-		if metaMap, ok := meta.(map[string]*command.Command); ok {
-			target = metaMap["command"]
-		}
-
-		if target == nil {
-			commandName, err := self.StringArgument("command_name")
-			if err != nil {
-				return 1, err
-			}
-
-			targetCommand, err := app.Find(commandName)
-			if err != nil {
-				return 1, err
-			}
-
-			target = targetCommand
-		}
-
-		d := descriptor.NewTextDescriptor(self.Output())
-		raw, _ := self.BoolOption("raw")
-		d.DescribeCommand(target, descriptor.NewDescriptorOptions("", raw, false, 0))
-
-		return 0, nil
-	})
-
-	command.IgnoreValidationErrors()
-	command.SetDefinition(input.NewInputDefinition(
-		[]*input.InputArgument{
-			input.NewInputArgument("command_name", input.INPUT_ARGUMENT_OPTIONAL, "The command name", "help", nil),
-		},
-		[]*input.InputOption{
-			input.NewInputOption("raw", "", input.INPUT_OPTION_BOOLEAN, "To output raw command help", nil, nil),
-		},
-	))
-	command.SetDescription("Display help for a command")
-	command.SetHelp(`The <highlight>%command.name%</highlight> command displays help for a given command:
+	c := &command.Command{
+		Name:        "help",
+		Description: "Display help for a command",
+		Help: `The <highlight>%command.name%</highlight> command displays help for a given command:
 
   <highlight>%command.full_name% list</highlight>
 
 To display the list of available commands, please use the <highlight>list</highlight> command.
-`)
+`,
+		IgnoreValidationErrors: true,
+		Handle: func(self *command.Command) (int, error) {
+			var target *command.Command = nil
 
-	return command
+			meta := self.Meta()
+			if metaMap, ok := meta.(map[string]*command.Command); ok {
+				target = metaMap["command"]
+			}
+
+			if target == nil {
+				commandName, err := self.StringArgument("command_name")
+				if err != nil {
+					return 1, err
+				}
+
+				targetCommand, err := app.Find(commandName)
+				if err != nil {
+					return 1, err
+				}
+
+				target = targetCommand
+			}
+
+			d := descriptor.NewTextDescriptor(self.Output())
+			raw, _ := self.BoolOption("raw")
+			d.DescribeCommand(target, descriptor.NewDescriptorOptions("", raw, false, 0))
+
+			return 0, nil
+		},
+	}
+
+	c.SetDefinition(input.NewInputDefinition(
+		[]*input.InputArgument{
+			input.NewInputArgument("command_name", input.INPUT_ARGUMENT_OPTIONAL, "The command name").SetDefaultValue("help"),
+		},
+		[]*input.InputOption{
+			input.NewInputOption("raw", "", input.INPUT_OPTION_BOOLEAN, "To output raw command help"),
+		},
+	))
+
+	return c
 }
 
 func (app *Application) newListCommand() *command.Command {
-	command := command.NewCommand("list", func(self *command.Command) (int, error) {
-		d := descriptor.NewTextDescriptor(self.Output())
-		raw, _ := self.BoolOption("raw")
-		short, _ := self.BoolOption("short")
-		namespace, _ := self.StringArgument("namespace")
-		d.DescribeApplication(app, descriptor.NewDescriptorOptions(namespace, raw, short, 0))
-
-		return 0, nil
-	})
-
-	command.IgnoreValidationErrors()
-	command.SetDefinition(input.NewInputDefinition(
-		[]*input.InputArgument{
-			input.NewInputArgument("namespace", input.INPUT_ARGUMENT_OPTIONAL, "The namespace name", nil, nil),
-		},
-		[]*input.InputOption{
-			input.NewInputOption("raw", "", input.INPUT_OPTION_BOOLEAN, "To output raw command list", nil, nil),
-			input.NewInputOption("short", "", input.INPUT_OPTION_BOOLEAN, "To skip describing commands' arguments", nil, nil),
-		},
-	))
-	command.SetDescription("List commands")
-	command.SetHelp(`The <highlight>%command.name%</highlight> command lists all commands:
+	c := &command.Command{
+		Name:        "list",
+		Description: "List commands",
+		Help: `The <highlight>%command.name%</highlight> command lists all commands:
 
   <highlight>%command.full_name%</highlight>
 
@@ -599,10 +584,30 @@ You can also display the commands for a specific namespace:
 
 It's also possible to get raw list of commands (useful for embedding command runner):
 
-  <highlight>%command.full_name% --raw</highlight>
-`)
+  <highlight>%command.full_name% --raw</highlight>`,
+		IgnoreValidationErrors: true,
+		Handle: func(self *command.Command) (int, error) {
+			d := descriptor.NewTextDescriptor(self.Output())
+			raw, _ := self.BoolOption("raw")
+			short, _ := self.BoolOption("short")
+			namespace, _ := self.StringArgument("namespace")
+			d.DescribeApplication(app, descriptor.NewDescriptorOptions(namespace, raw, short, 0))
 
-	return command
+			return 0, nil
+		},
+	}
+
+	c.SetDefinition(input.NewInputDefinition(
+		[]*input.InputArgument{
+			input.NewInputArgument("namespace", input.INPUT_ARGUMENT_OPTIONAL, "The namespace name"),
+		},
+		[]*input.InputOption{
+			input.NewInputOption("raw", "", input.INPUT_OPTION_BOOLEAN, "To output raw command list"),
+			input.NewInputOption("short", "", input.INPUT_OPTION_BOOLEAN, "To skip describing commands' arguments"),
+		},
+	))
+
+	return c
 }
 
 func (app *Application) abbreviationSuggestions(abbrevs []string) string {

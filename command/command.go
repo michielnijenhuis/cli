@@ -29,9 +29,9 @@ type Command struct {
 	definition             *input.InputDefinition
 	applicationDefinition  *input.InputDefinition
 	isSingleCommand        bool
-	hidden                 bool
+	Hidden                 bool
 	fullDefinition         *input.InputDefinition
-	ignoreValidationErrors bool
+	IgnoreValidationErrors bool
 	synopsis               map[string]string
 	usages                 []string
 	input                  input.InputInterface
@@ -40,52 +40,12 @@ type Command struct {
 	validatedName          bool
 }
 
-func NewCommand(name string, handle CommandHandle) *Command {
-	c := &Command{
-		Handle:                 handle,
-		initializer:            nil,
-		interacter:             nil,
-		Name:                   name,
-		Description:            "",
-		Aliases:                make([]string, 0),
-		Help:                   "",
-		definition:             input.NewInputDefinition(nil, nil),
-		applicationDefinition:  nil,
-		fullDefinition:         nil,
-		hidden:                 false,
-		isSingleCommand:        false,
-		ignoreValidationErrors: false,
-		synopsis:               make(map[string]string),
-		usages:                 make([]string, 0),
-		input:                  nil,
-		output:                 nil,
-		meta:                   nil,
-		validatedName:          false,
-	}
-
-	if name != "" {
-		aliases := strings.Split(name, "|")
-		name = aliases[0]
-		c.SetAliases(aliases[1:])
-	}
-
-	if name != "" {
-		c.SetName(name)
-	}
-
-	return c
-}
-
 func (c *Command) SetInitializer(initializer CommandInitializer) {
 	c.initializer = initializer
 }
 
 func (c *Command) SetInteracter(interactor CommandInteracter) {
 	c.interacter = interactor
-}
-
-func (c *Command) IgnoreValidationErrors() {
-	c.ignoreValidationErrors = true
 }
 
 func (c *Command) SetApplicationDefinition(definition *input.InputDefinition) {
@@ -176,7 +136,7 @@ func (c *Command) Run(i input.InputInterface, o output.OutputInterface) (int, er
 
 	i.Bind(c.Definition())
 	err := i.Parse()
-	if err != nil && !c.ignoreValidationErrors {
+	if err != nil && !c.IgnoreValidationErrors {
 		return 1, err
 	}
 
@@ -230,25 +190,69 @@ func (c *Command) NativeDefinition() *input.InputDefinition {
 	return c.definition
 }
 
-func (c *Command) AddArgument(name string, mode input.InputArgumentMode, description string, defaultValue input.InputType, validator input.InputValidator) *Command {
-	if c.definition != nil {
-		c.NativeDefinition().AddArgument(input.NewInputArgument(name, mode, description, defaultValue, validator))
-	}
+func (c *Command) AddArgument(arg *input.InputArgument) *Command {
+	c.NativeDefinition().AddArgument(arg)
 
 	if c.fullDefinition != nil {
-		c.NativeDefinition().AddArgument(input.NewInputArgument(name, mode, description, defaultValue, validator))
+		c.fullDefinition.AddArgument(arg.Clone())
 	}
 
 	return c
 }
 
-func (c *Command) AddOption(name string, shortcut string, mode input.InputOptionMode, description string, defaultValue input.InputType, validator input.InputValidator) *Command {
-	if c.definition != nil {
-		c.NativeDefinition().AddOption(input.NewInputOption(name, shortcut, mode, description, defaultValue, validator))
+func (c *Command) DefineArgument(name string, mode input.InputArgumentMode, description string, defaultValue input.InputType, validator input.InputValidator) *Command {
+	a := input.NewInputArgument(name, mode, description)
+	if defaultValue != nil {
+		a.SetDefaultValue(defaultValue)
 	}
+	if validator != nil {
+		a.SetValidator(validator)
+	}
+	c.NativeDefinition().AddArgument(a)
 
 	if c.fullDefinition != nil {
-		c.fullDefinition.AddOption(input.NewInputOption(name, shortcut, mode, description, defaultValue, validator))
+		a := input.NewInputArgument(name, mode, description)
+		if defaultValue != nil {
+			a.SetDefaultValue(defaultValue)
+		}
+		if validator != nil {
+			a.SetValidator(validator)
+		}
+		c.fullDefinition.AddArgument(a)
+	}
+
+	return c
+}
+
+func (c *Command) AddOption(option *input.InputOption) *Command {
+	c.NativeDefinition().AddOption(option)
+
+	if c.fullDefinition != nil {
+		c.fullDefinition.AddOption(option.Clone())
+	}
+
+	return c
+}
+
+func (c *Command) DefineOption(name string, shortcut string, mode input.InputOptionMode, description string, defaultValue input.InputType, validator input.InputValidator) *Command {
+	o := input.NewInputOption(name, shortcut, mode, description)
+	if defaultValue != nil {
+		o.SetDefaultValue(defaultValue)
+	}
+	if validator != nil {
+		o.SetValidator(validator)
+	}
+	c.NativeDefinition().AddOption(o)
+
+	if c.fullDefinition != nil {
+		o := input.NewInputOption(name, shortcut, mode, description)
+		if defaultValue != nil {
+			o.SetDefaultValue(defaultValue)
+		}
+		if validator != nil {
+			o.SetValidator(validator)
+		}
+		c.fullDefinition.AddOption(o)
 	}
 
 	return c
@@ -271,12 +275,8 @@ func (c *Command) SetHelp(help string) *Command {
 }
 
 func (c *Command) SetHidden(hidden bool) *Command {
-	c.hidden = hidden
+	c.Hidden = hidden
 	return c
-}
-
-func (c *Command) IsHidden() bool {
-	return c.hidden
 }
 
 func (c *Command) SetAliases(aliases []string) *Command {

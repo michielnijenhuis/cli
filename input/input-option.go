@@ -17,15 +17,16 @@ const (
 type InputOptionMode uint8
 
 type InputOption struct {
-	name         string
-	shortcut     string
-	description  string
-	mode         InputOptionMode
-	defaultValue InputType
-	validator    InputValidator
+	Name         string
+	Shortcut     string
+	Description  string
+	Mode         InputOptionMode
+	DefaultValue InputType
+	Validator    InputValidator
+	constructed  bool
 }
 
-func NewInputOption(name string, shortcut string, mode InputOptionMode, description string, defaultValue InputType, validator InputValidator) *InputOption {
+func NewInputOption(name string, shortcut string, mode InputOptionMode, description string) *InputOption {
 	name, _ = strings.CutPrefix(name, "--")
 
 	if name == "" {
@@ -57,12 +58,13 @@ func NewInputOption(name string, shortcut string, mode InputOptionMode, descript
 	}
 
 	o := &InputOption{
-		name:         name,
-		shortcut:     shortcut,
-		description:  description,
-		mode:         mode,
-		defaultValue: nil,
-		validator:    validator,
+		Name:         name,
+		Shortcut:     shortcut,
+		Description:  description,
+		Mode:         mode,
+		DefaultValue: nil,
+		Validator:    nil,
+		constructed:  true,
 	}
 
 	if o.IsArray() && !o.AcceptValue() {
@@ -73,33 +75,31 @@ func NewInputOption(name string, shortcut string, mode InputOptionMode, descript
 		panic("Impossible to have an option mode NEGATABLE if the option also accepts a value.")
 	}
 
-	o.SetDefaultValue(defaultValue)
-
 	return o
 }
 
 func (o *InputOption) IsArray() bool {
-	return (o.mode & INPUT_OPTION_IS_ARRAY) == INPUT_OPTION_IS_ARRAY
+	return (o.Mode & INPUT_OPTION_IS_ARRAY) == INPUT_OPTION_IS_ARRAY
 }
 
 func (o *InputOption) IsNegatable() bool {
-	return (o.mode & INPUT_OPTION_NEGATABLE) == INPUT_OPTION_NEGATABLE
+	return (o.Mode & INPUT_OPTION_NEGATABLE) == INPUT_OPTION_NEGATABLE
 }
 
 func (o *InputOption) IsValueRequired() bool {
-	return (o.mode & INPUT_OPTION_REQUIRED) == INPUT_OPTION_REQUIRED
+	return (o.Mode & INPUT_OPTION_REQUIRED) == INPUT_OPTION_REQUIRED
 }
 
 func (o *InputOption) IsValueOptional() bool {
-	return (o.mode & INPUT_OPTION_OPTIONAL) == INPUT_OPTION_OPTIONAL
+	return (o.Mode & INPUT_OPTION_OPTIONAL) == INPUT_OPTION_OPTIONAL
 }
 
 func (o *InputOption) AcceptValue() bool {
 	return o.IsValueRequired() || o.IsValueOptional()
 }
 
-func (o *InputOption) SetDefaultValue(value InputType) {
-	if (o.mode&INPUT_OPTION_BOOLEAN) == INPUT_OPTION_BOOLEAN && value != "" && value != nil {
+func (o *InputOption) SetDefaultValue(value InputType) *InputOption {
+	if (o.Mode&INPUT_OPTION_BOOLEAN) == INPUT_OPTION_BOOLEAN && value != "" && value != nil {
 		panic("Cannot set a default value when using InputOption.BOOLEAN mode.")
 	}
 
@@ -115,26 +115,17 @@ func (o *InputOption) SetDefaultValue(value InputType) {
 	}
 
 	if o.AcceptValue() || o.IsNegatable() {
-		o.defaultValue = value
+		o.DefaultValue = value
 	} else {
-		o.defaultValue = false
+		o.DefaultValue = false
 	}
+
+	return o
 }
 
-func (o *InputOption) Name() string {
-	return o.name
-}
-
-func (o *InputOption) Shortcut() string {
-	return o.shortcut
-}
-
-func (o *InputOption) DefaultValue() InputType {
-	return o.defaultValue
-}
-
-func (o *InputOption) Description() string {
-	return o.description
+func (o *InputOption) SetValidator(validator InputValidator) *InputOption {
+	o.Validator = validator
+	return o
 }
 
 func (o *InputOption) Equals(opt *InputOption) bool {
@@ -142,9 +133,9 @@ func (o *InputOption) Equals(opt *InputOption) bool {
 		return false
 	}
 
-	return opt.Name() == o.Name() &&
-		opt.Shortcut() == o.Shortcut() &&
-		opt.DefaultValue() == o.DefaultValue() &&
+	return opt.Name == o.Name &&
+		opt.Shortcut == o.Shortcut &&
+		opt.DefaultValue == o.DefaultValue &&
 		opt.IsNegatable() == o.IsNegatable() &&
 		opt.IsArray() == o.IsArray() &&
 		opt.IsValueRequired() == o.IsValueRequired() &&
@@ -172,4 +163,19 @@ func InputTypeToString(value InputType) string {
 	}
 
 	return ""
+}
+
+func (o *InputOption) WasConstructed() bool {
+	return o.constructed
+}
+
+func (o *InputOption) Clone() *InputOption {
+	c := NewInputOption(o.Name, o.Shortcut, o.Mode, o.Description)
+	if o.DefaultValue != nil {
+		c.SetDefaultValue(o.DefaultValue)
+	}
+	if o.Validator != nil {
+		c.SetValidator(o.Validator)
+	}
+	return c
 }

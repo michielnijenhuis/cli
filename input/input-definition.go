@@ -64,16 +64,20 @@ func (input *InputDefinition) AddArgument(argument *InputArgument) {
 		return
 	}
 
-	if input.arguments[argument.Name()] != nil {
-		panic(fmt.Sprintf("An argument with name \"%s\" already exists.", argument.Name()))
+	if !argument.WasConstructed() {
+		argument = argument.Clone()
+	}
+
+	if input.arguments[argument.Name] != nil {
+		panic(fmt.Sprintf("An argument with name \"%s\" already exists.", argument.Name))
 	}
 
 	if input.lastArrayArgument != nil {
-		panic(fmt.Sprintf("Cannot add a required argument \"%s\" after an array argument \"%s\".", argument.Name(), input.lastArrayArgument.Name()))
+		panic(fmt.Sprintf("Cannot add a required argument \"%s\" after an array argument \"%s\".", argument.Name, input.lastArrayArgument.Name))
 	}
 
 	if argument.IsRequired() && input.lastOptionalArgument != nil {
-		panic(fmt.Sprintf("Cannot add a required argument \"%s\" after an optional one \"%s\".", argument.Name(), input.lastOptionalArgument.Name()))
+		panic(fmt.Sprintf("Cannot add a required argument \"%s\" after an optional one \"%s\".", argument.Name, input.lastOptionalArgument.Name))
 	}
 
 	if argument.IsArray() {
@@ -86,7 +90,7 @@ func (input *InputDefinition) AddArgument(argument *InputArgument) {
 		input.lastOptionalArgument = argument
 	}
 
-	input.arguments[argument.Name()] = argument
+	input.arguments[argument.Name] = argument
 }
 
 func (input *InputDefinition) HasArgument(name string) bool {
@@ -149,7 +153,7 @@ func (definition *InputDefinition) ArgumentDefaults() map[string]InputType {
 	m := make(map[string]InputType)
 
 	for name, arg := range definition.arguments {
-		m[name] = arg.DefaultValue()
+		m[name] = arg.DefaultValue
 	}
 
 	return m
@@ -173,7 +177,11 @@ func (definition *InputDefinition) AddOptions(options []*InputOption) {
 }
 
 func (definition *InputDefinition) AddOption(option *InputOption) {
-	name := option.Name()
+	if !option.WasConstructed() {
+		option = option.Clone()
+	}
+
+	name := option.Name
 
 	if definition.options[name] != nil && !option.Equals(definition.options[name]) {
 		panic(fmt.Sprintf("An option named \"%s\" already exists.", name))
@@ -183,7 +191,7 @@ func (definition *InputDefinition) AddOption(option *InputOption) {
 		panic(fmt.Sprintf("An option named \"%s\" already exists.", name))
 	}
 
-	shortcut := option.Shortcut()
+	shortcut := option.Shortcut
 	if shortcut != "" {
 		shortcuts := strings.Split(shortcut, "|")
 		for _, s := range shortcuts {
@@ -254,7 +262,7 @@ func (definition *InputDefinition) OptionDefaults() map[string]InputType {
 	values := make(map[string]InputType)
 	options := definition.Options()
 	for _, option := range options {
-		values[option.Name()] = option.DefaultValue()
+		values[option.Name] = option.DefaultValue
 	}
 
 	return values
@@ -287,7 +295,7 @@ func (definition *InputDefinition) Synopsis(short bool) string {
 					segments = append(segments, "")
 				}
 
-				segments = append(segments, strings.ToUpper(o.Name()))
+				segments = append(segments, strings.ToUpper(o.Name))
 
 				if o.IsValueOptional() {
 					segments = append(segments, "]")
@@ -299,16 +307,16 @@ func (definition *InputDefinition) Synopsis(short bool) string {
 			}
 
 			shortcut := ""
-			if o.Shortcut() != "" {
-				shortcut = fmt.Sprintf("-%s|", o.Shortcut())
+			if o.Shortcut != "" {
+				shortcut = fmt.Sprintf("-%s|", o.Shortcut)
 			}
 
 			negation := ""
 			if o.IsNegatable() {
-				negation = fmt.Sprintf("|--no-%s", o.Name())
+				negation = fmt.Sprintf("|--no-%s", o.Name)
 			}
 
-			elements = append(elements, fmt.Sprintf("[%s--%s%s%s]", shortcut, o.Name(), value, negation))
+			elements = append(elements, fmt.Sprintf("[%s--%s%s%s]", shortcut, o.Name, value, negation))
 		}
 	}
 
@@ -318,7 +326,7 @@ func (definition *InputDefinition) Synopsis(short bool) string {
 
 	tail := ""
 	for _, arg := range definition.Arguments() {
-		element := fmt.Sprintf("<%s>", arg.Name())
+		element := fmt.Sprintf("<%s>", arg.Name)
 
 		if arg.IsArray() {
 			element += "..."

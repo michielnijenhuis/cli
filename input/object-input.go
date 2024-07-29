@@ -145,7 +145,7 @@ func (input *ObjectInput) addShortOption(shortcut string, value InputType) error
 		return e
 	}
 
-	return input.addLongOption(opt.Name(), value)
+	return input.addLongOption(opt.Name, value)
 }
 
 func (input *ObjectInput) addLongOption(name string, value InputType) error {

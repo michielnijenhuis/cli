@@ -96,9 +96,9 @@ func (input *ArgvInput) parseArgument(token string) error {
 		}
 
 		if arg.IsArray() {
-			input.arguments[arg.Name()] = []string{token}
+			input.arguments[arg.Name] = []string{token}
 		} else {
-			input.arguments[arg.Name()] = token
+			input.arguments[arg.Name] = token
 		}
 
 		return nil
@@ -112,7 +112,7 @@ func (input *ArgvInput) parseArgument(token string) error {
 
 			// if last argument isArray(), append token to last argument
 			if arg.IsArray() {
-				name := arg.Name()
+				name := arg.Name
 				current := input.arguments[name]
 				arr, isArr := current.([]string)
 				if isArr {
@@ -136,7 +136,7 @@ func (input *ArgvInput) parseArgument(token string) error {
 		var commandName string
 		inputArgument := all[key]
 
-		if inputArgument != nil && inputArgument.Name() == "command" {
+		if inputArgument != nil && inputArgument.Name == "command" {
 			commandValue := input.arguments["command"]
 			str, isStr := commandValue.(string)
 
@@ -222,12 +222,12 @@ func (input *ArgvInput) parseShortOptionSet(name string) error {
 
 		if opt.AcceptValue() {
 			if length-1 == i {
-				err := input.addLongOption(opt.Name(), nil)
+				err := input.addLongOption(opt.Name, nil)
 				if err != nil {
 					return err
 				}
 			} else {
-				err := input.addLongOption(opt.Name(), name[i+1:])
+				err := input.addLongOption(opt.Name, name[i+1:])
 				if err != nil {
 					return err
 				}
@@ -235,7 +235,7 @@ func (input *ArgvInput) parseShortOptionSet(name string) error {
 
 			break
 		} else {
-			err := input.addLongOption(opt.Name(), nil)
+			err := input.addLongOption(opt.Name, nil)
 			if err != nil {
 				return err
 			}
@@ -255,7 +255,7 @@ func (input *ArgvInput) addShortOption(shortcut string, value InputType) error {
 		return err
 	}
 
-	return input.addLongOption(opt.Name(), value)
+	return input.addLongOption(opt.Name, value)
 }
 
 func (input *ArgvInput) addLongOption(name string, value InputType) error {

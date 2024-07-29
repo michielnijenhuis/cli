@@ -152,7 +152,7 @@ func (input *Input) StringArgument(name string) (string, error) {
 			return "", e
 		}
 
-		value := arg.DefaultValue()
+		value := arg.DefaultValue
 		str, isStr := value.(string)
 		if !isStr {
 			return "", nil
@@ -186,7 +186,7 @@ func (input *Input) ArrayArgument(name string) ([]string, error) {
 			return []string{}, e
 		}
 
-		value := arg.DefaultValue()
+		value := arg.DefaultValue
 		arr, isArr := value.([]string)
 		if !isArr {
 			return []string{}, nil
@@ -260,7 +260,7 @@ func (input *Input) BoolOption(name string) (bool, error) {
 			return false, e
 		}
 
-		value := opt.DefaultValue()
+		value := opt.DefaultValue
 		boolval, isBool := value.(bool)
 		if !isBool {
 			return false, nil
@@ -302,7 +302,7 @@ func (input *Input) StringOption(name string) (string, error) {
 			return "", e
 		}
 
-		value := opt.DefaultValue()
+		value := opt.DefaultValue
 		str, isStr := value.(string)
 		if !isStr {
 			return "", nil
@@ -336,7 +336,7 @@ func (input *Input) ArrayOption(name string) ([]string, error) {
 			return []string{}, e
 		}
 
-		value := opt.DefaultValue()
+		value := opt.DefaultValue
 		arr, isArr := value.([]string)
 		if !isArr {
 			return []string{}, nil
@@ -400,7 +400,7 @@ func (input *Input) runArgumentValidators() error {
 	for name, arg := range args {
 		value := input.arguments[name]
 
-		validator := arg.validator
+		validator := arg.Validator
 		if validator == nil {
 			continue
 		}
@@ -424,7 +424,7 @@ func (input *Input) runOptionValidators() error {
 	for name, opt := range opts {
 		value := input.options[name]
 
-		validator := opt.validator
+		validator := opt.Validator
 		if validator == nil {
 			continue
 		}

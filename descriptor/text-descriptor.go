@@ -171,7 +171,7 @@ func (d *TextDescriptor) DescribeCommand(command *command.Command, options *Desc
 func (d *TextDescriptor) DescribeInputDefinition(definition *input.InputDefinition, options *DescriptorOptions) {
 	totalWidth := calculateTotalWidthForOptions(definition.OptionsArray())
 	for _, argument := range definition.Arguments() {
-		totalWidth = max(totalWidth, helper.Width(argument.Name()))
+		totalWidth = max(totalWidth, helper.Width(argument.Name))
 	}
 
 	hasArgs := len(definition.Arguments()) > 0
@@ -197,7 +197,7 @@ func (d *TextDescriptor) DescribeInputDefinition(definition *input.InputDefiniti
 		d.writeText("<header>Options:</header>", options)
 
 		for _, option := range definition.Options() {
-			if len(option.Shortcut()) > 1 {
+			if len(option.Shortcut) > 1 {
 				laterOptions = append(laterOptions, option)
 				continue
 			}
@@ -225,11 +225,11 @@ func (d *TextDescriptor) DescribeInputDefinition(definition *input.InputDefiniti
 
 func (d *TextDescriptor) DescribeInputArgument(argument *input.InputArgument, options *DescriptorOptions) {
 	var defaultValue string
-	if hasDefaultValue(argument.DefaultValue()) {
-		defaultValue = fmt.Sprintf("<header> [default: %s]</header>", formatDefaultValue(argument.DefaultValue()))
+	if hasDefaultValue(argument.DefaultValue) {
+		defaultValue = fmt.Sprintf("<header> [default: %s]</header>", formatDefaultValue(argument.DefaultValue))
 	}
 
-	name := argument.Name()
+	name := argument.Name
 
 	var totalWidth int
 	if options != nil && options.totalWidth > 0 {
@@ -241,18 +241,18 @@ func (d *TextDescriptor) DescribeInputArgument(argument *input.InputArgument, op
 	spacingWidth := totalWidth - len(name) + 1
 	width := strings.Repeat(" ", spacingWidth)
 	re := regexp.MustCompile(`\s*[\r\n]\s*`)
-	desc := re.ReplaceAllString(argument.Description(), strings.Repeat(" ", totalWidth+4))
+	desc := re.ReplaceAllString(argument.Description, strings.Repeat(" ", totalWidth+4))
 
 	d.writeText(fmt.Sprintf("  <highlight>%s</highlight> %s%s%s", name, width, desc, defaultValue), options)
 }
 
 func (d *TextDescriptor) DescribeInputOption(option *input.InputOption, options *DescriptorOptions) {
 	var defaultValue string
-	if hasDefaultValue(option.DefaultValue()) {
-		defaultValue = fmt.Sprintf("<header> [default: %s]</header>", formatDefaultValue(option.DefaultValue()))
+	if hasDefaultValue(option.DefaultValue) {
+		defaultValue = fmt.Sprintf("<header> [default: %s]</header>", formatDefaultValue(option.DefaultValue))
 	}
 
-	name := option.Name()
+	name := option.Name
 
 	var value string
 	if option.AcceptValue() {
@@ -271,8 +271,8 @@ func (d *TextDescriptor) DescribeInputOption(option *input.InputOption, options 
 	}
 
 	var synopsis string
-	if option.Shortcut() != "" {
-		synopsis = fmt.Sprintf("-%s, ", option.Shortcut())
+	if option.Shortcut != "" {
+		synopsis = fmt.Sprintf("-%s, ", option.Shortcut)
 	} else {
 		synopsis = "    "
 	}
@@ -288,7 +288,7 @@ func (d *TextDescriptor) DescribeInputOption(option *input.InputOption, options 
 	spacingWidth := max(0, totalWidth-helper.Width(synopsis))
 	width := strings.Repeat(" ", spacingWidth)
 	re := regexp.MustCompile(`\s*[\r\n]\s*`)
-	desc := re.ReplaceAllString(option.Description(), strings.Repeat(" ", totalWidth+4))
+	desc := re.ReplaceAllString(option.Description, strings.Repeat(" ", totalWidth+4))
 
 	var arr string
 	if option.IsArray() {
@@ -319,12 +319,12 @@ func calculateTotalWidthForOptions(options []*input.InputOption) int {
 
 	for _, option := range options {
 		// "-" + shortcut + ", --" + name
-		nameLength := max(helper.Width(option.Shortcut()), 1) + 4 + helper.Width(option.Name())
+		nameLength := max(helper.Width(option.Shortcut), 1) + 4 + helper.Width(option.Name)
 
 		if option.IsNegatable() {
-			nameLength += 6 + helper.Width(option.Name()) // |--no- + name
+			nameLength += 6 + helper.Width(option.Name) // |--no- + name
 		} else if option.AcceptValue() {
-			valueLength := 1 + helper.Width(option.Name()) // = + value
+			valueLength := 1 + helper.Width(option.Name) // = + value
 			if option.IsValueOptional() {
 				valueLength += 2 // [ + ]
 			}

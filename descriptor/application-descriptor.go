@@ -82,7 +82,7 @@ func (d *ApplicationDescription) inspectApplication() {
 		names := make([]string, 0)
 
 		for name, cmd := range commands {
-			if cmd.Name == "" || (!d.showHidden && cmd.IsHidden()) {
+			if cmd.Name == "" || (!d.showHidden && cmd.Hidden) {
 				continue
 			}
 
