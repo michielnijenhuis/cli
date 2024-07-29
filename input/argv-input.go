@@ -11,7 +11,7 @@ import (
 )
 
 type ArgvInput struct {
-	Input
+	*Input
 	tokens []string
 	parsed []string
 }
@@ -24,7 +24,7 @@ func NewArgvInput(argv []string, definition *InputDefinition) (*ArgvInput, error
 	baseInput, err := NewInput(definition)
 
 	input := &ArgvInput{
-		Input:  *baseInput,
+		Input:  baseInput,
 		tokens: argv,
 		parsed: make([]string, 0),
 	}
@@ -34,7 +34,7 @@ func NewArgvInput(argv []string, definition *InputDefinition) (*ArgvInput, error
 
 func (input *ArgvInput) Parse() error {
 	parseOptions := true
-	copy(input.parsed, input.tokens)
+	input.parsed = append(input.parsed, input.tokens...)
 	var token string
 	var err error
 

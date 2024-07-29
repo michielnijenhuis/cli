@@ -20,11 +20,12 @@ import (
 type Application struct {
 	Name           string
 	Version        string
-	defaultCommand string
+	LongVersion    string
+	DefaultCommand string
 	wantsHelp      bool
-	catchErrors    bool
-	autoExit       bool
-	singleCommand  bool
+	CatchErrors    bool
+	AutoExit       bool
+	SingleCommand  bool
 	initialized    bool
 	runningCommand *command.Command
 	definition     *input.InputDefinition
@@ -53,11 +54,11 @@ func (app *Application) RunWith(i input.InputInterface, o output.OutputInterface
 		o = output.NewConsoleOutput(0, true, nil)
 	}
 
-	if app.defaultCommand == "" {
-		app.defaultCommand = "list"
+	if app.DefaultCommand == "" {
+		app.DefaultCommand = "list"
 	}
 
-	if app.catchErrors {
+	if app.CatchErrors {
 		defer func() {
 			if r := recover(); r != nil {
 				recoveredErr, isErr := r.(error)
@@ -83,7 +84,7 @@ func (app *Application) RunWith(i input.InputInterface, o output.OutputInterface
 	code, err := app.doRun(i, o)
 
 	if err != nil {
-		if !app.catchErrors {
+		if !app.CatchErrors {
 			return 1, err
 		}
 
@@ -93,7 +94,7 @@ func (app *Application) RunWith(i input.InputInterface, o output.OutputInterface
 		exitCode = code
 	}
 
-	if app.autoExit {
+	if app.AutoExit {
 		if exitCode > 255 {
 			exitCode = 255
 		}
@@ -106,7 +107,7 @@ func (app *Application) RunWith(i input.InputInterface, o output.OutputInterface
 
 func (app *Application) doRun(i input.InputInterface, o output.OutputInterface) (int, error) {
 	if i.HasParameterOption("--version", true) || i.HasParameterOption("-V", true) {
-		o.Writeln(app.longVersion(), 0)
+		o.Writeln(app.version(), 0)
 
 		return 0, nil
 	}
@@ -120,7 +121,7 @@ func (app *Application) doRun(i input.InputInterface, o output.OutputInterface) 
 	if i.HasParameterOption("--help", true) || i.HasParameterOption("-h", true) {
 		if name == "" {
 			name = "help"
-			params := map[string]input.InputType{"command_name": app.defaultCommand}
+			params := map[string]input.InputType{"command_name": app.DefaultCommand}
 			objectInput, err := input.NewObjectInput(params, nil)
 			i = objectInput
 
@@ -133,7 +134,7 @@ func (app *Application) doRun(i input.InputInterface, o output.OutputInterface) 
 	}
 
 	if name == "" {
-		name = app.defaultCommand
+		name = app.DefaultCommand
 		definition := app.Definition()
 		definition.SetArguments(nil)
 	}
@@ -163,7 +164,7 @@ func (app *Application) Definition() *input.InputDefinition {
 		app.definition = app.defaultInputDefinition()
 	}
 
-	if app.singleCommand {
+	if app.SingleCommand {
 		inputDefinition := app.definition
 		inputDefinition.SetArguments(nil)
 
@@ -174,35 +175,29 @@ func (app *Application) Definition() *input.InputDefinition {
 }
 
 func (app *Application) Help() string {
-	return app.longVersion()
+	version := app.version()
+
+	if version != "" {
+		return version
+	}
+
+	return "Console Tool"
 }
 
-func (app *Application) AreErrorsCaught() bool {
-	return app.catchErrors
-}
+func (app *Application) version() string {
+	if app.LongVersion != "" {
+		return app.LongVersion
+	}
 
-func (app *Application) SetCatchErrors(boolean bool) {
-	app.catchErrors = boolean
-}
-
-func (app *Application) IsAutoExitEnabled() bool {
-	return app.autoExit
-}
-
-func (app *Application) SetAutoExit(boolean bool) {
-	app.autoExit = boolean
-}
-
-func (app *Application) longVersion() string {
-	if app.Name == "" || app.Name == "UNKNOWN" {
-		if app.Version == "" || app.Version == "UNKNOWN" {
+	if app.Name != "" {
+		if app.Version != "" {
 			return fmt.Sprintf("%s <highlight>%s</highlight>", app.Name, app.Version)
 		}
 
 		return app.Name
 	}
 
-	return "Console Tool"
+	return ""
 }
 
 func (app *Application) AddCommands(commands []*command.Command) {
@@ -467,8 +462,8 @@ func (app *Application) configureIO(i input.InputInterface, o output.OutputInter
 }
 
 func (app *Application) commandName(input input.InputInterface) string {
-	if app.singleCommand {
-		return app.defaultCommand
+	if app.SingleCommand {
+		return app.DefaultCommand
 	}
 
 	first := input.FirstArgument()
@@ -489,7 +484,7 @@ func (app *Application) defaultInputDefinition() *input.InputDefinition {
 	commandArgument := input.NewInputArgument("command", input.INPUT_ARGUMENT_REQUIRED, "The command to execute")
 	arguments := []*input.InputArgument{commandArgument}
 
-	helpOption := input.NewInputOption("--help", "-h", input.INPUT_OPTION_BOOLEAN, fmt.Sprintf("Display help for the given command, or the <highlight>%s</highlight> command (if no command is given)", app.defaultCommand))
+	helpOption := input.NewInputOption("--help", "-h", input.INPUT_OPTION_BOOLEAN, fmt.Sprintf("Display help for the given command, or the <highlight>%s</highlight> command (if no command is given)", app.DefaultCommand))
 	quietOption := input.NewInputOption("--quiet", "-q", input.INPUT_OPTION_BOOLEAN, "Do not output any message")
 	verboseoption := input.NewInputOption("--verbose", "-v|vv|vvv", input.INPUT_OPTION_BOOLEAN, "Increase the verbosity of messages: normal (1), verbose (2) or debug (3)")
 	versionOption := input.NewInputOption("--version", "-V", input.INPUT_OPTION_BOOLEAN, "Display this application version")
@@ -633,11 +628,11 @@ func (app *Application) SetDefaultCommand(commandName string, isSingleCommand bo
 		commandName = commandName[1:]
 	}
 
-	app.defaultCommand = strings.Split(commandName, "|")[0]
+	app.DefaultCommand = strings.Split(commandName, "|")[0]
 
-	if app.singleCommand {
+	if app.SingleCommand {
 		_, e := app.Find(commandName)
-		app.singleCommand = true
+		app.SingleCommand = true
 
 		if e != nil {
 			return e
@@ -645,10 +640,6 @@ func (app *Application) SetDefaultCommand(commandName string, isSingleCommand bo
 	}
 
 	return nil
-}
-
-func (app *Application) IsSingleCommand() bool {
-	return app.singleCommand
 }
 
 func (app *Application) extractAllNamespace(name string) []string {
@@ -673,8 +664,8 @@ func (app *Application) init() {
 
 	app.initialized = true
 
-	if app.defaultCommand == "" {
-		app.defaultCommand = "list"
+	if app.DefaultCommand == "" {
+		app.DefaultCommand = "list"
 	}
 
 	if app.commands == nil {

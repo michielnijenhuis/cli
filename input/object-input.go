@@ -6,14 +6,14 @@ import (
 )
 
 type ObjectInput struct {
-	Input
+	*Input
 	parameters map[string]InputType
 }
 
 func NewObjectInput(parameters map[string]InputType, definition *InputDefinition) (*ObjectInput, error) {
 	baseInput, err := NewInput(definition)
 	objectInput := &ObjectInput{
-		Input:      *baseInput,
+		Input:      baseInput,
 		parameters: parameters,
 	}
 

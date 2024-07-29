@@ -15,10 +15,9 @@ func TestApplicationCanRenderError(t *testing.T) {
 	fmt.Println("--- begin APPLICATION CAN RENDER test ---")
 
 	app := &application.Application{
-		Name: "app",
+		Name:        "app",
+		CatchErrors: true,
 	}
-	app.SetCatchErrors(true)
-	app.SetAutoExit(false)
 
 	cmd := &command.Command{
 		Name: "test",
@@ -63,10 +62,9 @@ func TestApplicationCanSuccesfullyExecuteCommand(t *testing.T) {
 	fmt.Println("--- begin APPLICATION CAN SUCCESSFULLY EXECUTE COMMAND test ---")
 
 	app := &application.Application{
-		Name: "app",
+		Name:        "app",
+		CatchErrors: true,
 	}
-	app.SetCatchErrors(true)
-	app.SetAutoExit(false)
 
 	cmd := &command.Command{
 		Name: "test",
@@ -111,10 +109,9 @@ func TestApplicationCanRecover(t *testing.T) {
 	fmt.Println("--- begin APPLICATION CAN RECOVER test ---")
 
 	app := &application.Application{
-		Name: "app",
+		Name:        "app",
+		CatchErrors: true,
 	}
-	app.SetCatchErrors(true)
-	app.SetAutoExit(false)
 
 	expectedError := "Oh no!"
 
@@ -161,10 +158,9 @@ func TestApplicationCanShowHelp(t *testing.T) {
 	fmt.Println("--- begin CAN SHOW HELP test ---")
 
 	app := &application.Application{
-		Name: "app",
+		Name:        "app",
+		CatchErrors: true,
 	}
-	app.SetCatchErrors(true)
-	app.SetAutoExit(false)
 
 	argv := map[string]input.InputType{
 		"command": "help",
@@ -185,10 +181,9 @@ func TestApplicationCanShowHelp(t *testing.T) {
 func TestApplicationCanListCommands(t *testing.T) {
 	fmt.Println("--- begin CAN LIST COMMANDS test ---")
 	app := &application.Application{
-		Name: "app",
+		Name:        "app",
+		CatchErrors: true,
 	}
-	app.SetCatchErrors(true)
-	app.SetAutoExit(false)
 
 	argv := map[string]input.InputType{
 		"command": "list",
@@ -256,10 +251,9 @@ func TestSumCommand(t *testing.T) {
 	}, nil)
 
 	app := &application.Application{
-		Name: "app",
+		Name:        "app",
+		CatchErrors: true,
 	}
-	app.SetCatchErrors(true)
-	app.SetAutoExit(false)
 	app.Add(cmd)
 
 	_, err := app.RunWith(input, nil)
@@ -269,5 +263,47 @@ func TestSumCommand(t *testing.T) {
 }
 
 func TestHelpCommandCanShowHelp(t *testing.T) {
+	app := &application.Application{
+		Name: "app",
+	}
 
+	cmd := &command.Command{
+		Name:        "test",
+		Description: "This is a test command that does nothing.",
+		Help:        "Very useful help message.",
+		Handle: func(self *command.Command) (int, error) {
+			return 0, nil
+		},
+	}
+
+	input, _ := input.NewArgvInput([]string{"help", "test"}, nil)
+
+	app.Add(cmd)
+
+	if _, err := app.RunWith(input, nil); err != nil {
+		t.Error(err.Error())
+	}
+}
+
+func TestCommandHasHelpFlag(t *testing.T) {
+	app := &application.Application{
+		Name: "app",
+	}
+
+	cmd := &command.Command{
+		Name:        "test",
+		Description: "This is a test command that does nothing.",
+		Help:        "Very useful help message.",
+		Handle: func(self *command.Command) (int, error) {
+			return 0, nil
+		},
+	}
+
+	input, _ := input.NewArgvInput([]string{"test", "-h"}, nil)
+
+	app.Add(cmd)
+
+	if _, err := app.RunWith(input, nil); err != nil {
+		t.Error(err.Error())
+	}
 }
