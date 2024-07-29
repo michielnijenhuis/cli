@@ -672,6 +672,10 @@ func (app *Application) init() {
 		app.defaultCommand = "list"
 	}
 
+	if app.commands == nil {
+		app.commands = make(map[string]*command.Command)
+	}
+
 	for _, command := range app.defaultCommands() {
 		app.Add(command)
 	}
