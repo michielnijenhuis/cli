@@ -3,7 +3,7 @@ package output
 import (
 	"regexp"
 
-	Formatter "github.com/michielnijenhuis/cli/formatter"
+	"github.com/michielnijenhuis/cli/formatter"
 )
 
 type Outputter func(message string, newLine bool)
@@ -11,36 +11,36 @@ type Outputter func(message string, newLine bool)
 type Output struct {
 	verbosity uint
 	decorated bool
-	formatter Formatter.OutputFormatterInferface
+	formatter formatter.OutputFormatterInferface
 	outputter Outputter
 }
 
-func NewOutput(verbosity uint, decorated bool, formatter Formatter.OutputFormatterInferface) *Output {
+func NewOutput(verbosity uint, decorated bool, f formatter.OutputFormatterInferface) *Output {
 	if verbosity == 0 {
 		verbosity = VERBOSITY_NORMAL
 	}
 
-	if formatter == nil {
-		formatter = Formatter.NewOutputFormatter(false, nil)
+	if f == nil {
+		f = formatter.NewOutputFormatter(false, nil)
 	}
 
-	formatter.SetDecorated(decorated)
+	f.SetDecorated(decorated)
 
 	output := &Output{
 		verbosity: verbosity,
 		decorated: decorated,
-		formatter: formatter,
+		formatter: f,
 		outputter: nil,
 	}
 
 	return output
 }
 
-func (o *Output) SetFormatter(formatter Formatter.OutputFormatterInferface) {
+func (o *Output) SetFormatter(formatter formatter.OutputFormatterInferface) {
 	o.formatter = formatter
 }
 
-func (o *Output) GetFormatter() Formatter.OutputFormatterInferface {
+func (o *Output) GetFormatter() formatter.OutputFormatterInferface {
 	return o.formatter
 }
 

@@ -3,7 +3,7 @@ package output
 import (
 	"os"
 
-	Formatter "github.com/michielnijenhuis/cli/formatter"
+	"github.com/michielnijenhuis/cli/formatter"
 )
 
 type ConsoleOutput struct {
@@ -12,7 +12,7 @@ type ConsoleOutput struct {
 	StreamOutput
 }
 
-func NewConsoleOutput(verbosity uint, decorated bool, formatter Formatter.OutputFormatterInferface) *ConsoleOutput {
+func NewConsoleOutput(verbosity uint, decorated bool, formatter formatter.OutputFormatterInferface) *ConsoleOutput {
 	streamOutput := NewStreamOutput(OpenOutputStream(), verbosity, decorated, formatter)
 
 	var stderr OutputInterface
@@ -40,7 +40,7 @@ func (o *ConsoleOutput) SetDecorated(decorated bool) {
 	o.stderr.SetDecorated(decorated)
 }
 
-func (o *ConsoleOutput) SetFormatter(formatter Formatter.OutputFormatterInferface) {
+func (o *ConsoleOutput) SetFormatter(formatter formatter.OutputFormatterInferface) {
 	o.StreamOutput.SetFormatter(formatter)
 	o.stderr.SetFormatter(formatter)
 }

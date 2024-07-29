@@ -245,7 +245,7 @@ func (definition *InputDefinition) HasNegation(name string) bool {
 func (definition *InputDefinition) GetOptionForShortcut(shortcut string) (*InputOption, error) {
 	opt, err := definition.GetOption(definition.ShortcutToName(shortcut))
 	if err != nil {
-		return nil, fmt.Errorf("the \"-%s\" option does not exist.", shortcut)
+		return nil, fmt.Errorf("the \"-%s\" option does not exist", shortcut)
 	}
 	return opt, nil
 }

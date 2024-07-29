@@ -1,7 +1,7 @@
 package output
 
 import (
-	formatter "github.com/michielnijenhuis/cli/formatter"
+	"github.com/michielnijenhuis/cli/formatter"
 )
 
 const (

@@ -1,13 +1,13 @@
 package descriptor
 
 import (
-	Output "github.com/michielnijenhuis/cli/output"
+	"github.com/michielnijenhuis/cli/output"
 )
 
-func Write(output Output.OutputInterface, content string, decorated bool) {
+func Write(o output.OutputInterface, content string, decorated bool) {
 	if decorated {
-		output.Write(content, false, Output.OUTPUT_NORMAL)
+		o.Write(content, false, output.OUTPUT_NORMAL)
 	} else {
-		output.Write(content, false, Output.OUTPUT_RAW)
+		o.Write(content, false, output.OUTPUT_RAW)
 	}
 }

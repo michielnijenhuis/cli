@@ -4,7 +4,7 @@ import (
 	"os"
 	"regexp"
 
-	Formatter "github.com/michielnijenhuis/cli/formatter"
+	"github.com/michielnijenhuis/cli/formatter"
 )
 
 type StreamOutput struct {
@@ -12,7 +12,7 @@ type StreamOutput struct {
 	Output
 }
 
-func NewStreamOutput(stream *os.File, verbosity uint, decorated bool, formatter Formatter.OutputFormatterInferface) *StreamOutput {
+func NewStreamOutput(stream *os.File, verbosity uint, decorated bool, formatter formatter.OutputFormatterInferface) *StreamOutput {
 	so := &StreamOutput{
 		stream: stream,
 		Output: *NewOutput(verbosity, decorated, formatter),

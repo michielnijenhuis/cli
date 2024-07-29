@@ -3,14 +3,14 @@ package formatter
 import (
 	"fmt"
 
-	Color "github.com/michielnijenhuis/cli/color"
+	"github.com/michielnijenhuis/cli/color"
 )
 
 type OutputFormatterStyle struct {
 	foreground            string
 	background            string
 	options               []string
-	color                 Color.Color
+	color                 *color.Color
 	href                  string
 	handlesHrefGracefully bool
 }
@@ -24,7 +24,7 @@ func NewOutputFormatterStyle(foreground string, background string, options []str
 		foreground:            foreground,
 		background:            background,
 		options:               options,
-		color:                 *Color.NewColor(foreground, background, options),
+		color:                 color.NewColor(foreground, background, options),
 		href:                  "",
 		handlesHrefGracefully: false,
 	}
@@ -37,14 +37,14 @@ func (s *OutputFormatterStyle) Clone() OutputFormatterStyleInterface {
 	return NewOutputFormatterStyle(s.foreground, s.background, options)
 }
 
-func (s *OutputFormatterStyle) SetForeground(color string) {
-	s.foreground = color
-	s.color = *Color.NewColor(color, s.background, s.options)
+func (s *OutputFormatterStyle) SetForeground(c string) {
+	s.foreground = c
+	s.color = color.NewColor(c, s.background, s.options)
 }
 
-func (s *OutputFormatterStyle) SetBackground(color string) {
-	s.background = color
-	s.color = *Color.NewColor(s.foreground, color, s.options)
+func (s *OutputFormatterStyle) SetBackground(c string) {
+	s.background = c
+	s.color = color.NewColor(s.foreground, c, s.options)
 }
 
 func (s *OutputFormatterStyle) SetHref(href string) {
@@ -53,7 +53,7 @@ func (s *OutputFormatterStyle) SetHref(href string) {
 
 func (s *OutputFormatterStyle) SetOption(option string) {
 	s.options = append(s.options, option)
-	s.color = *Color.NewColor(s.foreground, s.background, s.options)
+	s.color = color.NewColor(s.foreground, s.background, s.options)
 }
 
 func (s *OutputFormatterStyle) UnsetOption(option string) {
@@ -73,12 +73,12 @@ func (s *OutputFormatterStyle) UnsetOption(option string) {
 		}
 	}
 
-	s.color = *Color.NewColor(s.foreground, s.background, s.options)
+	s.color = color.NewColor(s.foreground, s.background, s.options)
 }
 
 func (s *OutputFormatterStyle) SetOptions(options []string) {
 	s.options = options
-	s.color = *Color.NewColor(s.foreground, s.background, options)
+	s.color = color.NewColor(s.foreground, s.background, options)
 }
 
 func (s *OutputFormatterStyle) Apply(text string) string {

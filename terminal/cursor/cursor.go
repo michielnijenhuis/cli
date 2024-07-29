@@ -10,17 +10,17 @@ import (
 	"strconv"
 	"strings"
 
-	Output "github.com/michielnijenhuis/cli/output"
-	Terminal "github.com/michielnijenhuis/cli/terminal"
+	"github.com/michielnijenhuis/cli/output"
+	"github.com/michielnijenhuis/cli/terminal"
 )
 
 type Cursor struct {
-	output         Output.OutputInterface
+	output         output.OutputInterface
 	input          *os.File
 	isTtySupported uint8 // 0 not set, 1 true, 2 false
 }
 
-func NewCursor(output Output.OutputInterface, input *os.File) *Cursor {
+func NewCursor(output output.OutputInterface, input *os.File) *Cursor {
 	return &Cursor{output: output, input: input, isTtySupported: 0}
 }
 
@@ -118,7 +118,7 @@ func (c *Cursor) GetCurrentPosition() (int, int) {
 	if c.isTtySupported > 0 {
 		isTtySupported = c.isTtySupported == 1
 	} else {
-		isTtySupported = Terminal.IsInteractive()
+		isTtySupported = terminal.IsInteractive()
 		if isTtySupported {
 			c.isTtySupported = 1
 		} else {

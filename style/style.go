@@ -1,10 +1,10 @@
 package style
 
 import (
-	Formatter "github.com/michielnijenhuis/cli/formatter"
-	Input "github.com/michielnijenhuis/cli/input"
-	Output "github.com/michielnijenhuis/cli/output"
-	Terminal "github.com/michielnijenhuis/cli/terminal"
+	"github.com/michielnijenhuis/cli/formatter"
+	"github.com/michielnijenhuis/cli/input"
+	"github.com/michielnijenhuis/cli/output"
+	"github.com/michielnijenhuis/cli/terminal"
 )
 
 const MAX_LINE_LENGTH = 120
@@ -12,21 +12,21 @@ const MAX_LINE_LENGTH = 120
 type Style struct {
 	progressBar    interface{} // TODO
 	lineLength     int
-	bufferedOutput *Output.TrimmedBufferOutput
-	input          Input.InputInterface
-	output         Output.OutputInterface
+	bufferedOutput *output.TrimmedBufferOutput
+	input          input.InputInterface
+	output         output.OutputInterface
 }
 
-func NewStyle(input Input.InputInterface, output Output.OutputInterface) *Style {
+func NewStyle(i input.InputInterface, o output.OutputInterface) *Style {
 	s := &Style{
 		progressBar:    nil,
 		lineLength:     -1,
-		bufferedOutput: Output.NewTrimmedBufferOutput(2, output.GetVerbosity(), output.IsDecorated(), output.GetFormatter().Clone()),
-		input:          input,
-		output:         output,
+		bufferedOutput: output.NewTrimmedBufferOutput(2, o.GetVerbosity(), o.IsDecorated(), o.GetFormatter().Clone()),
+		input:          i,
+		output:         o,
 	}
 
-	width, _ := Terminal.GetWidth()
+	width, _ := terminal.GetWidth()
 	if width == 0 {
 		width = MAX_LINE_LENGTH
 	}
@@ -36,11 +36,11 @@ func NewStyle(input Input.InputInterface, output Output.OutputInterface) *Style 
 	return s
 }
 
-func (s *Style) SetFormatter(formatter Formatter.OutputFormatterInferface) {
+func (s *Style) SetFormatter(formatter formatter.OutputFormatterInferface) {
 	s.output.SetFormatter(formatter)
 }
 
-func (s *Style) GetFormatter() Formatter.OutputFormatterInferface {
+func (s *Style) GetFormatter() formatter.OutputFormatterInferface {
 	return s.output.GetFormatter()
 }
 

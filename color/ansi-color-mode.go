@@ -1,4 +1,4 @@
-package style
+package color
 
 import (
 	"errors"

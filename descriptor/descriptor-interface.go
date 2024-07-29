@@ -1,7 +1,7 @@
 package descriptor
 
 import (
-	output "github.com/michielnijenhuis/cli/output"
+	"github.com/michielnijenhuis/cli/output"
 )
 
 type DescriptorOptions struct {

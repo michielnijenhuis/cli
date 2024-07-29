@@ -6,26 +6,26 @@ import (
 	"runtime"
 	"strings"
 
-	Formatter "github.com/michielnijenhuis/cli/formatter"
-	Helper "github.com/michielnijenhuis/cli/helper"
-	Input "github.com/michielnijenhuis/cli/input"
-	Output "github.com/michielnijenhuis/cli/output"
-	Style "github.com/michielnijenhuis/cli/style"
-	Terminal "github.com/michielnijenhuis/cli/terminal"
+	"github.com/michielnijenhuis/cli/formatter"
+	"github.com/michielnijenhuis/cli/helper"
+	"github.com/michielnijenhuis/cli/input"
+	"github.com/michielnijenhuis/cli/output"
+	"github.com/michielnijenhuis/cli/style"
+	"github.com/michielnijenhuis/cli/terminal"
 )
 
-func Ask[T any](input Input.InputInterface, output Output.OutputInterface, question QuestionInterface[T]) (T, error) {
-	consoleOutput, isConsoleOutput := output.(Output.ConsoleOutputInterface)
+func Ask[T any](i input.InputInterface, o output.OutputInterface, question QuestionInterface[T]) (T, error) {
+	consoleOutput, isConsoleOutput := o.(output.ConsoleOutputInterface)
 	if isConsoleOutput {
-		output = consoleOutput.GetErrorOutput()
+		o = consoleOutput.GetErrorOutput()
 	}
 
-	if !input.IsInteractive() {
+	if !i.IsInteractive() {
 		return cast[T](defaultAnswer[T](question).(T)), nil
 	}
 
 	var inputStream *os.File
-	streamableInput, ok := input.(Input.StreamableInputInterface)
+	streamableInput, ok := i.(input.StreamableInputInterface)
 	if ok {
 		stream := streamableInput.GetStream()
 		if stream != nil {
@@ -33,9 +33,9 @@ func Ask[T any](input Input.InputInterface, output Output.OutputInterface, quest
 		}
 	}
 
-	value, err := doAsk(output, question, inputStream)
+	value, err := doAsk(o, question, inputStream)
 	if err != nil {
-		input.SetInteractive(false)
+		i.SetInteractive(false)
 		fallbackOutput := defaultAnswer[T](question)
 
 		str, ok := any(fallbackOutput).(string)
@@ -74,8 +74,8 @@ type QuestionInterface[T any] interface {
 }
 
 // TODO: implement
-func doAsk[T any](output Output.OutputInterface, question QuestionInterface[T], inputStream *os.File) (T, error) {
-	writePrompt[T](output, question)
+func doAsk[T any](o output.OutputInterface, question QuestionInterface[T], inputStream *os.File) (T, error) {
+	writePrompt[T](o, question)
 
 	if inputStream == nil {
 		inputStream = os.Stdin
@@ -83,7 +83,7 @@ func doAsk[T any](output Output.OutputInterface, question QuestionInterface[T], 
 
 	var ret T
 
-	if Terminal.IsInteractive() {
+	if terminal.IsInteractive() {
 		// outputStream := os.Stdout
 		// streamOutput, ok := output.(*Output.StreamOutput)
 		// if ok {
@@ -94,7 +94,7 @@ func doAsk[T any](output Output.OutputInterface, question QuestionInterface[T], 
 	}
 
 	str := any(ret).(string)
-	consoleSectionOutput, ok := output.(*Output.ConsoleSectionOutput)
+	consoleSectionOutput, ok := o.(*output.ConsoleSectionOutput)
 	if ok {
 		consoleSectionOutput.AddContent("", true)
 		consoleSectionOutput.AddContent(str, true)
@@ -140,13 +140,13 @@ func defaultAnswer[T any](question interface{}) any {
 	return defaultValue
 }
 
-func writePrompt[T any](output Output.OutputInterface, question interface{}) {
+func writePrompt[T any](output output.OutputInterface, question interface{}) {
 	q, ok := question.(*Question[T])
 	if !ok {
 		return
 	}
 
-	text := Formatter.EscapeTrailingBackslash(q.Question())
+	text := formatter.EscapeTrailingBackslash(q.Question())
 
 	if q.IsMultiline() {
 		text += fmt.Sprintf(" (press %s to continue)", getEofShortcut())
@@ -193,11 +193,11 @@ func formatChoiceQuestionChoices(question *ChoiceQuestion, tag string) []string 
 
 	var maxWidth int
 	for key := range choices {
-		maxWidth = max(maxWidth, Helper.Width(key))
+		maxWidth = max(maxWidth, helper.Width(key))
 	}
 
 	for key, value := range choices {
-		padding := strings.Repeat(" ", maxWidth-Helper.Width(key))
+		padding := strings.Repeat(" ", maxWidth-helper.Width(key))
 		message := fmt.Sprintf("  [<%s>%s%s</%s>] %s", tag, key, padding, tag, value)
 		messages = append(messages, message)
 	}
@@ -205,15 +205,15 @@ func formatChoiceQuestionChoices(question *ChoiceQuestion, tag string) []string 
 	return messages
 }
 
-func writeError(output Output.OutputInterface, err error) {
-	style, ok := output.(*Style.Style)
+func writeError(output output.OutputInterface, err error) {
+	style, ok := output.(*style.Style)
 	if ok {
 		style.NewLine(1)
 		style.Err([]string{err.Error()})
 		return
 	}
 
-	message := Formatter.FormatBlock([]string{err.Error()}, "error", false)
+	message := formatter.FormatBlock([]string{err.Error()}, "error", false)
 
 	output.Writeln(message, 0)
 }

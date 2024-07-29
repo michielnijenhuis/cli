@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	helper "github.com/michielnijenhuis/cli/helper"
+	"github.com/michielnijenhuis/cli/helper"
 )
 
 type ArgvInput struct {

@@ -3,196 +3,194 @@ package cli
 import (
 	"errors"
 	"fmt"
-
-	// "fmt"
 	"strconv"
 	"testing"
 
-	Application "github.com/michielnijenhuis/cli/application"
-	Command "github.com/michielnijenhuis/cli/command"
-	Input "github.com/michielnijenhuis/cli/input"
+	"github.com/michielnijenhuis/cli/application"
+	"github.com/michielnijenhuis/cli/command"
+	"github.com/michielnijenhuis/cli/input"
 )
 
-// func TestApplicationCanRenderError(t *testing.T) {
-// 	fmt.Println("--- begin APPLICATION CAN RENDER test ---")
+func TestApplicationCanRenderError(t *testing.T) {
+	fmt.Println("--- begin APPLICATION CAN RENDER test ---")
 
-// 	app := Application.NewApplication("app", "v1.0.0")
-// 	app.SetCatchErrors(true)
-// 	app.SetAutoExit(false)
+	app := application.NewApplication("app", "v1.0.0")
+	app.SetCatchErrors(true)
+	app.SetAutoExit(false)
 
-// 	cmd := Command.NewCommand("test", func(self *Command.Command) (int, error) {
+	cmd := command.NewCommand("test", func(self *command.Command) (int, error) {
 
-// 		return 1, errors.New("Test error")
-// 	})
+		return 1, errors.New("Test error")
+	})
 
-// 	app.Add(cmd)
+	app.Add(cmd)
 
-// 	argv := map[string]Input.InputType{
-// 		"command": "test",
-// 	}
+	argv := map[string]input.InputType{
+		"command": "test",
+	}
 
-// 	input, _ := Input.NewObjectInput(argv, nil)
-// 	parseError := input.Validate()
+	input, _ := input.NewObjectInput(argv, nil)
+	parseError := input.Validate()
 
-// 	if parseError != nil {
-// 		fmt.Print(parseError.Error())
-// 	}
+	if parseError != nil {
+		fmt.Print(parseError.Error())
+	}
 
-// 	code, err := app.Run(input, nil)
+	code, err := app.Run(input, nil)
 
-// 	var errMsg string
-// 	if err != nil {
-// 		errMsg = err.Error()
-// 	}
+	var errMsg string
+	if err != nil {
+		errMsg = err.Error()
+	}
 
-// 	if code != 1 {
-// 		t.Errorf("Expected code 1, got: %d", code)
-// 	}
+	if code != 1 {
+		t.Errorf("Expected code 1, got: %d", code)
+	}
 
-// 	if errMsg != "Test error" {
-// 		t.Errorf("Expected error \"Test error\", got: %s", errMsg)
-// 	}
+	if errMsg != "Test error" {
+		t.Errorf("Expected error \"Test error\", got: %s", errMsg)
+	}
 
-// 	fmt.Println("--- end APPLICATION CAN RENDER test ---")
-// 	fmt.Println("")
-// }
+	fmt.Println("--- end APPLICATION CAN RENDER test ---")
+	fmt.Println("")
+}
 
-// func TestApplicationCanSuccesfullyExecuteCommand(t *testing.T) {
-// 	fmt.Println("--- begin APPLICATION CAN SUCCESSFULLY EXECUTE COMMAND test ---")
+func TestApplicationCanSuccesfullyExecuteCommand(t *testing.T) {
+	fmt.Println("--- begin APPLICATION CAN SUCCESSFULLY EXECUTE COMMAND test ---")
 
-// 	app := Application.NewApplication("app", "v1.0.0")
-// 	app.SetCatchErrors(true)
-// 	app.SetAutoExit(false)
+	app := application.NewApplication("app", "v1.0.0")
+	app.SetCatchErrors(true)
+	app.SetAutoExit(false)
 
-// 	cmd := Command.NewCommand("test", func(self *Command.Command) (int, error) {
-// 		return 0, nil
-// 	})
+	cmd := command.NewCommand("test", func(self *command.Command) (int, error) {
+		return 0, nil
+	})
 
-// 	app.Add(cmd)
+	app.Add(cmd)
 
-// 	argv := map[string]Input.InputType{
-// 		"command": "test",
-// 	}
+	argv := map[string]input.InputType{
+		"command": "test",
+	}
 
-// 	input, _ := Input.NewObjectInput(argv, nil)
-// 	parseError := input.Validate()
+	input, _ := input.NewObjectInput(argv, nil)
+	parseError := input.Validate()
 
-// 	if parseError != nil {
-// 		fmt.Print(parseError.Error())
-// 	}
+	if parseError != nil {
+		fmt.Print(parseError.Error())
+	}
 
-// 	code, err := app.Run(input, nil)
+	code, err := app.Run(input, nil)
 
-// 	var errMsg string
-// 	if err != nil {
-// 		errMsg = err.Error()
-// 	}
+	var errMsg string
+	if err != nil {
+		errMsg = err.Error()
+	}
 
-// 	if code != 0 {
-// 		t.Errorf("Expected code 0, got: %d", code)
-// 	}
+	if code != 0 {
+		t.Errorf("Expected code 0, got: %d", code)
+	}
 
-// 	if errMsg != "" {
-// 		t.Errorf("Expected no error, got: %s", errMsg)
-// 	}
+	if errMsg != "" {
+		t.Errorf("Expected no error, got: %s", errMsg)
+	}
 
-// 	fmt.Println("--- end APPLICATION CAN SUCCESSFULLY EXECUTE COMMAND test ---")
-// 	fmt.Println("")
-// }
+	fmt.Println("--- end APPLICATION CAN SUCCESSFULLY EXECUTE COMMAND test ---")
+	fmt.Println("")
+}
 
-// func TestApplicationCanRecover(t *testing.T) {
-// 	fmt.Println("--- begin APPLICATION CAN RECOVER test ---")
+func TestApplicationCanRecover(t *testing.T) {
+	fmt.Println("--- begin APPLICATION CAN RECOVER test ---")
 
-// 	app := Application.NewApplication("app", "v1.0.0")
-// 	app.SetCatchErrors(true)
-// 	app.SetAutoExit(false)
+	app := application.NewApplication("app", "v1.0.0")
+	app.SetCatchErrors(true)
+	app.SetAutoExit(false)
 
-// 	expectedError := "Oh no!"
+	expectedError := "Oh no!"
 
-// 	cmd := Command.NewCommand("test", func(self *Command.Command) (int, error) {
-// 		panic(expectedError)
-// 	})
+	cmd := command.NewCommand("test", func(self *command.Command) (int, error) {
+		panic(expectedError)
+	})
 
-// 	app.Add(cmd)
+	app.Add(cmd)
 
-// 	argv := map[string]Input.InputType{
-// 		"command": "test",
-// 	}
+	argv := map[string]input.InputType{
+		"command": "test",
+	}
 
-// 	input, _ := Input.NewObjectInput(argv, nil)
-// 	parseError := input.Validate()
+	input, _ := input.NewObjectInput(argv, nil)
+	parseError := input.Validate()
 
-// 	if parseError != nil {
-// 		fmt.Print(parseError.Error())
-// 	}
+	if parseError != nil {
+		fmt.Print(parseError.Error())
+	}
 
-// 	code, err := app.Run(input, nil)
+	code, err := app.Run(input, nil)
 
-// 	var errMsg string
-// 	if err != nil {
-// 		errMsg = err.Error()
-// 	}
+	var errMsg string
+	if err != nil {
+		errMsg = err.Error()
+	}
 
-// 	if code != 1 {
-// 		t.Errorf("Expected code 1, got: %d", code)
-// 	}
+	if code != 1 {
+		t.Errorf("Expected code 1, got: %d", code)
+	}
 
-// 	if errMsg != expectedError {
-// 		t.Errorf("Expected error \"%s\", got: %s", expectedError, errMsg)
-// 	}
+	if errMsg != expectedError {
+		t.Errorf("Expected error \"%s\", got: %s", expectedError, errMsg)
+	}
 
-// 	fmt.Println("--- end APPLICATION CAN RECOVER test ---")
-// 	fmt.Println("")
-// }
+	fmt.Println("--- end APPLICATION CAN RECOVER test ---")
+	fmt.Println("")
+}
 
-// func TestApplicationCanShowHelp(t *testing.T) {
-// 	fmt.Println("--- begin CAN SHOW HELP test ---")
+func TestApplicationCanShowHelp(t *testing.T) {
+	fmt.Println("--- begin CAN SHOW HELP test ---")
 
-// 	app := Application.NewApplication("app", "v1.0.0")
-// 	app.SetCatchErrors(true)
-// 	app.SetAutoExit(false)
+	app := application.NewApplication("app", "v1.0.0")
+	app.SetCatchErrors(true)
+	app.SetAutoExit(false)
 
-// 	argv := map[string]Input.InputType{
-// 		"command": "help",
-// 	}
+	argv := map[string]input.InputType{
+		"command": "help",
+	}
 
-// 	input, _ := Input.NewObjectInput(argv, nil)
-// 	parseError := input.Validate()
+	input, _ := input.NewObjectInput(argv, nil)
+	parseError := input.Validate()
 
-// 	if parseError != nil {
-// 		fmt.Print(parseError.Error())
-// 	}
+	if parseError != nil {
+		fmt.Print(parseError.Error())
+	}
 
-// 	app.Run(input, nil)
-// 	fmt.Println("--- end CAN SHOW HELP test ---")
-// 	fmt.Println("")
-// }
+	app.Run(input, nil)
+	fmt.Println("--- end CAN SHOW HELP test ---")
+	fmt.Println("")
+}
 
-// func TestApplicationCanListCommands(t *testing.T) {
-// 	fmt.Println("--- begin CAN LIST COMMANDS test ---")
-// 	app := Application.NewApplication("app", "v1.0.0")
-// 	app.SetCatchErrors(true)
-// 	app.SetAutoExit(false)
+func TestApplicationCanListCommands(t *testing.T) {
+	fmt.Println("--- begin CAN LIST COMMANDS test ---")
+	app := application.NewApplication("app", "v1.0.0")
+	app.SetCatchErrors(true)
+	app.SetAutoExit(false)
 
-// 	argv := map[string]Input.InputType{
-// 		"command": "list",
-// 	}
+	argv := map[string]input.InputType{
+		"command": "list",
+	}
 
-// 	input, _ := Input.NewObjectInput(argv, nil)
-// 	parseError := input.Validate()
+	input, _ := input.NewObjectInput(argv, nil)
+	parseError := input.Validate()
 
-// 	if parseError != nil {
-// 		fmt.Print(parseError.Error())
-// 	}
+	if parseError != nil {
+		fmt.Print(parseError.Error())
+	}
 
-// 	app.Run(input, nil)
+	app.Run(input, nil)
 
-// 	fmt.Println("--- end CAN LIST COMMANDS test ---")
-// 	fmt.Println("")
-// }
+	fmt.Println("--- end CAN LIST COMMANDS test ---")
+	fmt.Println("")
+}
 
 func TestSumCommand(t *testing.T) {
-	cmd := Command.NewCommand("sum", func(self *Command.Command) (int, error) {
+	cmd := command.NewCommand("sum", func(self *command.Command) (int, error) {
 		values, err := self.ArrayArgument("values")
 		if err != nil {
 			return 1, err
@@ -214,7 +212,7 @@ func TestSumCommand(t *testing.T) {
 		return 0, nil
 	})
 	cmd.SetDescription("Prints the sum of all given values.")
-	cmd.AddArgument("values", Input.INPUT_ARGUMENT_IS_ARRAY, "The values to sum", nil, func(value Input.InputType) error {
+	cmd.AddArgument("values", input.INPUT_ARGUMENT_IS_ARRAY, "The values to sum", nil, func(value input.InputType) error {
 		arr, ok := value.([]string)
 		if ok {
 			for _, v := range arr {
@@ -230,13 +228,13 @@ func TestSumCommand(t *testing.T) {
 		return errors.New("Value is not an array.")
 	})
 
-	input, _ := Input.NewObjectInput(map[string]Input.InputType{
+	input, _ := input.NewObjectInput(map[string]input.InputType{
 		"command":   "sum",
 		"values":    []string{"1", "2", "3", "4"},
 		"--verbose": "3",
 	}, nil)
 
-	app := Application.NewApplication("app", "v1.0.0")
+	app := application.NewApplication("app", "v1.0.0")
 	app.SetCatchErrors(true)
 	app.SetAutoExit(false)
 	app.Add(cmd)
