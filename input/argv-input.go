@@ -155,14 +155,14 @@ func (input *ArgvInput) parseArgument(token string) error {
 			}
 			allCommandsString := strings.Join(allCommands, " ")
 			if commandName != "" {
-				message = fmt.Sprintf("Too many arguments to \"%s\" command, expected arguments \"%s\".", commandName, allCommandsString)
+				message = fmt.Sprintf("too many arguments to \"%s\" command, expected arguments \"%s\"", commandName, allCommandsString)
 			} else {
-				message = fmt.Sprintf("Too many arguments, expected arguments \"%s\".", allCommandsString)
+				message = fmt.Sprintf("too many arguments, expected arguments \"%s\"", allCommandsString)
 			}
 		} else if commandName != "" {
-			message = fmt.Sprintf("No arguments expected for \"%s\" command, got \"%s\".", commandName, token)
+			message = fmt.Sprintf("no arguments expected for \"%s\" command, got \"%s\"", commandName, token)
 		} else {
-			message = fmt.Sprintf("No arguments expected, got \"%s\".", token)
+			message = fmt.Sprintf("no arguments expected, got \"%s\"", token)
 		}
 
 		return errors.New(message)
