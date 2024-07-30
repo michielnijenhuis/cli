@@ -81,8 +81,9 @@ func doAsk[T any](o output.OutputInterface, question types.QuestionInterface[T],
 
 		reader := bufio.NewReader(inputStream)
 		attempts := question.MaxAttempts()
+		hasMaxAttempts := attempts > 0
 
-		for input == "" && attempts > 0 {
+		for input == "" && (!hasMaxAttempts || attempts > 0) {
 			attempts--
 			fmt.Println("> ")
 

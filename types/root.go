@@ -12,7 +12,7 @@ type QuestionInterface[T any] interface {
 	Default() T
 	Normalizer() QuestionNormalizer[T]
 	Validator() QuestionValidator[T]
-	MaxAttempts() uint
+	MaxAttempts() int
 	IsTrimmable() bool
 	IsMultiline() bool
 }
