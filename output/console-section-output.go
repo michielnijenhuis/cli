@@ -135,7 +135,7 @@ func (o *ConsoleSectionOutput) AddContent(input string, newLine bool) int {
 	return linesAdded
 }
 
-func (o *ConsoleSectionOutput) AddNewLineOfInputSibmit() {
+func (o *ConsoleSectionOutput) AddNewLineOfInputSubmit() {
 	o.content = append(o.content, "\n")
 	o.lines++
 }
@@ -223,7 +223,7 @@ func (o *ConsoleSectionOutput) popStreamContentUntilCurrentSection(numberOfLines
 		o.StreamOutput.DoWrite("\x1b[0J", false)
 	}
 
-	reversed := make([]string, len(erasedContent))
+	reversed := make([]string, 0, len(erasedContent))
 	for i := len(erasedContent) - 1; i >= 0; i-- {
 		reversed = append(reversed, erasedContent[i])
 	}

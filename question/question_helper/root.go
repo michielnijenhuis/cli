@@ -1,8 +1,8 @@
-package question
+package question_helper
 
 import (
+	"errors"
 	"fmt"
-	"os"
 	"runtime"
 	"strings"
 
@@ -10,11 +10,12 @@ import (
 	"github.com/michielnijenhuis/cli/helper"
 	"github.com/michielnijenhuis/cli/input"
 	"github.com/michielnijenhuis/cli/output"
-	"github.com/michielnijenhuis/cli/style"
+	"github.com/michielnijenhuis/cli/question"
 	"github.com/michielnijenhuis/cli/terminal"
+	"github.com/michielnijenhuis/cli/types"
 )
 
-func Ask[T any](i input.InputInterface, o output.OutputInterface, question QuestionInterface[T]) (T, error) {
+func Ask[T any](i input.InputInterface, o output.OutputInterface, question types.QuestionInterface[T]) (T, error) {
 	consoleOutput, isConsoleOutput := o.(output.ConsoleOutputInterface)
 	if isConsoleOutput {
 		o = consoleOutput.ErrorOutput()
@@ -24,16 +25,7 @@ func Ask[T any](i input.InputInterface, o output.OutputInterface, question Quest
 		return cast[T](defaultAnswer[T](question).(T)), nil
 	}
 
-	var inputStream *os.File
-	streamableInput, ok := i.(input.StreamableInputInterface)
-	if ok {
-		stream := streamableInput.Stream()
-		if stream != nil {
-			inputStream = stream
-		}
-	}
-
-	value, err := doAsk(o, question, inputStream)
+	value, err := doAsk(o, question)
 	if err != nil {
 		i.SetInteractive(false)
 		fallbackOutput := defaultAnswer[T](question)
@@ -68,52 +60,72 @@ func cast[T any](value any) T {
 	return empty
 }
 
-type QuestionInterface[T any] interface {
-	Default() T
-	Normalizer() QuestionNormalizer[T]
-}
-
-// TODO: implement
-func doAsk[T any](o output.OutputInterface, question QuestionInterface[T], inputStream *os.File) (T, error) {
+func doAsk[T any](o output.OutputInterface, question types.QuestionInterface[T]) (T, error) {
 	writePrompt[T](o, question)
 
-	if inputStream == nil {
-		inputStream = os.Stdin
-	}
-
+	var input string
 	var ret T
+	var err error
 
 	if terminal.IsInteractive() {
-		// outputStream := os.Stdout
-		// streamOutput, ok := output.(*Output.StreamOutput)
-		// if ok {
-		// 	outputStream = streamOutput.Stream()
-		// }
+		attempts := question.MaxAttempts()
 
-		// TODO: do ask
+		for input == "" && attempts > 0 {
+			attempts--
+			fmt.Println("> ")
+
+			_, err = fmt.Scanln(&input)
+			if err != nil {
+				writeError(o, err)
+				err = nil
+			}
+		}
+
+		if input == "" {
+			var empty T
+			return empty, errors.New("missing input")
+		}
 	}
 
-	str := any(ret).(string)
+	if err != nil {
+		var empty T
+		return empty, err
+	}
+
 	consoleSectionOutput, ok := o.(*output.ConsoleSectionOutput)
 	if ok {
 		consoleSectionOutput.AddContent("", true)
-		consoleSectionOutput.AddContent(str, true)
+		consoleSectionOutput.AddContent(input, true)
 	}
 
-	if len(str) == 0 {
+	if question.IsTrimmable() {
+		input = strings.TrimSpace(input)
+	}
+
+	if len(input) == 0 {
 		ret = question.Default()
 	}
 
 	normalizer := question.Normalizer()
 	if normalizer != nil {
-		ret = normalizer(str)
+		ret = normalizer(input)
+	}
+
+	validator := question.Validator()
+	if validator != nil {
+		validated, err := validator(ret)
+		if err != nil {
+			var empty T
+			return empty, err
+		}
+		ret = validated
 	}
 
 	return ret, nil
 }
 
-func defaultAnswer[T any](question interface{}) any {
-	q, ok := question.(*Question[T])
+func defaultAnswer[T any](qs interface{}) any {
+	q, ok := qs.(types.QuestionInterface[T])
 	if !ok {
 		var empty T
 		return empty
@@ -123,10 +135,11 @@ func defaultAnswer[T any](question interface{}) any {
 
 	validator := q.Validator()
 	if validator != nil {
-		return validator(defaultValue)
+		df, _ := validator(defaultValue)
+		return df
 	}
 
-	choiceQuestion, ok := question.(*ChoiceQuestion)
+	choiceQuestion, ok := qs.(*question.ChoiceQuestion)
 	if !ok {
 		return defaultValue
 	}
@@ -140,13 +153,13 @@ func defaultAnswer[T any](question interface{}) any {
 	return defaultValue
 }
 
-func writePrompt[T any](output output.OutputInterface, question interface{}) {
-	q, ok := question.(*Question[T])
+func writePrompt[T any](output output.OutputInterface, qs interface{}) {
+	q, ok := qs.(types.QuestionInterface[T])
 	if !ok {
 		return
 	}
 
-	text := formatter.EscapeTrailingBackslash(q.Question())
+	text := formatter.EscapeTrailingBackslash(q.GetQuestion())
 
 	if q.IsMultiline() {
 		text += fmt.Sprintf(" (press %s to continue)", eofShortcut())
@@ -154,14 +167,14 @@ func writePrompt[T any](output output.OutputInterface, question interface{}) {
 
 	if str, ok := any(q.Default()).(string); ok && str == "" {
 		text = fmt.Sprintf(" <info>%s</info>", text)
-	} else if cq, ok := question.(*ConfirmationQuestion); ok {
+	} else if cq, ok := qs.(*question.ConfirmationQuestion); ok {
 		highlight := "yes"
 		if !cq.Default() {
 			highlight = "no"
 		}
 
 		text = fmt.Sprintf(" <info>%s (yes/no)</info> [<highlight>%s</highlight>]", text, highlight)
-	} else if cq, ok := question.(*ChoiceQuestion); ok {
+	} else if cq, ok := qs.(*question.ChoiceQuestion); ok {
 		choices := cq.Choices()
 		str, isStr := any(q.Default()).(string)
 		comment := str
@@ -178,7 +191,7 @@ func writePrompt[T any](output output.OutputInterface, question interface{}) {
 
 	prompt := " > "
 
-	choice, ok := question.(*ChoiceQuestion)
+	choice, ok := qs.(*question.ChoiceQuestion)
 	if ok {
 		output.Writelns(formatChoiceQuestionChoices(choice, "comment"), 0)
 		prompt = choice.Prompt()
@@ -187,7 +200,7 @@ func writePrompt[T any](output output.OutputInterface, question interface{}) {
 	output.Write(prompt, false, 0)
 }
 
-func formatChoiceQuestionChoices(question *ChoiceQuestion, tag string) []string {
+func formatChoiceQuestionChoices(question *question.ChoiceQuestion, tag string) []string {
 	messages := make([]string, 0)
 	choices := question.Choices()
 
@@ -206,7 +219,7 @@ func formatChoiceQuestionChoices(question *ChoiceQuestion, tag string) []string 
 }
 
 func writeError(output output.OutputInterface, err error) {
-	style, ok := output.(*style.Style)
+	style, ok := output.(types.StyleInterface)
 	if ok {
 		style.NewLine(1)
 		style.Err([]string{err.Error()})

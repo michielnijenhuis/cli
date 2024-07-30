@@ -25,7 +25,9 @@ func NewTrimmedBufferOutput(maxLength uint, verbosity uint, decorated bool, form
 			trimmedBufferOutput.buffer += "\n"
 		}
 
-		trimmedBufferOutput.buffer = trimmedBufferOutput.buffer[0:trimmedBufferOutput.maxLength]
+		if len(trimmedBufferOutput.buffer) >= int(trimmedBufferOutput.maxLength) {
+			trimmedBufferOutput.buffer = trimmedBufferOutput.buffer[0:trimmedBufferOutput.maxLength]
+		}
 	}
 
 	return trimmedBufferOutput

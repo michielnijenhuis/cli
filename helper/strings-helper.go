@@ -1,5 +1,7 @@
 package helper
 
+import "strings"
+
 // TODO: implement
 func StrimWidth(str string, start int, width int, trimMarker string) string {
 	return str
@@ -13,6 +15,22 @@ func TrimWidthBackwards(str string, start int, width int) string {
 // TODO: implement
 func Pad(text string, length int, char string) string {
 	return text
+}
+
+func PadStart(text string, length int, char byte) string {
+	current := len(text)
+	if length >= current {
+		return text
+	}
+	return strings.Repeat(string(char), length-current) + text
+}
+
+func PadEnd(text string, length int, char byte) string {
+	current := len(text)
+	if length >= current {
+		return text
+	}
+	return text + strings.Repeat(string(char), length-current)
 }
 
 // TODO: implement (remove 2)

@@ -32,6 +32,11 @@ func NewArgvInput(argv []string, definition *InputDefinition) (*ArgvInput, error
 	return input, err
 }
 
+func ArgvInputFrom(s ...string) *ArgvInput {
+	i, _ := NewArgvInput(s, nil)
+	return i
+}
+
 func (input *ArgvInput) Parse() error {
 	parseOptions := true
 	input.parsed = append(input.parsed, input.tokens...)

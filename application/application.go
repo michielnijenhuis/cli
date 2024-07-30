@@ -6,15 +6,20 @@ import (
 	"math"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/michielnijenhuis/cli/command"
 	"github.com/michielnijenhuis/cli/descriptor"
 	"github.com/michielnijenhuis/cli/formatter"
+	"github.com/michielnijenhuis/cli/helper"
+	"github.com/michielnijenhuis/cli/helper/maps"
 	"github.com/michielnijenhuis/cli/input"
 	"github.com/michielnijenhuis/cli/output"
+	"github.com/michielnijenhuis/cli/style"
 	"github.com/michielnijenhuis/cli/terminal"
+	"github.com/michielnijenhuis/cli/types"
 )
 
 type Application struct {
@@ -140,16 +145,56 @@ func (app *Application) doRun(i input.InputInterface, o output.OutputInterface) 
 	}
 
 	app.runningCommand = nil
-	command, findCommandErr := app.Find(name)
+	c, findCommandErr := app.Find(name)
 
 	if findCommandErr != nil {
-		// TODO: suggest alternatives
+		notFound, ok := findCommandErr.(*command.CommandNotFoundError)
+		var alternatives []string
+		if ok {
+			alternatives = notFound.Alternatives()
+		}
+		interactive := i.IsInteractive()
 
-		return 1, findCommandErr
+		if ok && len(alternatives) == 1 && interactive {
+			o.Writeln("", 0)
+			formattedBlock := formatter.FormatBlock([]string{fmt.Sprintf("command \"%s\" is not defined", name)}, "error", true)
+			o.Writeln(formattedBlock, 0)
+
+			style := style.NewStyle(i, o)
+			alternative := alternatives[0]
+
+			runAlternative, err := style.Confirm(fmt.Sprintf("Do you want to run \"%s\" instead?", alternative), false)
+			if err != nil {
+				return 1, err
+			}
+
+			if !runAlternative {
+				return 1, nil
+			}
+
+			c, findCommandErr = app.Find(alternative)
+			if findCommandErr != nil {
+				return 1, findCommandErr
+			}
+		} else {
+			namespace, err := app.FindNamespace(name)
+
+			if _, ok := findCommandErr.(types.ErrorWithAlternatives); ok && err == nil {
+				outputter := o
+				if consoleOutput, ok := outputter.(*output.ConsoleOutput); ok {
+					outputter = consoleOutput
+				}
+
+				d := descriptor.NewTextDescriptor(outputter)
+				d.DescribeApplication(app, descriptor.NewDescriptorOptions(namespace, false, false, 0))
+			}
+
+			return 1, findCommandErr
+		}
 	}
 
-	app.runningCommand = command
-	exitCode, runCommandErr := command.Run(i, o)
+	app.runningCommand = c
+	exitCode, runCommandErr := c.Run(i, o)
 	app.runningCommand = nil
 
 	return exitCode, runCommandErr
@@ -283,7 +328,7 @@ func (app *Application) Namespaces() []string {
 		}
 	}
 
-	namespaces := make([]string, len(namespacesMap))
+	namespaces := make([]string, 0, len(namespacesMap))
 	for ns := range namespacesMap {
 		namespaces = append(namespaces, ns)
 	}
@@ -291,8 +336,57 @@ func (app *Application) Namespaces() []string {
 	return namespaces
 }
 
-func (app *Application) FindNamespaces(namespace string) string {
-	panic("TODO: Application.FindNamespaces()")
+func (app *Application) FindNamespace(namespace string) (string, error) {
+	allNamespaces := app.Namespaces()
+
+	parts := strings.Split(namespace, ":")
+	re := regexp.MustCompile(`[-\/\\^$*+?.()|[\]{}]`)
+	for i, part := range parts {
+		parts[i] = re.ReplaceAllString(part, "$1")
+	}
+
+	expr := regexp.MustCompile("^" + strings.Join(allNamespaces, "[^:]*:") + "[^:]*")
+	namespaces := make([]string, 0, len(allNamespaces))
+	for _, ns := range allNamespaces {
+		if expr.MatchString(ns) {
+			namespaces = append(namespaces, ns)
+		}
+	}
+
+	if len(namespaces) == 0 {
+		message := fmt.Sprintf("There are no commands defined in the \"%s\" namespace.", namespace)
+		alternatives := app.findAlternatives(namespace, allNamespaces)
+
+		if len(alternatives) > 0 {
+			if len(alternatives) == 1 {
+				message += "\n\nDid you mean this?\n    "
+			} else {
+				message += "\n\nDid you mean one of these?\n    "
+			}
+
+			message += strings.Join(alternatives, "\n    ")
+		}
+
+		return "", NamespaceNotFound(message, alternatives)
+	}
+
+	var exact bool
+	for _, ns := range namespaces {
+		if ns == namespace {
+			exact = true
+			break
+		}
+	}
+
+	if len(namespaces) > 1 && !exact {
+		return "", NamespaceNotFound(fmt.Sprintf("The namespace \"%s\" is ambiguous.\nDid you mean one of these?\n%s", namespace, app.abbreviationSuggestions(namespaces)), namespaces)
+	}
+
+	if exact {
+		return namespace, nil
+	}
+
+	return namespaces[0], nil
 }
 
 func (app *Application) Find(name string) (*command.Command, error) {
@@ -312,7 +406,155 @@ func (app *Application) Find(name string) (*command.Command, error) {
 		return app.Get(name)
 	}
 
-	panic("TODO: alternatives support in app.Find()")
+	parts := strings.Split(name, ":")
+	re := regexp.MustCompile(`[-/\\^$*+?.()|[\]{}]`)
+	for i, part := range parts {
+		parts[i] = re.ReplaceAllString(part, "$&")
+	}
+	expr := strings.Join(parts, "[^:]*:") + "[^:]*"
+	re2 := regexp.MustCompile(expr)
+
+	commands := make([]string, 0, len(app.commands))
+	for cmd := range app.commands {
+		if re2.MatchString(cmd) {
+			commands = append(commands, cmd)
+		}
+	}
+
+	if len(commands) == 0 {
+		caseInsensitiveRegex := regexp.MustCompile("(i?)^" + expr)
+		commands = make([]string, 0, len(app.commands))
+		for cmd := range app.commands {
+			if caseInsensitiveRegex.MatchString(cmd) {
+				commands = append(commands, cmd)
+			}
+		}
+	}
+
+	// if no commands matched or we just matched namespaces
+	grepRegex := regexp.MustCompile("(i?){^" + expr + "}")
+	var grepFilteredCommands []string
+	if len(commands) > 0 {
+		grepFilteredCommands = make([]string, 0, len(commands))
+		for _, cmd := range commands {
+			if grepRegex.MatchString(cmd) {
+				grepFilteredCommands = append(grepFilteredCommands, cmd)
+			}
+		}
+	}
+
+	if len(commands) == 0 || (grepFilteredCommands != nil && len(grepFilteredCommands) < 1) {
+		pos := strings.Index(name, ":")
+		if pos != -1 {
+			_, err := app.FindNamespace(name[0:pos])
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		message := fmt.Sprintf("command \"%s\" is not defined", name)
+		alternatives := app.findAlternatives(name, maps.Keys(app.commands))
+		if len(alternatives) > 0 {
+			var ptr int
+			for _, v := range alternatives {
+				cmd, err := app.Get(v)
+				if err == nil && !cmd.Hidden {
+					alternatives[ptr] = v
+					ptr++
+				}
+			}
+			alternatives = alternatives[:ptr]
+
+			if len(alternatives) == 1 {
+				message += "\n\nDid you mean this?\n    "
+			} else {
+				message += "\n\nDid you mean one of these?\n    "
+			}
+
+			message += strings.Join(alternatives, "\n    ")
+		}
+
+		return nil, command.NotFound(message, alternatives)
+	}
+
+	aliases := make(map[string]string)
+	if len(commands) > 0 {
+		commandsMap := make(map[string]int)
+		for _, cmd := range commands {
+			item, exists := app.commands[cmd]
+			if !exists {
+				continue
+			}
+			aliases[cmd] = item.Name
+
+			if item.Name == cmd {
+				commandsMap[cmd] = 0
+				continue
+			}
+
+			if item.Name == "" {
+				continue
+			}
+
+			for _, c := range commands {
+				if c == item.Name {
+					continue
+				}
+			}
+
+			commandsMap[cmd] = 0
+		}
+
+		newSlice := make([]string, 0, len(commandsMap))
+		for k := range commandsMap {
+			newSlice = append(newSlice, k)
+		}
+		commands = newSlice
+	}
+
+	if len(commands) > 0 {
+		terminalWidth, _ := terminal.Width()
+		usableWidth := terminalWidth - 10
+		abbrevs := commands
+		maxLen := 0
+
+		for _, abbrev := range abbrevs {
+			maxLen = max(maxLen, helper.Width(abbrev))
+
+			filteredAbbrevs := make([]string, 0, len(abbrevs))
+			for i, cmd := range commands {
+				if app.commands[cmd].Hidden {
+					commands[i] = commands[len(commands)-1]
+					commands = commands[:len(commands)-1]
+					continue
+				}
+
+				abbrev = helper.PadStart(cmd, maxLen, ' ') + " " + app.commands[cmd].Description
+
+				if helper.Width(abbrev) > usableWidth {
+					filteredAbbrevs = append(filteredAbbrevs, abbrev[:usableWidth-3]+"...")
+				} else {
+					filteredAbbrevs = append(filteredAbbrevs, abbrev)
+				}
+			}
+
+			if len(commands) > 1 {
+				suggestions := app.abbreviationSuggestions(filteredAbbrevs)
+				return nil, command.NotFound(fmt.Sprintf("command \"%s\" is ambiguous.\nDid you mean one of these?\n%s", name, suggestions), commands)
+			}
+		}
+	}
+
+	cmd, err := app.Get(commands[0])
+	if err != nil {
+		return nil, err
+	}
+
+	if cmd.Hidden {
+		return nil, command.NotFound(fmt.Sprintf("the command \"%s\" does not exist", name), nil)
+	}
+
+	return cmd, nil
 }
 
 func (app *Application) All(namespace string) map[string]*command.Command {
@@ -620,7 +862,61 @@ func (app *Application) ExtractNamespace(name string, limit int) string {
 }
 
 func (app *Application) findAlternatives(name string, collection []string) []string {
-	panic("TODO: app.findAlternatives()")
+	treshold := int(1e3)
+	alternatives := make(map[string]int)
+	collectionParts := make(map[string][]string)
+
+	for _, item := range collection {
+		collectionParts[item] = strings.Split(item, ":")
+	}
+
+	slice := strings.Split(name, ":")
+	for i := 0; i < len(slice); i++ {
+		subname := slice[i]
+		for collectionName, parts := range collectionParts {
+			_, exists := alternatives[collectionName]
+
+			if parts[i] == "" && exists {
+				alternatives[collectionName] += treshold
+				continue
+			} else if parts[i] == "" {
+				continue
+			}
+
+			lev := levenshtein(subname, parts[i])
+			if lev <= len(subname)/3 || (subname != "" && strings.Contains(parts[i], subname)) {
+				if exists {
+					alternatives[collectionName] = alternatives[collectionName] + lev
+				} else {
+					alternatives[collectionName] += treshold
+				}
+			} else if exists {
+				alternatives[collectionName] += treshold
+			}
+		}
+	}
+
+	for _, item := range collection {
+		lev := levenshtein(name, item)
+		if lev <= len(name)/3 || strings.Contains(item, name) {
+			_, ok := alternatives[item]
+			if ok {
+				alternatives[item] = alternatives[item] - lev
+			} else {
+				alternatives[item] = lev
+			}
+		}
+	}
+
+	filteredAlternatives := make([]string, 0, len(alternatives))
+	for k, v := range alternatives {
+		if v < 2*treshold {
+			filteredAlternatives = append(filteredAlternatives, k)
+		}
+	}
+
+	sort.Strings(filteredAlternatives)
+	return filteredAlternatives
 }
 
 func (app *Application) SetDefaultCommand(commandName string, isSingleCommand bool) error {
@@ -689,14 +985,20 @@ func levenshtein(a string, b string) int {
 		return aLen
 	}
 
-	matrix := make([][]int, 0)
+	matrix := make([][]int, 0, max(aLen, bLen))
 
 	for i := 0; i <= aLen; i++ {
-		matrix[i] = []int{i}
+		s := make([]int, 0, bLen)
+		s = append(s, i)
+		matrix = append(matrix, s)
 	}
 
 	for j := 0; j <= bLen; j++ {
-		matrix[0][j] = j
+		if j == 0 {
+			matrix[0][j] = j
+		} else {
+			matrix[0] = append(matrix[0], j)
+		}
 	}
 
 	for i := 1; i <= aLen; i++ {
@@ -706,7 +1008,19 @@ func levenshtein(a string, b string) int {
 				cost = 1
 			}
 
-			matrix[i][j] = min(matrix[i-1][j]+1, matrix[i][j-1]+1, matrix[i-1][j-1]+cost)
+			mLen := len(matrix)
+			if i >= mLen {
+				matrix = append(matrix, make([]int, 0))
+			}
+
+			v := min(matrix[i-1][j]+1, matrix[i][j-1]+1, matrix[i-1][j-1]+cost)
+
+			iLen := len(matrix[i])
+			if j >= iLen {
+				matrix[i] = append(matrix[i], v)
+			} else {
+				matrix[i][j] = v
+			}
 		}
 	}
 

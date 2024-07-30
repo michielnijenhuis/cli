@@ -299,7 +299,30 @@ func TestCommandHasHelpFlag(t *testing.T) {
 		},
 	}
 
-	input, _ := input.NewArgvInput([]string{"test", "-h"}, nil)
+	input := input.ArgvInputFrom("test", "-h")
+
+	app.Add(cmd)
+
+	if _, err := app.RunWith(input, nil); err != nil {
+		t.Error(err.Error())
+	}
+}
+
+func TestCanSuggestAlternatives(t *testing.T) {
+	app := &application.Application{
+		Name: "app",
+	}
+
+	cmd := &command.Command{
+		Name:        "test",
+		Description: "This is a test command that does nothing.",
+		Help:        "Very useful help message.",
+		Handle: func(self *command.Command) (int, error) {
+			return 0, nil
+		},
+	}
+
+	input := input.ArgvInputFrom("testt")
 
 	app.Add(cmd)
 

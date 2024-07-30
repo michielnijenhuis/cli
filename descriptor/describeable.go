@@ -8,7 +8,7 @@ import (
 type DescribeableApplication interface {
 	All(namespace string) map[string]*command.Command
 	ExtractNamespace(name string, limit int) string
-	FindNamespaces(namespace string) string
+	FindNamespace(namespace string) (string, error)
 	Help() string
 	Definition() *input.InputDefinition
 }

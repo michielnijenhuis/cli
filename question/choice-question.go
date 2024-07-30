@@ -3,6 +3,8 @@ package question
 import (
 	"fmt"
 	"strings"
+
+	"github.com/michielnijenhuis/cli/types"
 )
 
 type ChoiceQuestion struct {
@@ -47,11 +49,11 @@ func (cq *ChoiceQuestion) SetErrorMessage(message string) {
 	cq.SetValidator(cq.defaultValidator())
 }
 
-func (cq *ChoiceQuestion) defaultValidator() QuestionValidator[string] {
+func (cq *ChoiceQuestion) defaultValidator() types.QuestionValidator[string] {
 	choices := cq.Choices()
 	errorMessage := cq.errorMessage
 
-	return func(selected string) string {
+	return func(selected string) (string, error) {
 		if cq.IsTrimmable() {
 			selected = strings.TrimSpace(selected)
 		}
@@ -64,8 +66,7 @@ func (cq *ChoiceQuestion) defaultValidator() QuestionValidator[string] {
 		}
 
 		if len(results) > 1 {
-			// TODO: return error
-			panic(fmt.Sprintf("The provided answer is ambiguous. Value should be one of \"%s\".", strings.Join(results, "\" or \"")))
+			return "", fmt.Errorf("the provided answer is ambiguous. Value should be one of \"%s\"", strings.Join(results, "\" or \""))
 		}
 
 		var result string
@@ -83,10 +84,9 @@ func (cq *ChoiceQuestion) defaultValidator() QuestionValidator[string] {
 		}
 
 		if result == "" {
-			// TODO: return error
-			panic(fmt.Sprintf(errorMessage, selected))
+			return "", fmt.Errorf(errorMessage, selected)
 		}
 
-		return result
+		return result, nil
 	}
 }

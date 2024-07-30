@@ -14,7 +14,7 @@ func FormatSection(section string, message string, style string) string {
 
 func FormatBlock(messages []string, style string, large bool) string {
 	var length int
-	lines := make([]string, len(messages))
+	lines := make([]string, 0, len(messages))
 
 	for _, message := range messages {
 		message = Escape(message)
@@ -29,6 +29,11 @@ func FormatBlock(messages []string, style string, large bool) string {
 		} else {
 			length = max(helper.Width(message)+2, length)
 		}
+	}
+
+	messages = make([]string, 0)
+	if large {
+		messages = append(messages, strings.Repeat(" ", length))
 	}
 
 	for _, line := range lines {

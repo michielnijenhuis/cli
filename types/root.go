@@ -1,4 +1,21 @@
-package style
+package types
+
+type ErrorWithAlternatives interface {
+	error
+	Alternatives() []string
+}
+
+type QuestionValidator[T any] func(T) (T, error)
+type QuestionNormalizer[T any] func(string) T
+type QuestionInterface[T any] interface {
+	GetQuestion() string
+	Default() T
+	Normalizer() QuestionNormalizer[T]
+	Validator() QuestionValidator[T]
+	MaxAttempts() uint
+	IsTrimmable() bool
+	IsMultiline() bool
+}
 
 type StyleInterface interface {
 	Title(message string)

@@ -336,7 +336,7 @@ func (d *TextDescriptor) commandAliasesText(command *command.Command) string {
 		return text
 	}
 
-	aliases := make([]string, len(commandAliases))
+	aliases := make([]string, 0, len(commandAliases))
 
 	for _, alias := range commandAliases {
 		segments := strings.Split(alias, ":")

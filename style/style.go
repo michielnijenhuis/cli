@@ -4,7 +4,10 @@ import (
 	"github.com/michielnijenhuis/cli/formatter"
 	"github.com/michielnijenhuis/cli/input"
 	"github.com/michielnijenhuis/cli/output"
+	"github.com/michielnijenhuis/cli/question"
+	"github.com/michielnijenhuis/cli/question/question_helper"
 	"github.com/michielnijenhuis/cli/terminal"
+	"github.com/michielnijenhuis/cli/types"
 )
 
 const MAX_LINE_LENGTH = 120
@@ -136,8 +139,9 @@ func (s *Style) AskHidden(question string, validator func(string) bool) string {
 }
 
 // TODO: implement
-func (s *Style) Confirm(question string, defaultValue bool) bool {
-	return false
+func (s *Style) Confirm(q string, defaultValue bool) (bool, error) {
+	cq := question.NewConfirmationQuestion(q, defaultValue, nil)
+	return askQuestion(s, cq, s.input, s.output)
 }
 
 // TODO: implement
@@ -159,3 +163,53 @@ func (s *Style) ProgressFinish() {}
 
 // TODO: implement
 func (s *Style) Box(title string, body string, footer string, color string, info string) {}
+
+func askQuestion[T any](s *Style, q types.QuestionInterface[T], i input.InputInterface, o output.OutputInterface) (T, error) {
+	if i.IsInteractive() {
+		s.autoPrependBlock()
+	}
+
+	answer, err := question_helper.Ask(i, o, q)
+
+	if err != nil {
+		var empty T
+		return empty, nil
+	}
+
+	if i.IsInteractive() {
+		consoleSectionOutput, ok := o.(*output.ConsoleSectionOutput)
+		if ok {
+			// add the new line of the `return` to submit the input to ConsoleSectionOutput, because ConsoleSectionOutput is holding all it's lines.
+			// this is relevant when a `ConsoleSectionOutput.clear` is called.
+			consoleSectionOutput.AddNewLineOfInputSubmit()
+		}
+		s.NewLine(1)
+		s.bufferedOutput.Write("\n", false, 0)
+	}
+
+	return answer, nil
+}
+
+func (s *Style) autoPrependBlock() {
+	chars := s.bufferedOutput.Fetch()
+
+	if len(chars) > 2 {
+		chars = chars[:len(chars)-2]
+	}
+
+	if chars == "" {
+		s.NewLine(1) // empty history, so we should start with a new line.
+		return
+	}
+
+	var lineBreakCount int
+	for i := 0; i < len(chars); i++ {
+		char := chars[i]
+		if char == '\n' {
+			lineBreakCount++
+		}
+	}
+
+	// Prepend new line for each non LF chars (This means no blank line was output before)
+	s.NewLine(2 - lineBreakCount)
+}

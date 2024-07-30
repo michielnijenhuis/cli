@@ -73,7 +73,8 @@ func (d *ApplicationDescription) inspectApplication() {
 
 	var all map[string]*command.Command
 	if d.namespace != "" {
-		all = d.application.All(d.application.FindNamespaces(d.namespace))
+		ns, _ := d.application.FindNamespace(d.namespace)
+		all = d.application.All(ns)
 	} else {
 		all = d.application.All("")
 	}
@@ -142,7 +143,7 @@ func (d *ApplicationDescription) sortCommands(commands map[string]*command.Comma
 }
 
 func ksort[T any](obj map[string]T) map[string]T {
-	keys := make([]string, len(obj))
+	keys := make([]string, 0, len(obj))
 	for k := range obj {
 		keys = append(keys, k)
 	}

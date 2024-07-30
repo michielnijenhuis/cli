@@ -2,6 +2,8 @@ package question
 
 import (
 	"regexp"
+
+	"github.com/michielnijenhuis/cli/types"
 )
 
 type ConfirmationQuestion struct {
@@ -21,7 +23,7 @@ func NewConfirmationQuestion(question string, defaultValue bool, trueAnswerRegex
 	return cq
 }
 
-func (q *ConfirmationQuestion) defaultNormalizer() QuestionNormalizer[bool] {
+func (q *ConfirmationQuestion) defaultNormalizer() types.QuestionNormalizer[bool] {
 	defaultValue := q.Default()
 	regex := q.trueAnswerRegex
 
