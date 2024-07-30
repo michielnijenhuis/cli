@@ -158,7 +158,7 @@ func (app *Application) doRun(i input.InputInterface, o output.OutputInterface) 
 		if ok && len(alternatives) == 1 && interactive {
 			o.Writeln("", 0)
 			formattedBlock := formatter.FormatBlock([]string{fmt.Sprintf("command \"%s\" is not defined", name)}, "error", true)
-			o.Writeln(formattedBlock, 0)
+			o.Writeln(formattedBlock+"\n", 0)
 
 			style := style.NewStyle(i, o)
 			alternative := alternatives[0]

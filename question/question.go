@@ -18,11 +18,11 @@ func NewQuestion[T any](question string, defaultValue T) *Question[T] {
 	return &Question[T]{
 		attempts:       -1,
 		hidden:         false,
-		hiddenFallback: false,
+		hiddenFallback: true,
 		validator:      nil,
 		normalizer:     nil,
-		trimmable:      false,
-		multiline:      true,
+		trimmable:      true,
+		multiline:      false,
 		question:       question,
 		defaultValue:   defaultValue,
 	}

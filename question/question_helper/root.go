@@ -85,7 +85,6 @@ func doAsk[T any](o output.OutputInterface, question types.QuestionInterface[T],
 
 		for input == "" && (!hasMaxAttempts || attempts > 0) {
 			attempts--
-			fmt.Println("> ")
 
 			input, err = reader.ReadString('\n')
 			if err != nil {
@@ -186,7 +185,7 @@ func writePrompt[T any](output output.OutputInterface, qs interface{}) {
 			highlight = "no"
 		}
 
-		text = fmt.Sprintf(" <info>%s (yes/no)</info> [<highlight>%s</highlight>]", text, highlight)
+		text = fmt.Sprintf(" %s (yes/no) [<highlight>%s</highlight>]", text, highlight)
 	} else if cq, ok := qs.(*question.ChoiceQuestion); ok {
 		choices := cq.Choices()
 		str, isStr := any(q.Default()).(string)
