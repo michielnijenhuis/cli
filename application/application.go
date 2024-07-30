@@ -175,6 +175,8 @@ func (app *Application) doRun(i input.InputInterface, o output.OutputInterface) 
 			c, findCommandErr = app.Find(alternative)
 			if findCommandErr != nil {
 				return 1, findCommandErr
+			} else {
+				o.Writeln("", 0)
 			}
 		} else {
 			namespace, err := app.FindNamespace(name)
