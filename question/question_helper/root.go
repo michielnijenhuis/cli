@@ -1,8 +1,10 @@
 package question_helper
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 
@@ -25,7 +27,12 @@ func Ask[T any](i input.InputInterface, o output.OutputInterface, question types
 		return cast[T](defaultAnswer[T](question).(T)), nil
 	}
 
-	value, err := doAsk(o, question)
+	var inputStream *os.File
+	if streamableInput, ok := i.(input.StreamableInputInterface); ok && streamableInput.Stream() != nil {
+		inputStream = streamableInput.Stream()
+	}
+
+	value, err := doAsk(o, question, inputStream)
 	if err != nil {
 		i.SetInteractive(false)
 		fallbackOutput := defaultAnswer[T](question)
@@ -60,7 +67,7 @@ func cast[T any](value any) T {
 	return empty
 }
 
-func doAsk[T any](o output.OutputInterface, question types.QuestionInterface[T]) (T, error) {
+func doAsk[T any](o output.OutputInterface, question types.QuestionInterface[T], inputStream *os.File) (T, error) {
 	writePrompt[T](o, question)
 
 	var input string
@@ -68,13 +75,18 @@ func doAsk[T any](o output.OutputInterface, question types.QuestionInterface[T])
 	var err error
 
 	if terminal.IsInteractive() {
+		if inputStream == nil {
+			inputStream = os.Stdin
+		}
+
+		reader := bufio.NewReader(inputStream)
 		attempts := question.MaxAttempts()
 
 		for input == "" && attempts > 0 {
 			attempts--
 			fmt.Println("> ")
 
-			_, err = fmt.Scanln(&input)
+			input, err = reader.ReadString('\n')
 			if err != nil {
 				writeError(o, err)
 				err = nil
