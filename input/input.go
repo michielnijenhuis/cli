@@ -403,6 +403,10 @@ func (input *Input) runArgumentValidators() error {
 			continue
 		}
 
+		if !arg.IsRequired() && value == nil {
+			continue
+		}
+
 		validator := arg.Validator
 		if validator == nil {
 			continue
@@ -427,6 +431,10 @@ func (input *Input) runOptionValidators() error {
 	for name, opt := range opts {
 		value := input.options[name]
 		if value == opt.DefaultValue {
+			continue
+		}
+
+		if !opt.IsValueRequired() && value == nil {
 			continue
 		}
 

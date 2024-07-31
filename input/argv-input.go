@@ -32,7 +32,7 @@ func NewArgvInput(argv []string, definition *InputDefinition) (*ArgvInput, error
 	return input, err
 }
 
-func ArgvInputFrom(s ...string) *ArgvInput {
+func Make(s ...string) InputInterface {
 	i, _ := NewArgvInput(s, nil)
 	return i
 }
