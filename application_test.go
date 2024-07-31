@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/michielnijenhuis/cli/application"
@@ -328,5 +329,37 @@ func TestCanSuggestAlternatives(t *testing.T) {
 
 	if _, err := app.RunWith(input, nil); err != nil {
 		t.Error(err.Error())
+	}
+}
+
+func TestCommandCanExecChildProcesses(t *testing.T) {
+	var out string
+	expected := "Hello, world!"
+
+	cmd := &command.Command{
+		Name:        "test",
+		Description: "This is a test command that does nothing.",
+		Help:        "Very useful help message.",
+		Handle: func(self *command.Command) (int, error) {
+			var err error
+			out, err = self.Exec("echo 'Hello, world!'", "", false)
+			if err != nil {
+				return 1, err
+			}
+			return 0, nil
+		},
+	}
+
+	input, _ := input.NewArgvInput([]string{}, nil)
+
+	if _, err := cmd.Run(input, nil); err != nil {
+		t.Error(err.Error())
+		return
+	}
+
+	out = strings.TrimSuffix(out, "\n")
+
+	if out != expected {
+		t.Errorf("Expected %v, got %v", expected, out)
 	}
 }
