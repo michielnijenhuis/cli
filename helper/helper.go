@@ -1,6 +1,9 @@
 package helper
 
 import (
+	"fmt"
+	"strconv"
+	"strings"
 	"unicode/utf8"
 )
 
@@ -73,12 +76,75 @@ func Substring(s string, from int, length int) string {
 	return s[from:length]
 }
 
-// TODO: implement
 func FormatMemory(memory int) string {
-	return ""
+	format := fmt.Sprintf("%%.%df %%s", 1)
+
+	if memory >= 1024*1024*1024 {
+		return fmt.Sprintf(format, memory/1024/1024/1024, "GiB")
+	}
+
+	if memory >= 1024*1024 {
+		return fmt.Sprintf(format, memory/1024/1024, "MiB")
+	}
+
+	if memory >= 1024 {
+		return fmt.Sprintf(format, memory/1024, "KiB")
+	}
+
+	return fmt.Sprintf("%d B", memory)
 }
 
-// TODO: implement
+var TIME_FORMATS = [][]string{
+	{"1", "1 sec", "secs"},
+	{"60", "1 min", "mins"},
+	{"3600", "1 hr", "hrs"},
+	{"86400", "1 day", "days"},
+}
+
 func FormatTime(secs int, precision int) string {
-	return ""
+	if secs <= 0 {
+		return "< 1 sec"
+	}
+
+	times := make(map[int]string)
+
+	for i, format := range TIME_FORMATS {
+		seconds := secs
+		if i+1 < len(TIME_FORMATS) {
+			conv, _ := strconv.Atoi(TIME_FORMATS[i+1][0])
+			seconds = secs % conv
+		}
+
+		delete(times, i-precision)
+
+		if seconds == 0 {
+			continue
+		}
+
+		f, _ := strconv.Atoi(format[0])
+		unitCount := seconds / f
+
+		var t string
+		if unitCount == 1 {
+			t = format[1]
+		} else {
+			t = fmt.Sprintf("%d %s", unitCount, format[2])
+		}
+		times[i] = t
+
+		if secs == seconds {
+			continue
+		}
+
+		secs -= seconds
+	}
+
+	values := make([]string, len(times))
+	i := 0
+	for k := range times {
+		values[i] = fmt.Sprint(k)
+		i++
+	}
+
+	return strings.Join(values, ", ")
 }

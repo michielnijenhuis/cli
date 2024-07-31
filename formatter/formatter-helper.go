@@ -64,11 +64,6 @@ func Truncate(message string, length int, suffix string) string {
 	return message[:length-1] + suffix
 }
 
-// TODO: implement
-func DetectEncoding(formatter OutputFormatterInferface, str string) string {
-	return ""
-}
-
 func RemoveDecoration(formatter OutputFormatterInferface, str string) string {
 	isDecorated := formatter.IsDecorated()
 	formatter.SetDecorated(false)
