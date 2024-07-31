@@ -399,6 +399,9 @@ func (input *Input) runArgumentValidators() error {
 	args := definition.Arguments()
 	for name, arg := range args {
 		value := input.arguments[name]
+		if value == arg.DefaultValue {
+			continue
+		}
 
 		validator := arg.Validator
 		if validator == nil {
@@ -423,6 +426,9 @@ func (input *Input) runOptionValidators() error {
 	opts := definition.Options()
 	for name, opt := range opts {
 		value := input.options[name]
+		if value == opt.DefaultValue {
+			continue
+		}
 
 		validator := opt.Validator
 		if validator == nil {
