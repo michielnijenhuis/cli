@@ -29,16 +29,7 @@ func TestApplicationCanRenderError(t *testing.T) {
 
 	app.Add(cmd)
 
-	argv := map[string]input.InputType{
-		"command": "test",
-	}
-
-	input, _ := input.NewObjectInput(argv, nil)
-	parseError := input.Validate()
-
-	if parseError != nil {
-		fmt.Print(parseError.Error())
-	}
+	input := input.Make("test")
 
 	code, err := app.RunWith(input, nil)
 
@@ -76,17 +67,7 @@ func TestApplicationCanSuccesfullyExecuteCommand(t *testing.T) {
 
 	app.Add(cmd)
 
-	argv := map[string]input.InputType{
-		"command": "test",
-	}
-
-	input, _ := input.NewObjectInput(argv, nil)
-	parseError := input.Validate()
-
-	if parseError != nil {
-		fmt.Print(parseError.Error())
-	}
-
+	input := input.Make("test")
 	code, err := app.RunWith(input, nil)
 
 	var errMsg string
@@ -125,16 +106,7 @@ func TestApplicationCanRecover(t *testing.T) {
 
 	app.Add(cmd)
 
-	argv := map[string]input.InputType{
-		"command": "test",
-	}
-
-	input, _ := input.NewObjectInput(argv, nil)
-	parseError := input.Validate()
-
-	if parseError != nil {
-		fmt.Print(parseError.Error())
-	}
+	input := input.Make("test")
 
 	code, err := app.RunWith(input, nil)
 
@@ -163,16 +135,7 @@ func TestApplicationCanShowHelp(t *testing.T) {
 		CatchErrors: true,
 	}
 
-	argv := map[string]input.InputType{
-		"command": "help",
-	}
-
-	input, _ := input.NewObjectInput(argv, nil)
-	parseError := input.Validate()
-
-	if parseError != nil {
-		fmt.Print(parseError.Error())
-	}
+	input := input.Make("help")
 
 	app.RunWith(input, nil)
 	fmt.Println("--- end CAN SHOW HELP test ---")
@@ -186,11 +149,7 @@ func TestApplicationCanListCommands(t *testing.T) {
 		CatchErrors: true,
 	}
 
-	argv := map[string]input.InputType{
-		"command": "list",
-	}
-
-	input, _ := input.NewObjectInput(argv, nil)
+	input := input.Make("list")
 	parseError := input.Validate()
 
 	if parseError != nil {
@@ -245,11 +204,7 @@ func TestSumCommand(t *testing.T) {
 		return errors.New("Value is not an array.")
 	})
 
-	input, _ := input.NewObjectInput(map[string]input.InputType{
-		"command": "sum",
-		"values":  []string{"1", "2", "3", "4"},
-		"-vvv":    true,
-	}, nil)
+	input := input.Make("sum", "-vvv", "1", "2", "3", "4")
 
 	app := &application.Application{
 		Name:        "app",
@@ -277,7 +232,7 @@ func TestHelpCommandCanShowHelp(t *testing.T) {
 		},
 	}
 
-	input, _ := input.NewArgvInput([]string{"help", "test"}, nil)
+	input := input.Make("help", "test")
 
 	app.Add(cmd)
 
@@ -300,7 +255,7 @@ func TestCommandHasHelpFlag(t *testing.T) {
 		},
 	}
 
-	input := input.ArgvInputFrom("test", "-h")
+	input := input.Make("test", "-h")
 
 	app.Add(cmd)
 
@@ -323,7 +278,7 @@ func TestCanSuggestAlternatives(t *testing.T) {
 		},
 	}
 
-	input := input.ArgvInputFrom("testt")
+	input := input.Make("testt")
 
 	app.Add(cmd)
 
