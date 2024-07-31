@@ -13,8 +13,6 @@ import (
 )
 
 func TestApplicationCanRenderError(t *testing.T) {
-	fmt.Println("--- begin APPLICATION CAN RENDER test ---")
-
 	app := &application.Application{
 		Name:        "app",
 		CatchErrors: true,
@@ -45,14 +43,9 @@ func TestApplicationCanRenderError(t *testing.T) {
 	if errMsg != "Test error" {
 		t.Errorf("Expected error \"Test error\", got: %s", errMsg)
 	}
-
-	fmt.Println("--- end APPLICATION CAN RENDER test ---")
-	fmt.Println("")
 }
 
 func TestApplicationCanSuccesfullyExecuteCommand(t *testing.T) {
-	fmt.Println("--- begin APPLICATION CAN SUCCESSFULLY EXECUTE COMMAND test ---")
-
 	app := &application.Application{
 		Name:        "app",
 		CatchErrors: true,
@@ -82,14 +75,9 @@ func TestApplicationCanSuccesfullyExecuteCommand(t *testing.T) {
 	if errMsg != "" {
 		t.Errorf("Expected no error, got: %s", errMsg)
 	}
-
-	fmt.Println("--- end APPLICATION CAN SUCCESSFULLY EXECUTE COMMAND test ---")
-	fmt.Println("")
 }
 
 func TestApplicationCanRecover(t *testing.T) {
-	fmt.Println("--- begin APPLICATION CAN RECOVER test ---")
-
 	app := &application.Application{
 		Name:        "app",
 		CatchErrors: true,
@@ -122,14 +110,9 @@ func TestApplicationCanRecover(t *testing.T) {
 	if errMsg != expectedError {
 		t.Errorf("Expected error \"%s\", got: %s", expectedError, errMsg)
 	}
-
-	fmt.Println("--- end APPLICATION CAN RECOVER test ---")
-	fmt.Println("")
 }
 
 func TestApplicationCanShowHelp(t *testing.T) {
-	fmt.Println("--- begin CAN SHOW HELP test ---")
-
 	app := &application.Application{
 		Name:        "app",
 		CatchErrors: true,
@@ -138,12 +121,9 @@ func TestApplicationCanShowHelp(t *testing.T) {
 	input := input.Make("help")
 
 	app.RunWith(input, nil)
-	fmt.Println("--- end CAN SHOW HELP test ---")
-	fmt.Println("")
 }
 
 func TestApplicationCanListCommands(t *testing.T) {
-	fmt.Println("--- begin CAN LIST COMMANDS test ---")
 	app := &application.Application{
 		Name:        "app",
 		CatchErrors: true,
@@ -157,9 +137,6 @@ func TestApplicationCanListCommands(t *testing.T) {
 	}
 
 	app.RunWith(input, nil)
-
-	fmt.Println("--- end CAN LIST COMMANDS test ---")
-	fmt.Println("")
 }
 
 func TestSumCommand(t *testing.T) {
