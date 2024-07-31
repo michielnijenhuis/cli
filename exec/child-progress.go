@@ -41,7 +41,7 @@ func (cp *ChildProcess) Run() (string, error) {
 	c := cp.createCommand()
 
 	if cp.Pipe {
-		output, err := c.Output()
+		output, err := c.CombinedOutput()
 		return string(output), err
 	}
 

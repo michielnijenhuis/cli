@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/michielnijenhuis/cli/exec"
 	"github.com/michielnijenhuis/cli/input"
 	"github.com/michielnijenhuis/cli/output"
 	"github.com/michielnijenhuis/cli/style"
@@ -37,7 +38,6 @@ type Command struct {
 	input                  input.InputInterface
 	output                 output.OutputInterface
 	meta                   any
-	validatedName          bool
 }
 
 func (c *Command) SetInitializer(initializer CommandInitializer) {
@@ -393,4 +393,39 @@ func (c *Command) Meta() any {
 
 func (c *Command) SetMeta(meta any) {
 	c.meta = meta
+}
+
+func (c *Command) Exec(cmd string, shell string, inherit bool) (string, error) {
+	options := &exec.ChildProcessOptions{
+		Shell:   shell,
+		Inherit: inherit,
+		Pipe:    !inherit,
+	}
+
+	if inherit {
+		i := c.input
+		o := c.output
+
+		if stream, ok := i.(input.StreamableInputInterface); ok {
+			options.Stdin = stream.Stream()
+		}
+
+		if stream, ok := o.(output.StreamOutputInterface); ok {
+			options.Stdout = stream.Stream()
+		}
+
+		if console, ok := o.(output.ConsoleOutputInterface); ok {
+			errorOutput := console.ErrorOutput()
+			if stream, ok := errorOutput.(output.StreamOutputInterface); ok {
+				options.Stderr = stream.Stream()
+			}
+		}
+	}
+
+	cp := &exec.ChildProcess{
+		Cmd:                 cmd,
+		ChildProcessOptions: options,
+	}
+
+	return cp.Run()
 }
