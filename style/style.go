@@ -13,7 +13,7 @@ import (
 const MAX_LINE_LENGTH = 120
 
 type Style struct {
-	progressBar    interface{} // TODO
+	progressBar    *ProgressBar
 	lineLength     int
 	bufferedOutput *output.TrimmedBufferOutput
 	input          input.InputInterface
