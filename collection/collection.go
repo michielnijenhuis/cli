@@ -164,3 +164,11 @@ func (c Collection[T]) Reverse() Collection[T] {
 	}
 	return Collect(r)
 }
+
+func Reduce[T any, U any](c Collection[T], fn func(U, T, int) U, initial U) U {
+	for i, v := range c {
+		initial = fn(initial, v, i)
+	}
+
+	return initial
+}
