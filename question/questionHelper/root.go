@@ -1,4 +1,4 @@
-package question_helper
+package questionHelper
 
 import (
 	"bufio"
@@ -37,7 +37,7 @@ func Ask[T any](i input.InputInterface, o output.OutputInterface, question types
 		i.SetInteractive(false)
 		fallbackOutput := defaultAnswer[T](question)
 
-		str, ok := any(fallbackOutput).(string)
+		str, ok := fallbackOutput.(string)
 		if ok {
 			if str == "" {
 				return cast[T](str), err

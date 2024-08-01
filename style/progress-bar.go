@@ -6,14 +6,14 @@ import (
 )
 
 const (
-	FORMAT_VERBOSE            = "verbose"
-	FORMAT_VERY_VERBOSE       = "very_verbose"
-	FORMAT_DEBUG              = "debug"
-	FORMAT_NORMAL             = "normal"
-	FORMAT_VERBOSE_NOMAX      = "verbose_nomax"
-	FORMAT_VERY_VERBOSE_NOMAX = "very_verbose_nomax"
-	FORMAT_DEBUG_NOMAX        = "debug_nomax"
-	FORMAT_NORMAL_NOMAX       = "normal_nomax"
+	formatVerbose           = "verbose"
+	formatVeryVerbose       = "very_verbose"
+	formatDebug             = "debug"
+	formatNormal            = "normal"
+	formatVerboseNomax      = "verbose_nomax"
+	formatVeryVerbose_Nomax = "very_verbose_nomax"
+	formatDebugNomax        = "debug_nomax"
+	formatNormalNomax       = "normal_nomax"
 )
 
 type Formatter func(self *ProgressBar, o output.OutputInterface) string

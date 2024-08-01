@@ -5,9 +5,9 @@ import (
 )
 
 const (
-	INPUT_ARGUMENT_REQUIRED = 1
-	INPUT_ARGUMENT_OPTIONAL = 2
-	INPUT_ARGUMENT_IS_ARRAY = 4
+	InputArgumentRequired = 1
+	InputArgumentOptional = 2
+	InputArgumentIsArray  = 4
 )
 
 type InputArgumentMode uint8
@@ -23,7 +23,7 @@ type InputArgument struct {
 
 func NewInputArgument(name string, mode InputArgumentMode, description string) *InputArgument {
 	if mode == 0 {
-		mode = INPUT_ARGUMENT_OPTIONAL
+		mode = InputArgumentOptional
 	} else if mode > 7 || mode < 1 {
 		panic(fmt.Sprintf("Argument mode \"%d\" is not valid.", mode))
 	}
@@ -41,11 +41,11 @@ func NewInputArgument(name string, mode InputArgumentMode, description string) *
 }
 
 func (a *InputArgument) IsRequired() bool {
-	return (a.Mode & INPUT_ARGUMENT_REQUIRED) == INPUT_ARGUMENT_REQUIRED
+	return (a.Mode & InputArgumentRequired) == InputArgumentRequired
 }
 
 func (a *InputArgument) IsArray() bool {
-	return (a.Mode & INPUT_ARGUMENT_IS_ARRAY) == INPUT_ARGUMENT_IS_ARRAY
+	return (a.Mode & InputArgumentIsArray) == InputArgumentIsArray
 }
 
 func (a *InputArgument) SetDefaultValue(value InputType) *InputArgument {
@@ -57,18 +57,17 @@ func (a *InputArgument) SetDefaultValue(value InputType) *InputArgument {
 	str, isStr := value.(string)
 
 	if a.IsArray() {
-		_, isArr := value.([]string)
+		arr, isArr := value.([]string)
 
 		if isNil {
-			value = make([]string, 0)
+			arr = make([]string, 0)
 		} else if isStr {
-			arr := make([]string, 0)
-			value = append(arr, str)
+			arr = []string{str}
 		} else if !isArr {
 			panic("A default value for an array argument must be an array.")
 		}
 
-		a.DefaultValue = value
+		a.DefaultValue = arr
 		return a
 	}
 

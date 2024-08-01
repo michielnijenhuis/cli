@@ -120,7 +120,9 @@ func TestApplicationCanShowHelp(t *testing.T) {
 
 	input := input.Make("help")
 
-	app.RunWith(input, nil)
+	if _, err := app.RunWith(input, nil); err != nil {
+		t.Error(err.Error())
+	}
 }
 
 func TestApplicationCanListCommands(t *testing.T) {
@@ -136,7 +138,9 @@ func TestApplicationCanListCommands(t *testing.T) {
 		fmt.Print(parseError.Error())
 	}
 
-	app.RunWith(input, nil)
+	if _, err := app.RunWith(input, nil); err != nil {
+		t.Error(err.Error())
+	}
 }
 
 func TestSumCommand(t *testing.T) {
@@ -165,7 +169,7 @@ func TestSumCommand(t *testing.T) {
 		}}
 
 	cmd.SetDescription("Prints the sum of all given values.")
-	cmd.DefineArgument("values", input.INPUT_ARGUMENT_IS_ARRAY, "The values to sum", nil, func(value input.InputType) error {
+	cmd.DefineArgument("values", input.InputArgumentIsArray, "The values to sum", nil, func(value input.InputType) error {
 		arr, ok := value.([]string)
 		if ok {
 			for _, v := range arr {

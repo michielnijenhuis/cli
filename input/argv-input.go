@@ -346,7 +346,7 @@ func (input *ArgvInput) FirstArgument() InputType {
 
 			value := input.options[name]
 			if (value == nil || value == "") && !input.definition.HasShortcut(name) {
-				//noop
+				// noop
 			} else if value != "" && value != nil && input.tokens[i+1] == value {
 				isOption = true
 			} else {
@@ -378,7 +378,7 @@ func (input *ArgvInput) HasParameterOption(value string, onlyParams bool) bool {
 			return false
 		}
 
-		var leading string = value
+		leading := value
 		if strings.HasPrefix(value, "--") {
 			leading = value + "="
 		}
@@ -408,7 +408,7 @@ func (input *ArgvInput) ParameterOption(value string, defaultValue InputType, on
 		// Options with values:
 		//   For long options, test for '--option=' at beginning
 		//   For short options, test for '-o' at beginning
-		var leading string = value
+		leading := value
 		if strings.HasPrefix(value, "--") {
 			leading = value + "="
 		}

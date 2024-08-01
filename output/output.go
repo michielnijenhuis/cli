@@ -17,7 +17,7 @@ type Output struct {
 
 func NewOutput(verbosity uint, decorated bool, f formatter.OutputFormatterInferface) *Output {
 	if verbosity == 0 {
-		verbosity = VERBOSITY_NORMAL
+		verbosity = VerbosityNormal
 	}
 
 	if f == nil {
@@ -61,19 +61,19 @@ func (o *Output) Verbosity() uint {
 }
 
 func (o *Output) IsQuiet() bool {
-	return o.verbosity == VERBOSITY_QUIET
+	return o.verbosity == VerbosityQuiet
 }
 
 func (o *Output) IsVerbose() bool {
-	return o.verbosity == VERBOSITY_VERBOSE
+	return o.verbosity == VerbosityVerbose
 }
 
 func (o *Output) IsVeryVerbose() bool {
-	return o.verbosity == VERBOSITY_VERY_VERBOSE
+	return o.verbosity == VerbosityVeryVerbose
 }
 
 func (o *Output) IsDebug() bool {
-	return o.verbosity == VERBOSITY_DEBUG
+	return o.verbosity == VerbosityDebug
 }
 
 func (o *Output) Writeln(s string, options uint) {
@@ -89,17 +89,17 @@ func (o *Output) Write(message string, newLine bool, options uint) {
 }
 
 func (o *Output) WriteMany(messages []string, newLine bool, options uint) {
-	types := OUTPUT_NORMAL | OUTPUT_RAW | OUTPUT_PLAIN
+	types := OutputNormal | OutputRaw | OutputPlain
 
 	t := types & options
 	if t == 0 {
-		t = OUTPUT_NORMAL
+		t = OutputNormal
 	}
 
-	verbosities := VERBOSITY_QUIET | VERBOSITY_NORMAL | VERBOSITY_VERBOSE | VERBOSITY_VERY_VERBOSE | VERBOSITY_DEBUG
+	verbosities := VerbosityQuiet | VerbosityNormal | VerbosityVerbose | VerbosityVeryVerbose | VerbosityDebug
 	verbosity := verbosities & options
 	if verbosity == 0 {
-		verbosity = VERBOSITY_NORMAL
+		verbosity = VerbosityNormal
 	}
 
 	if verbosity > o.Verbosity() {
@@ -112,9 +112,9 @@ func (o *Output) WriteMany(messages []string, newLine bool, options uint) {
 	for _, m := range messages {
 		message = m
 		switch t {
-		case OUTPUT_NORMAL:
+		case OutputNormal:
 			message = o.formatter.Format(message)
-		case OUTPUT_PLAIN:
+		case OutputPlain:
 			message = re.ReplaceAllString(o.formatter.Format(message), "")
 		}
 

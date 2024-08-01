@@ -104,7 +104,7 @@ func (app *Application) RunWith(i input.InputInterface, o output.OutputInterface
 			exitCode = 255
 		}
 
-		os.Exit(exitCode)
+		defer os.Exit(exitCode)
 	}
 
 	return exitCode, err
@@ -599,16 +599,16 @@ func (app *Application) Abbreviations(names []string) map[string][]string {
 }
 
 func (app *Application) RenderError(o output.OutputInterface, err error) {
-	o.Writeln("", output.VERBOSITY_QUIET)
+	o.Writeln("", output.VerbosityQuiet)
 
 	app.doRenderError(o, err)
 
 	if app.runningCommand != nil {
 		o.Writeln(
 			fmt.Sprintf("<highlight>%s %s</highlight>", app.Name, app.runningCommand.Synopsis(false)),
-			output.VERBOSITY_QUIET,
+			output.VerbosityQuiet,
 		)
-		o.Writeln("", output.VERBOSITY_QUIET)
+		o.Writeln("", output.VerbosityQuiet)
 	}
 }
 
@@ -644,7 +644,7 @@ func (app *Application) doRenderError(o output.OutputInterface, err error) {
 
 	messages = append(messages, emptyLine, "")
 
-	o.Writelns(messages, output.VERBOSITY_QUIET)
+	o.Writelns(messages, output.VerbosityQuiet)
 }
 
 func (app *Application) configureIO(i input.InputInterface, o output.OutputInterface) {
@@ -665,35 +665,35 @@ func (app *Application) configureIO(i input.InputInterface, o output.OutputInter
 
 	switch shellVerbosity {
 	case -1:
-		o.SetVerbosity(output.VERBOSITY_QUIET)
+		o.SetVerbosity(output.VerbosityQuiet)
 	case 1:
-		o.SetVerbosity(output.VERBOSITY_VERBOSE)
+		o.SetVerbosity(output.VerbosityVerbose)
 	case 2:
-		o.SetVerbosity(output.VERBOSITY_VERY_VERBOSE)
+		o.SetVerbosity(output.VerbosityVeryVerbose)
 	case 3:
-		o.SetVerbosity(output.VERBOSITY_DEBUG)
+		o.SetVerbosity(output.VerbosityDebug)
 	default:
 		shellVerbosity = 0
 	}
 
 	if i.HasParameterOption("--quiet", true) || i.HasParameterOption("-q", true) {
-		o.SetVerbosity(output.VERBOSITY_QUIET)
+		o.SetVerbosity(output.VerbosityQuiet)
 		shellVerbosity = -1
 	} else {
 		if i.HasParameterOption("-vvv", true) ||
 			i.HasParameterOption("--verbose=3", true) ||
 			i.ParameterOption("--verbose", false, true) == "3" {
-			o.SetVerbosity(output.VERBOSITY_DEBUG)
+			o.SetVerbosity(output.VerbosityDebug)
 			shellVerbosity = 3
 		} else if i.HasParameterOption("-vv", true) ||
 			i.HasParameterOption("--verbose=2", true) ||
 			i.ParameterOption("--verbose", false, true) == "2" {
-			o.SetVerbosity(output.VERBOSITY_VERBOSE)
+			o.SetVerbosity(output.VerbosityVerbose)
 			shellVerbosity = 2
 		} else if i.HasParameterOption("-v", true) ||
 			i.HasParameterOption("--verbose=1", true) ||
 			i.HasParameterOption("--verbose", true) {
-			o.SetVerbosity(output.VERBOSITY_VERBOSE)
+			o.SetVerbosity(output.VerbosityVerbose)
 			shellVerbosity = 1
 		}
 	}
@@ -725,15 +725,15 @@ func (app *Application) commandName(input input.InputInterface) string {
 }
 
 func (app *Application) defaultInputDefinition() *input.InputDefinition {
-	commandArgument := input.NewInputArgument("command", input.INPUT_ARGUMENT_REQUIRED, "The command to execute")
+	commandArgument := input.NewInputArgument("command", input.InputArgumentRequired, "The command to execute")
 	arguments := []*input.InputArgument{commandArgument}
 
-	helpOption := input.NewInputOption("--help", "-h", input.INPUT_OPTION_BOOLEAN, fmt.Sprintf("Display help for the given command, or the <highlight>%s</highlight> command (if no command is given)", app.DefaultCommand))
-	quietOption := input.NewInputOption("--quiet", "-q", input.INPUT_OPTION_BOOLEAN, "Do not output any message")
-	verboseoption := input.NewInputOption("--verbose", "-v|vv|vvv", input.INPUT_OPTION_BOOLEAN, "Increase the verbosity of messages: normal (1), verbose (2) or debug (3)")
-	versionOption := input.NewInputOption("--version", "-V", input.INPUT_OPTION_BOOLEAN, "Display this application version")
-	ansiOption := input.NewInputOption("--ansi", "", input.INPUT_OPTION_NEGATABLE, "Force (or disable --no-ansi) ANSI output")
-	noInteractionOption := input.NewInputOption("--no-interaction", "-n", input.INPUT_OPTION_BOOLEAN, "Do not ask any interactive question")
+	helpOption := input.NewInputOption("--help", "-h", input.InputOptionBool, fmt.Sprintf("Display help for the given command, or the <highlight>%s</highlight> command (if no command is given)", app.DefaultCommand))
+	quietOption := input.NewInputOption("--quiet", "-q", input.InputOptionBool, "Do not output any message")
+	verboseoption := input.NewInputOption("--verbose", "-v|vv|vvv", input.InputOptionBool, "Increase the verbosity of messages: normal (1), verbose (2) or debug (3)")
+	versionOption := input.NewInputOption("--version", "-V", input.InputOptionBool, "Display this application version")
+	ansiOption := input.NewInputOption("--ansi", "", input.InputOptionNegatable, "Force (or disable --no-ansi) ANSI output")
+	noInteractionOption := input.NewInputOption("--no-interaction", "-n", input.InputOptionBool, "Do not ask any interactive question")
 
 	options := []*input.InputOption{
 		helpOption,
@@ -799,10 +799,10 @@ To display the list of available commands, please use the <highlight>list</highl
 
 	c.SetDefinition(input.NewInputDefinition(
 		[]*input.InputArgument{
-			input.NewInputArgument("command_name", input.INPUT_ARGUMENT_OPTIONAL, "The command name").SetDefaultValue("help"),
+			input.NewInputArgument("command_name", input.InputArgumentOptional, "The command name").SetDefaultValue("help"),
 		},
 		[]*input.InputOption{
-			input.NewInputOption("raw", "", input.INPUT_OPTION_BOOLEAN, "To output raw command help"),
+			input.NewInputOption("raw", "", input.InputOptionBool, "To output raw command help"),
 		},
 	))
 
@@ -838,11 +838,11 @@ It's also possible to get raw list of commands (useful for embedding command run
 
 	c.SetDefinition(input.NewInputDefinition(
 		[]*input.InputArgument{
-			input.NewInputArgument("namespace", input.INPUT_ARGUMENT_OPTIONAL, "The namespace name"),
+			input.NewInputArgument("namespace", input.InputArgumentOptional, "The namespace name"),
 		},
 		[]*input.InputOption{
-			input.NewInputOption("raw", "", input.INPUT_OPTION_BOOLEAN, "To output raw command list"),
-			input.NewInputOption("short", "", input.INPUT_OPTION_BOOLEAN, "To skip describing commands' arguments"),
+			input.NewInputOption("raw", "", input.InputOptionBool, "To output raw command list"),
+			input.NewInputOption("short", "", input.InputOptionBool, "To skip describing commands' arguments"),
 		},
 	))
 
@@ -888,7 +888,7 @@ func (app *Application) findAlternatives(name string, collection []string) []str
 			lev := levenshtein(subname, parts[i])
 			if lev <= len(subname)/3 || (subname != "" && strings.Contains(parts[i], subname)) {
 				if exists {
-					alternatives[collectionName] = alternatives[collectionName] + lev
+					alternatives[collectionName] += lev
 				} else {
 					alternatives[collectionName] += treshold
 				}
@@ -903,7 +903,7 @@ func (app *Application) findAlternatives(name string, collection []string) []str
 		if lev <= len(name)/3 || strings.Contains(item, name) {
 			_, ok := alternatives[item]
 			if ok {
-				alternatives[item] = alternatives[item] - lev
+				alternatives[item] -= lev
 			} else {
 				alternatives[item] = lev
 			}

@@ -69,11 +69,11 @@ func (c *Collection[T]) PushBack(v ...T) {
 	*c = append(*c, v...)
 }
 
-func (c Collection[T]) PushFront(v ...T) {
+func (c *Collection[T]) PushFront(v ...T) {
 	s := make([]T, 0, len(v)+c.Len())
 	s = append(s, v...)
-	s = append(s, c...)
-	c = s
+	s = append(s, *c...)
+	*c = s
 }
 
 func (c *Collection[T]) PopBack() T {

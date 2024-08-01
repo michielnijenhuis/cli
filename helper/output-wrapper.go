@@ -7,13 +7,14 @@ import (
 	"strings"
 )
 
-func Wrap(text string, width int, breakChar string, allowCutUrls bool) string {
-	TAG_OPEN_REGEX_SEGMENT := `[a-z](?:[^\\<>]*|\\.)*`
-	TAG_CLOSE_REGEX_SEGMENT := `[a-z][^<>]*`
-	URL_PATTERN := `https?:\/\/\S+`
+const tagOpenRegexSegment = `[a-z](?:[^\\<>]*|\\.)*`
+const tagCloseRegexSegment = `[a-z][^<>]*`
+const urlPattern = `https?:\/\/\S+`
 
-	tagPattern := regexp.MustCompile(fmt.Sprintf(`<(%s|/%s?)>`, TAG_OPEN_REGEX_SEGMENT, TAG_CLOSE_REGEX_SEGMENT))
-	urlRegex := regexp.MustCompile(URL_PATTERN)
+func Wrap(text string, width int, breakChar string, allowCutUrls bool) string {
+
+	tagPattern := regexp.MustCompile(fmt.Sprintf(`<(%s|/%s?)>`, tagOpenRegexSegment, tagCloseRegexSegment))
+	urlRegex := regexp.MustCompile(urlPattern)
 	breakPointPattern := regexp.MustCompile(fmt.Sprintf(`.{1,%d}(\\s|$)|.{1,%d}`, width, width))
 
 	var parts []string

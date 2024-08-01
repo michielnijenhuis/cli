@@ -117,7 +117,7 @@ func (o *ConsoleSectionOutput) AddContent(input string, newLine bool) int {
 			if deduction == 0 {
 				deduction = 1
 			}
-			o.lines -= int(deduction)
+			o.lines -= deduction
 
 			// concatenate previous and new line
 			lineContent = lastLine + lineContent

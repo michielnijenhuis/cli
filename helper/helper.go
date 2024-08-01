@@ -94,7 +94,7 @@ func FormatMemory(memory int) string {
 	return fmt.Sprintf("%d B", memory)
 }
 
-var TIME_FORMATS = [][]string{
+var timeFormats = [][]string{
 	{"1", "1 sec", "secs"},
 	{"60", "1 min", "mins"},
 	{"3600", "1 hr", "hrs"},
@@ -108,10 +108,10 @@ func FormatTime(secs int, precision int) string {
 
 	times := make(map[int]string)
 
-	for i, format := range TIME_FORMATS {
+	for i, format := range timeFormats {
 		seconds := secs
-		if i+1 < len(TIME_FORMATS) {
-			conv, _ := strconv.Atoi(TIME_FORMATS[i+1][0])
+		if i+1 < len(timeFormats) {
+			conv, _ := strconv.Atoi(timeFormats[i+1][0])
 			seconds = secs % conv
 		}
 

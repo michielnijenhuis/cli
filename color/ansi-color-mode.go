@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	ANSI_4  uint8 = 4
-	ANSI_8  uint8 = 8
-	ANSI_24 uint8 = 24
+	ansi4  uint8 = 4
+	ansi8  uint8 = 8
+	ansi24 uint8 = 24
 )
 
 func ConvertFromHexToAnsiColorCode(mode uint8, hexColor string) (string, error) {
@@ -36,15 +36,15 @@ func ConvertFromHexToAnsiColorCode(mode uint8, hexColor string) (string, error) 
 	b := color & 255
 
 	switch mode {
-	case ANSI_4:
+	case ansi4:
 		return convertFromRGB(mode, r, g, b)
-	case ANSI_8:
+	case ansi8:
 		str, e := convertFromRGB(mode, r, g, b)
 		if e != nil {
 			return "", e
 		}
 		return ("8;5;" + str), nil
-	case ANSI_24:
+	case ansi24:
 		return ("8;2;" + strings.Join([]string{strconv.Itoa(int(r)), strconv.Itoa(int(g)), strconv.Itoa(int(b))}, ";")), nil
 	default:
 		return "", errors.New("invalid Ansi color mode. Options: 4, 8, 24")
@@ -53,11 +53,11 @@ func ConvertFromHexToAnsiColorCode(mode uint8, hexColor string) (string, error) 
 
 func convertFromRGB(mode uint8, r int64, g int64, b int64) (string, error) {
 	switch mode {
-	case ANSI_4:
+	case ansi4:
 		return strconv.Itoa(degradeHexColorToAnsi4(r, g, b)), nil
-	case ANSI_8:
+	case ansi8:
 		return strconv.Itoa(degradeHexColorToAnsi8(r, g, b)), nil
-	case ANSI_24:
+	case ansi24:
 		return "", errors.New("rgb cannot be converted to Ansi24")
 	default:
 		return "", errors.New("invalid Ansi color mode. Options: 4, 8, 24")
@@ -96,16 +96,16 @@ func ColorMode() uint8 {
 		envColorTerm = strings.ToLower(envColorTerm)
 
 		if strings.Contains(envColorTerm, "truecolor") {
-			colorMode = ANSI_24
+			colorMode = ansi24
 			return colorMode
 		}
 
 		if strings.Contains(envColorTerm, "256color") {
-			colorMode = ANSI_8
+			colorMode = ansi8
 			return colorMode
 		}
 	}
 
-	colorMode = ANSI_4
+	colorMode = ansi4
 	return colorMode
 }

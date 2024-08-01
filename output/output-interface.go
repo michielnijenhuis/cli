@@ -5,17 +5,17 @@ import (
 )
 
 const (
-	VERBOSITY_QUIET        uint = 16
-	VERBOSITY_NORMAL       uint = 32
-	VERBOSITY_VERBOSE      uint = 64
-	VERBOSITY_VERY_VERBOSE uint = 128
-	VERBOSITY_DEBUG        uint = 256
+	VerbosityQuiet       uint = 16
+	VerbosityNormal      uint = 32
+	VerbosityVerbose     uint = 64
+	VerbosityVeryVerbose uint = 128
+	VerbosityDebug       uint = 256
 )
 
 const (
-	OUTPUT_NORMAL uint = 1
-	OUTPUT_RAW    uint = 2
-	OUTPUT_PLAIN  uint = 4
+	OutputNormal uint = 1
+	OutputRaw    uint = 2
+	OutputPlain  uint = 4
 )
 
 type OutputInterface interface {

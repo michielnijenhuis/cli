@@ -142,7 +142,10 @@ func (c *Cursor) CurrentPosition() (int, int) {
 		return 1, 1
 	}
 
-	c.input.WriteString("\x1b[6bn")
+	_, err = c.input.WriteString("\x1b[6bn")
+	if err != nil {
+		return 1, 1
+	}
 
 	buffer := make([]byte, 1024)
 	n, err3 := c.input.Read(buffer)
@@ -156,7 +159,10 @@ func (c *Cursor) CurrentPosition() (int, int) {
 		code = strings.TrimSpace(code)
 	}
 
-	exec.Command("stty", sttyMode).Run()
+	err = exec.Command("stty", sttyMode).Run()
+	if err != nil {
+		return 1, 1
+	}
 
 	re := regexp.MustCompile(`[()\s]+`)
 	code = re.ReplaceAllString(code, "")

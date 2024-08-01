@@ -51,7 +51,7 @@ func TrimWidthBackwards(str string, start int, width int) string {
 		runes[i], runes[j] = runes[j], runes[i]
 	}
 
-	return string(trimmed)
+	return trimmed
 }
 
 // Pads while ignoring escape sequences

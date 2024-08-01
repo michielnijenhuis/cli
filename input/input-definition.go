@@ -41,25 +41,25 @@ func (definition *InputDefinition) SetDefinition(arguments []*InputArgument, opt
 	definition.SetOptions(options)
 }
 
-func (input *InputDefinition) SetArguments(arguments []*InputArgument) {
-	input.arguments = make(map[string]*InputArgument)
-	input.requiredCount = 0
-	input.lastOptionalArgument = nil
-	input.lastArrayArgument = nil
-	input.AddArguments(arguments)
+func (definition *InputDefinition) SetArguments(arguments []*InputArgument) {
+	definition.arguments = make(map[string]*InputArgument)
+	definition.requiredCount = 0
+	definition.lastOptionalArgument = nil
+	definition.lastArrayArgument = nil
+	definition.AddArguments(arguments)
 }
 
-func (input *InputDefinition) AddArguments(arguments []*InputArgument) {
+func (definition *InputDefinition) AddArguments(arguments []*InputArgument) {
 	if arguments == nil {
 		return
 	}
 
 	for _, arg := range arguments {
-		input.AddArgument(arg)
+		definition.AddArgument(arg)
 	}
 }
 
-func (input *InputDefinition) AddArgument(argument *InputArgument) {
+func (definition *InputDefinition) AddArgument(argument *InputArgument) {
 	if argument == nil {
 		return
 	}
@@ -68,33 +68,33 @@ func (input *InputDefinition) AddArgument(argument *InputArgument) {
 		argument = argument.Clone()
 	}
 
-	if input.arguments[argument.Name] != nil {
+	if definition.arguments[argument.Name] != nil {
 		panic(fmt.Sprintf("An argument with name \"%s\" already exists.", argument.Name))
 	}
 
-	if input.lastArrayArgument != nil {
-		panic(fmt.Sprintf("Cannot add a required argument \"%s\" after an array argument \"%s\".", argument.Name, input.lastArrayArgument.Name))
+	if definition.lastArrayArgument != nil {
+		panic(fmt.Sprintf("Cannot add a required argument \"%s\" after an array argument \"%s\".", argument.Name, definition.lastArrayArgument.Name))
 	}
 
-	if argument.IsRequired() && input.lastOptionalArgument != nil {
-		panic(fmt.Sprintf("Cannot add a required argument \"%s\" after an optional one \"%s\".", argument.Name, input.lastOptionalArgument.Name))
+	if argument.IsRequired() && definition.lastOptionalArgument != nil {
+		panic(fmt.Sprintf("Cannot add a required argument \"%s\" after an optional one \"%s\".", argument.Name, definition.lastOptionalArgument.Name))
 	}
 
 	if argument.IsArray() {
-		input.lastArrayArgument = argument
+		definition.lastArrayArgument = argument
 	}
 
 	if argument.IsRequired() {
-		input.requiredCount += 1
+		definition.requiredCount += 1
 	} else {
-		input.lastOptionalArgument = argument
+		definition.lastOptionalArgument = argument
 	}
 
-	input.arguments[argument.Name] = argument
+	definition.arguments[argument.Name] = argument
 }
 
-func (input *InputDefinition) HasArgument(name string) bool {
-	return input.arguments[name] != nil
+func (definition *InputDefinition) HasArgument(name string) bool {
+	return definition.arguments[name] != nil
 }
 
 func (definition *InputDefinition) Argument(name string) (*InputArgument, error) {

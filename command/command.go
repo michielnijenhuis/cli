@@ -151,7 +151,10 @@ func (c *Command) Run(i input.InputInterface, o output.OutputInterface) (int, er
 	if i.HasArgument("command") {
 		command, _ := i.StringArgument("command")
 		if command == "" {
-			i.SetArgument("command", c.Name)
+			err := i.SetArgument("command", c.Name)
+			if err != nil {
+				return 1, err
+			}
 		}
 	}
 
@@ -356,7 +359,7 @@ func (c *Command) ProcessedHelp() string {
 	}
 
 	for i, placeholder := range placeholders {
-		help = strings.Replace(help, placeholder, replacements[i], -1)
+		help = strings.ReplaceAll(help, placeholder, replacements[i])
 	}
 
 	return help

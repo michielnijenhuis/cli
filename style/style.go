@@ -5,12 +5,12 @@ import (
 	"github.com/michielnijenhuis/cli/input"
 	"github.com/michielnijenhuis/cli/output"
 	"github.com/michielnijenhuis/cli/question"
-	"github.com/michielnijenhuis/cli/question/question_helper"
+	"github.com/michielnijenhuis/cli/question/questionHelper"
 	"github.com/michielnijenhuis/cli/terminal"
 	"github.com/michielnijenhuis/cli/types"
 )
 
-const MAX_LINE_LENGTH = 120
+const maxLineLength = 120
 
 type Style struct {
 	progressBar    *ProgressBar
@@ -31,10 +31,10 @@ func NewStyle(i input.InputInterface, o output.OutputInterface) *Style {
 
 	width, _ := terminal.Width()
 	if width == 0 {
-		width = MAX_LINE_LENGTH
+		width = maxLineLength
 	}
 
-	s.lineLength = min(width, MAX_LINE_LENGTH)
+	s.lineLength = min(width, maxLineLength)
 
 	return s
 }
@@ -169,7 +169,7 @@ func askQuestion[T any](s *Style, q types.QuestionInterface[T], i input.InputInt
 		s.autoPrependBlock()
 	}
 
-	answer, err := question_helper.Ask(i, o, q)
+	answer, err := questionHelper.Ask(i, o, q)
 
 	if err != nil {
 		var empty T

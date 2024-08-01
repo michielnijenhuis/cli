@@ -7,11 +7,11 @@ import (
 )
 
 const (
-	INPUT_OPTION_BOOLEAN   = 1
-	INPUT_OPTION_REQUIRED  = 2
-	INPUT_OPTION_OPTIONAL  = 4
-	INPUT_OPTION_IS_ARRAY  = 8
-	INPUT_OPTION_NEGATABLE = 16
+	InputOptionBool      = 1
+	InputOptionRequired  = 2
+	InputOptionOptional  = 4
+	InputOptionIsArray   = 8
+	InputOptionNegatable = 16
 )
 
 type InputOptionMode uint8
@@ -52,8 +52,8 @@ func NewInputOption(name string, shortcut string, mode InputOptionMode, descript
 	}
 
 	if mode == 0 {
-		mode = INPUT_OPTION_OPTIONAL
-	} else if mode >= INPUT_OPTION_NEGATABLE<<1 || mode < 1 {
+		mode = InputOptionOptional
+	} else if mode >= InputOptionNegatable<<1 || mode < 1 {
 		panic(fmt.Sprintf("Option mode \"%d\" is not valid.", mode))
 	}
 
@@ -79,19 +79,19 @@ func NewInputOption(name string, shortcut string, mode InputOptionMode, descript
 }
 
 func (o *InputOption) IsArray() bool {
-	return (o.Mode & INPUT_OPTION_IS_ARRAY) == INPUT_OPTION_IS_ARRAY
+	return (o.Mode & InputOptionIsArray) == InputOptionIsArray
 }
 
 func (o *InputOption) IsNegatable() bool {
-	return (o.Mode & INPUT_OPTION_NEGATABLE) == INPUT_OPTION_NEGATABLE
+	return (o.Mode & InputOptionNegatable) == InputOptionNegatable
 }
 
 func (o *InputOption) IsValueRequired() bool {
-	return (o.Mode & INPUT_OPTION_REQUIRED) == INPUT_OPTION_REQUIRED
+	return (o.Mode & InputOptionRequired) == InputOptionRequired
 }
 
 func (o *InputOption) IsValueOptional() bool {
-	return (o.Mode & INPUT_OPTION_OPTIONAL) == INPUT_OPTION_OPTIONAL
+	return (o.Mode & InputOptionOptional) == InputOptionOptional
 }
 
 func (o *InputOption) AcceptValue() bool {
@@ -99,7 +99,7 @@ func (o *InputOption) AcceptValue() bool {
 }
 
 func (o *InputOption) SetDefaultValue(value InputType) *InputOption {
-	if (o.Mode&INPUT_OPTION_BOOLEAN) == INPUT_OPTION_BOOLEAN && value != "" && value != nil {
+	if (o.Mode&InputOptionBool) == InputOptionBool && value != "" && value != nil {
 		panic("Cannot set a default value when using InputOption.BOOLEAN mode.")
 	}
 

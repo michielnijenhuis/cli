@@ -17,7 +17,7 @@ type Color struct {
 	options    map[string]AvailableOption
 }
 
-var COLORS = map[string]int{
+var colors = map[string]int{
 	"black":   0,
 	"red":     1,
 	"green":   2,
@@ -29,7 +29,7 @@ var COLORS = map[string]int{
 	"default": 9,
 }
 
-var BRIGHT_COLORS = map[string]int{
+var brightColors = map[string]int{
 	"gray":           0,
 	"bright-red":     1,
 	"bright-green":   2,
@@ -40,7 +40,7 @@ var BRIGHT_COLORS = map[string]int{
 	"bright-white":   7,
 }
 
-var AVAILABLE_OPTIONS = map[string]AvailableOption{
+var availableOptions = map[string]AvailableOption{
 	"bold":       {set: 1, unset: 22},
 	"underscore": {set: 4, unset: 24},
 	"blink":      {set: 5, unset: 25},
@@ -52,9 +52,9 @@ func NewColor(foreground string, background string, options []string) *Color {
 	opts := make(map[string]AvailableOption)
 
 	for _, opt := range options {
-		_, exists := AVAILABLE_OPTIONS[opt]
+		_, exists := availableOptions[opt]
 		if exists {
-			opts[opt] = AVAILABLE_OPTIONS[opt]
+			opts[opt] = availableOptions[opt]
 		}
 	}
 
@@ -139,7 +139,7 @@ func parseColor(color string, background bool) (string, error) {
 		return out, nil
 	}
 
-	if code, contains := COLORS[color]; contains {
+	if code, contains := colors[color]; contains {
 		if background {
 			return "4" + strconv.Itoa(code), nil
 		}
@@ -147,7 +147,7 @@ func parseColor(color string, background bool) (string, error) {
 		return "3" + strconv.Itoa(code), nil
 	}
 
-	if code, contains := BRIGHT_COLORS[color]; contains {
+	if code, contains := brightColors[color]; contains {
 		if background {
 			return "10" + strconv.Itoa(code), nil
 		}
@@ -156,10 +156,10 @@ func parseColor(color string, background bool) (string, error) {
 	}
 
 	opts := make([]string, 0)
-	for key := range COLORS {
+	for key := range colors {
 		opts = append(opts, key)
 	}
-	for key := range BRIGHT_COLORS {
+	for key := range brightColors {
 		opts = append(opts, key)
 	}
 

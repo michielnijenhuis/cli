@@ -6,8 +6,8 @@ import (
 
 func Write(o output.OutputInterface, content string, decorated bool) {
 	if decorated {
-		o.Write(content, false, output.OUTPUT_NORMAL)
+		o.Write(content, false, output.OutputNormal)
 	} else {
-		o.Write(content, false, output.OUTPUT_RAW)
+		o.Write(content, false, output.OutputRaw)
 	}
 }
