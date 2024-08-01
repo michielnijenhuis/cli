@@ -136,7 +136,7 @@ func doAsk[T any](o output.OutputInterface, question types.QuestionInterface[T],
 	return ret, nil
 }
 
-func defaultAnswer[T any](qs interface{}) any {
+func defaultAnswer[T any](qs any) any {
 	q, ok := qs.(types.QuestionInterface[T])
 	if !ok {
 		var empty T
@@ -165,7 +165,7 @@ func defaultAnswer[T any](qs interface{}) any {
 	return defaultValue
 }
 
-func writePrompt[T any](output output.OutputInterface, qs interface{}) {
+func writePrompt[T any](output output.OutputInterface, qs any) {
 	q, ok := qs.(types.QuestionInterface[T])
 	if !ok {
 		return

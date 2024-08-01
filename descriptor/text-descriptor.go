@@ -371,7 +371,7 @@ func hasDefaultValue(value input.InputType) bool {
 		return false
 	}
 
-	arr, ok := value.([]interface{})
+	arr, ok := value.([]any)
 	if ok {
 		return len(arr) > 0
 	}
@@ -408,7 +408,7 @@ func formatDefaultValue(value input.InputType) string {
 		return "false"
 	}
 
-	arr, ok := value.([]interface{})
+	arr, ok := value.([]any)
 	if ok {
 		elements := make([]string, 0, len(arr))
 		for _, el := range arr {

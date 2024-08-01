@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-type InputParser func(self interface{}) error
+type InputParser func(self any) error
 
 type Input struct {
 	definition  *InputDefinition

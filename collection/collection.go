@@ -33,7 +33,7 @@ func (c Collection[T]) MapInPlace(fn func(T) T) Collection[T] {
 
 func (c Collection[T]) Filter(predicate func(T) bool) Collection[T] {
 	f := make([]T, 0, c.Len())
-	for _, v := range c.Slice() {
+	for _, v := range c {
 		if predicate(v) {
 			f = append(f, v)
 		}
@@ -122,18 +122,14 @@ func (c Collection[T]) IndexOf(value T, cmp func(T, T) bool) int {
 	return -1
 }
 
-func (c Collection[T]) Find(fn func(T) bool) T {
+func (c Collection[T]) Find(fn func(T) bool) (T, bool) {
 	for _, v := range c {
 		if fn(v) {
-			return v
+			return v, true
 		}
 	}
 	var empty T
-	return empty
-}
-
-func (c Collection[T]) Slice() []T {
-	return c
+	return empty, false
 }
 
 func (c Collection[T]) Splice(start int, end int) Collection[T] {
@@ -165,10 +161,39 @@ func (c Collection[T]) Reverse() Collection[T] {
 	return Collect(r)
 }
 
-func Reduce[T any, U any](c Collection[T], fn func(U, T, int) U, initial U) U {
+func (c Collection[T]) ReverseInPlace() Collection[T] {
+	j := len(c) - 1
+	for i := 0; i < j; i++ {
+		tmp := c[i]
+		c[i] = c[j]
+		c[j] = tmp
+		j--
+	}
+	return c
+}
+
+func Reduce[T any, U any](c Collection[T], fn func(acc U, cur T, i int) U, initial U) U {
 	for i, v := range c {
 		initial = fn(initial, v, i)
 	}
 
 	return initial
+}
+
+func (c Collection[T]) Every(fn func(T) bool) bool {
+	for _, v := range c {
+		if !fn(v) {
+			return false
+		}
+	}
+	return true
+}
+
+func (c Collection[T]) Some(fn func(T) bool) bool {
+	for _, v := range c {
+		if fn(v) {
+			return true
+		}
+	}
+	return false
 }

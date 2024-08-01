@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-type InputType interface{}
+type InputType any
 
 type InputValidator func(value InputType) error
 
