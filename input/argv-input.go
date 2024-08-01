@@ -32,8 +32,56 @@ func NewArgvInput(argv []string, definition *InputDefinition) (*ArgvInput, error
 	return input, err
 }
 
+func ParseStringToArgs(cmd string) []string {
+	segments := strings.Split(cmd, " ")
+	out := make([]string, 0)
+	stack := make([]string, 0)
+	var i int
+	var collectingBy string
+
+	for i < len(segments) {
+		current := segments[i]
+		i++
+
+		if collectingBy == "" {
+			for _, char := range []string{"'", `"`} {
+				if strings.HasPrefix(current, char) && !strings.HasSuffix(current, char) {
+					stack = append(stack, current[1:])
+					collectingBy = char
+					break
+				}
+			}
+
+			if collectingBy == "" {
+				out = append(out, current)
+			}
+
+		} else if strings.HasSuffix(current, collectingBy) {
+			stack = append(stack, current[:len(current)-1])
+			out = append(out, strings.Join(stack, " "))
+			stack = make([]string, 0)
+			collectingBy = ""
+		} else {
+			stack = append(stack, current)
+		}
+	}
+
+	if len(stack) > 0 {
+		out = append(out, stack...)
+	}
+
+	return out
+}
+
 func Make(s ...string) InputInterface {
-	i, _ := NewArgvInput(s, nil)
+	var args = []string(s)
+
+	// accept single command string that includes all args
+	if len(args) == 1 {
+		args = ParseStringToArgs(args[0])
+	}
+
+	i, _ := NewArgvInput(args, nil)
 	return i
 }
 

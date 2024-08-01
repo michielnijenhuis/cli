@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"os"
 	os_exec "os/exec"
-	"strings"
+
+	"github.com/michielnijenhuis/cli/input"
 )
 
 type ChildProcessOptions struct {
@@ -76,7 +77,7 @@ func (cp *ChildProcess) createCommand() *os_exec.Cmd {
 
 	args := cp.Args
 	if cmd != "" && args == nil {
-		args = parseArgs(cmd)
+		args = input.ParseStringToArgs(cmd)
 	} else if args == nil {
 		args = []string{}
 	}
@@ -124,45 +125,4 @@ func prepareCommand(cmd string, shell string) string {
 	default:
 		return cmd
 	}
-}
-
-func parseArgs(cmd string) []string {
-	segments := strings.Split(cmd, " ")
-	out := make([]string, 0)
-	stack := make([]string, 0)
-	var i int
-	var collectingBy string
-
-	for i < len(segments) {
-		current := segments[i]
-		i++
-
-		if collectingBy == "" {
-			for _, char := range []string{"'", `"`} {
-				if strings.HasPrefix(current, char) && !strings.HasSuffix(current, char) {
-					stack = append(stack, current[1:])
-					collectingBy = char
-					break
-				}
-			}
-
-			if collectingBy == "" {
-				out = append(out, current)
-			}
-
-		} else if strings.HasSuffix(current, collectingBy) {
-			stack = append(stack, current[:len(current)-1])
-			out = append(out, strings.Join(stack, " "))
-			stack = make([]string, 0)
-			collectingBy = ""
-		} else {
-			stack = append(stack, current)
-		}
-	}
-
-	if len(stack) > 0 {
-		out = append(out, stack...)
-	}
-
-	return out
 }

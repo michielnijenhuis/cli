@@ -185,7 +185,7 @@ func TestSumCommand(t *testing.T) {
 		return errors.New("Value is not an array.")
 	})
 
-	input := input.Make("sum", "-vvv", "1", "2", "3", "4")
+	input := input.Make("sum -vvv 1 2 3 4")
 
 	app := &application.Application{
 		Name:        "app",
