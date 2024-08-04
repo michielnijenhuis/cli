@@ -6,30 +6,24 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-
-	"github.com/michielnijenhuis/cli/application"
-	"github.com/michielnijenhuis/cli/command"
-	"github.com/michielnijenhuis/cli/input"
 )
 
 func TestApplicationCanRenderError(t *testing.T) {
-	app := &application.Application{
+	app := &Application{
 		Name:        "app",
 		CatchErrors: true,
 	}
 
-	cmd := &command.Command{
+	cmd := &Command{
 		Name: "test",
-		Handle: func(self *command.Command) (int, error) {
+		Handle: func(self *Command) (int, error) {
 			return 1, errors.New("Test error")
 		},
 	}
 
 	app.Add(cmd)
 
-	input := input.Make("test")
-
-	code, err := app.RunWith(input, nil)
+	code, err := app.Run("test")
 
 	var errMsg string
 	if err != nil {
@@ -46,22 +40,21 @@ func TestApplicationCanRenderError(t *testing.T) {
 }
 
 func TestApplicationCanSuccesfullyExecuteCommand(t *testing.T) {
-	app := &application.Application{
+	app := &Application{
 		Name:        "app",
 		CatchErrors: true,
 	}
 
-	cmd := &command.Command{
+	cmd := &Command{
 		Name: "test",
-		Handle: func(self *command.Command) (int, error) {
+		Handle: func(self *Command) (int, error) {
 			return 0, nil
 		},
 	}
 
 	app.Add(cmd)
 
-	input := input.Make("test")
-	code, err := app.RunWith(input, nil)
+	code, err := app.Run("test")
 
 	var errMsg string
 	if err != nil {
@@ -78,25 +71,23 @@ func TestApplicationCanSuccesfullyExecuteCommand(t *testing.T) {
 }
 
 func TestApplicationCanRecover(t *testing.T) {
-	app := &application.Application{
+	app := &Application{
 		Name:        "app",
 		CatchErrors: true,
 	}
 
 	expectedError := "Oh no!"
 
-	cmd := &command.Command{
+	cmd := &Command{
 		Name: "test",
-		Handle: func(self *command.Command) (int, error) {
+		Handle: func(self *Command) (int, error) {
 			panic(expectedError)
 		},
 	}
 
 	app.Add(cmd)
 
-	input := input.Make("test")
-
-	code, err := app.RunWith(input, nil)
+	code, err := app.Run("test")
 
 	var errMsg string
 	if err != nil {
@@ -113,40 +104,31 @@ func TestApplicationCanRecover(t *testing.T) {
 }
 
 func TestApplicationCanShowHelp(t *testing.T) {
-	app := &application.Application{
+	app := &Application{
 		Name:        "app",
 		CatchErrors: true,
 	}
 
-	input := input.Make("help")
-
-	if _, err := app.RunWith(input, nil); err != nil {
+	if _, err := app.Run("help"); err != nil {
 		t.Error(err.Error())
 	}
 }
 
 func TestApplicationCanListCommands(t *testing.T) {
-	app := &application.Application{
+	app := &Application{
 		Name:        "app",
 		CatchErrors: true,
 	}
 
-	input := input.Make("list")
-	parseError := input.Validate()
-
-	if parseError != nil {
-		fmt.Print(parseError.Error())
-	}
-
-	if _, err := app.RunWith(input, nil); err != nil {
+	if _, err := app.Run("list"); err != nil {
 		t.Error(err.Error())
 	}
 }
 
 func TestSumCommand(t *testing.T) {
-	cmd := &command.Command{
+	cmd := &Command{
 		Name: "sum",
-		Handle: func(self *command.Command) (int, error) {
+		Handle: func(self *Command) (int, error) {
 			values, err := self.ArrayArgument("values")
 			if err != nil {
 				return 1, err
@@ -169,102 +151,104 @@ func TestSumCommand(t *testing.T) {
 		}}
 
 	cmd.SetDescription("Prints the sum of all given values.")
-	cmd.DefineArgument("values", input.InputArgumentIsArray, "The values to sum", nil, func(value input.InputType) error {
-		arr, ok := value.([]string)
-		if ok {
-			for _, v := range arr {
-				_, err := strconv.Atoi(v)
-				if err != nil {
-					return err
+
+	cmd.AddArgument(&InputArgument{
+		Name:        "values",
+		Mode:        InputArgumentIsArray | InputArgumentRequired,
+		Description: "The values to sum",
+		Validator: func(value InputType) error {
+			arr, ok := value.([]string)
+			if ok {
+				for _, v := range arr {
+					_, err := strconv.Atoi(v)
+					if err != nil {
+						return err
+					}
 				}
+
+				return nil
 			}
 
-			return nil
-		}
-
-		return errors.New("Value is not an array.")
+			return errors.New("Value is not an array.")
+		},
 	})
 
-	input := input.Make("sum -vvv 1 2 3 4")
-
-	app := &application.Application{
+	app := &Application{
 		Name:        "app",
 		CatchErrors: true,
 	}
+
 	app.Add(cmd)
 
-	_, err := app.RunWith(input, nil)
-	if err != nil {
+	if _, err := app.Run("sum 1 2 3 4"); err != nil {
 		t.Fatal(err.Error())
 	}
 }
 
 func TestHelpCommandCanShowHelp(t *testing.T) {
-	app := &application.Application{
+	app := &Application{
 		Name: "app",
 	}
 
-	cmd := &command.Command{
+	cmd := &Command{
 		Name:        "test",
 		Description: "This is a test command that does nothing.",
 		Help:        "Very useful help message.",
-		Handle: func(self *command.Command) (int, error) {
+		Handle: func(self *Command) (int, error) {
 			return 0, nil
 		},
 	}
 
-	input := input.Make("help", "test")
-
 	app.Add(cmd)
 
-	if _, err := app.RunWith(input, nil); err != nil {
+	if _, err := app.Run("help test"); err != nil {
 		t.Error(err.Error())
 	}
 }
 
 func TestCommandHasHelpFlag(t *testing.T) {
-	app := &application.Application{
+	app := &Application{
 		Name: "app",
 	}
 
-	cmd := &command.Command{
+	cmd := &Command{
 		Name:        "test",
 		Description: "This is a test command that does nothing.",
 		Help:        "Very useful help message.",
-		Handle: func(self *command.Command) (int, error) {
+		Handle: func(self *Command) (int, error) {
 			return 0, nil
 		},
 	}
 
-	input := input.Make("test", "-h")
-
 	app.Add(cmd)
 
-	if _, err := app.RunWith(input, nil); err != nil {
+	if _, err := app.Run("test -h"); err != nil {
 		t.Error(err.Error())
 	}
 }
 
 func TestCanSuggestAlternatives(t *testing.T) {
-	app := &application.Application{
+	app := &Application{
 		Name: "app",
 	}
 
-	cmd := &command.Command{
+	cmd := &Command{
 		Name:        "test",
 		Description: "This is a test command that does nothing.",
 		Help:        "Very useful help message.",
-		Handle: func(self *command.Command) (int, error) {
+		Handle: func(self *Command) (int, error) {
 			return 0, nil
 		},
 	}
 
-	input := input.Make("testt")
-
 	app.Add(cmd)
 
-	if _, err := app.RunWith(input, nil); err != nil {
-		t.Error(err.Error())
+	if _, err := app.Run("testt"); err != nil {
+		if !strings.HasPrefix(err.Error(), "command \"testt\" is not defined") {
+			t.Error(err)
+		}
+	} else {
+		t.Error("Expected an error")
 	}
 }
 
@@ -272,11 +256,11 @@ func TestCommandCanExecChildProcesses(t *testing.T) {
 	var out string
 	expected := "Hello, world!"
 
-	cmd := &command.Command{
+	cmd := &Command{
 		Name:        "test",
 		Description: "This is a test command that does nothing.",
 		Help:        "Very useful help message.",
-		Handle: func(self *command.Command) (int, error) {
+		Handle: func(self *Command) (int, error) {
 			var err error
 			out, err = self.Exec("echo 'Hello, world!'", "", false)
 			if err != nil {
@@ -286,7 +270,7 @@ func TestCommandCanExecChildProcesses(t *testing.T) {
 		},
 	}
 
-	input, _ := input.NewArgvInput([]string{}, nil)
+	input := NewInput([]string{}...)
 
 	if _, err := cmd.Run(input, nil); err != nil {
 		t.Error(err.Error())
