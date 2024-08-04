@@ -146,7 +146,10 @@ func (o *Output) DoWrite(message string, newLine bool) {
 		message += "\n"
 	}
 
-	o.Stream.WriteString(message)
+	_, err := o.Stream.WriteString(message)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (o *Output) SetDecorated(decorated bool) {
@@ -249,8 +252,12 @@ func (o *Output) Choice(question string, choices map[string]string, defaultValue
 	return defaultValue
 }
 
-// TODO: implement
-func (o *Output) NewLine(count int) {}
+func (o *Output) NewLine(count int) {
+	for count > 0 {
+		o.Writeln("", 0)
+		count--
+	}
+}
 
 // TODO: implement
 func (o *Output) ProgressStart(max uint) {}

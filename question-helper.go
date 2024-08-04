@@ -37,10 +37,20 @@ func getQuestion[T any](val any) *Question[T] {
 		return val.(*Question[T])
 	}
 
+	q := Question[T]{}
 	for i := 0; i < rv.NumField(); i++ {
 		field := rv.Field(i)
-		if field.Type() == reflect.TypeOf(Question[T]{}) {
-			ptr := field.Addr().Interface().(*Question[T])
+
+		if field.Kind() != reflect.Ptr {
+			continue
+		}
+
+		field = field.Elem()
+
+		if field.Type() == reflect.TypeOf(q) {
+			addr := field.Addr()
+			iface := addr.Interface()
+			ptr := iface.(*Question[T])
 			return ptr
 		}
 	}

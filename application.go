@@ -109,7 +109,6 @@ func (app *Application) doRun(i *Input, o *Output) (int, error) {
 	// Makes ArgvInput.FirstArgument() able to distinguish an option from an argument.
 	// Errors must be ignored, full binding/validation happens later when the command is known.
 	i.Bind(app.Definition())
-	i.Parse()
 
 	name := app.commandName(i)
 	if i.HasParameterOption("--help", true) || i.HasParameterOption("-h", true) {

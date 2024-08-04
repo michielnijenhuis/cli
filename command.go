@@ -117,8 +117,7 @@ func (c *Command) Run(i *Input, o *Output) (int, error) {
 
 	c.MergeApplication(true)
 
-	i.Bind(c.Definition())
-	err := i.Parse()
+	err := i.Bind(c.Definition())
 	if err != nil && !c.IgnoreValidationErrors {
 		return 1, err
 	}

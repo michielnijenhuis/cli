@@ -48,8 +48,7 @@ func (i *Input) SetDefinition(definition *InputDefinition) error {
 		i.definition = &InputDefinition{}
 		return nil
 	} else {
-		i.Bind(definition)
-		err := i.Parse()
+		err := i.Bind(definition)
 		if err != nil {
 			return err
 		}
@@ -58,10 +57,12 @@ func (i *Input) SetDefinition(definition *InputDefinition) error {
 	}
 }
 
-func (i *Input) Bind(definition *InputDefinition) {
+func (i *Input) Bind(definition *InputDefinition) error {
 	i.arguments = make(map[string]InputType)
 	i.options = make(map[string]InputType)
 	i.definition = definition
+
+	return i.Parse()
 }
 
 func (i *Input) Parse() error {
