@@ -12,14 +12,6 @@ import (
 	"github.com/michielnijenhuis/cli/helper"
 )
 
-type QuestionMeta[T any] struct {
-	Query        string
-	Multiline    bool
-	DefaultValue T
-	Normalizer   QuestionNormalizer[any]
-	Validator    QuestionValidator[any]
-}
-
 func getQuestion[T any](val any) *Question[T] {
 	rv := reflect.ValueOf(val)
 
@@ -65,21 +57,18 @@ type QuestionInterface interface {
 func Ask[T any](i *Input, o *Output, question QuestionInterface) (T, error) {
 	checkPtr(i, "question input")
 	checkPtr(o, "question output")
-
-	q := getQuestion[T](question)
-	checkPtr(q, "question")
-
 	o = o.Stderr
 	checkPtr(o, "output stderr")
 
 	if !i.IsInteractive() {
+		q := getQuestion[T](question)
+		checkPtr(q, "question")
 		return q.DefaultValue, nil
 	}
 
 	inputStream := i.Stream
-	checkPtr(inputStream, "input stream")
 
-	value, err := doAsk[T](o, q, inputStream)
+	value, err := doAsk[T](o, question, inputStream)
 	if err != nil {
 		i.SetInteractive(false)
 		fallbackOutput := defaultAnswer[T](question)
@@ -88,6 +77,63 @@ func Ask[T any](i *Input, o *Output, question QuestionInterface) (T, error) {
 	} else {
 		return value, nil
 	}
+}
+
+func normalizeAnswer(answer string, question QuestionInterface) any {
+	if cq, ok := question.(*ConfirmationQuestion); ok {
+		n := cq.Normalizer
+		if n == nil {
+			n = cq.DefaultNormalizer()
+		}
+		if n != nil {
+			return n(answer)
+		}
+	} else if chq, ok := question.(*ChoiceQuestion); ok {
+		n := chq.DefaultNormalizer()
+		if n != nil {
+			return n(answer)
+		}
+	}
+
+	return answer
+}
+
+func validateAnswer[T any](answer T, question QuestionInterface) (T, error) {
+	if cq, ok := question.(*ConfirmationQuestion); ok {
+		v := cq.Validator
+		if v == nil {
+			v = cq.DefaultValidator()
+		}
+
+		if v != nil {
+			typed, matches := any(answer).(bool)
+			if matches {
+				validated, err := v(typed)
+				typed := any(validated).(T)
+				return typed, err
+			}
+		}
+
+		return answer, nil
+	} else if chq, ok := question.(*ChoiceQuestion); ok {
+		v := chq.Validator
+		if v == nil {
+			v = chq.DefaultValidator()
+		}
+
+		if v != nil {
+			typed, matches := any(answer).(string)
+			if matches {
+				validated, err := v(typed)
+				typed := any(validated).(T)
+				return typed, err
+			}
+		}
+
+		return answer, nil
+	}
+
+	return answer, nil
 }
 
 func doAsk[T any](o *Output, question QuestionInterface, inputStream *os.File) (T, error) {
@@ -138,33 +184,26 @@ func doAsk[T any](o *Output, question QuestionInterface, inputStream *os.File) (
 		ret = q.DefaultValue
 	}
 
-	normalizer := q.Normalizer
-	if normalizer == nil {
-		normalizer = q.DefaultNormalizer()
-	}
-	if normalizer != nil {
-		ret = normalizer(input)
-	}
-
-	validator := q.Validator
-	if validator == nil {
-		validator = q.DefaultValidator()
-	}
-
-	if validator != nil {
-		validated, err := validator(ret)
-		if err != nil {
-			var empty T
-			return empty, err
+	normalized := normalizeAnswer(input, question)
+	if normalized != input {
+		typed, ok := normalized.(T)
+		if ok {
+			ret = typed
 		}
-		ret = validated
 	}
 
-	return ret, nil
+	validated, err := validateAnswer(ret, question)
+	if err != nil {
+		var empty T
+		return empty, err
+	}
+
+	return validated, nil
 }
 
 func defaultAnswer[T any](qs QuestionInterface) T {
 	q := getQuestion[T](qs)
+	checkPtr(q, "question")
 
 	defaultValue := q.DefaultValue
 

@@ -8,11 +8,11 @@
             "name": "Launch",
             "type": "go",
             "request": "launch",
-            "mode": "auto",
-            "program": "${workspaceRoot}/application_test.go",
+            "mode": "debug",
+            "program": "${workspaceRoot}/test/main.go",
             "env": {},
-            "args": [],
-            "showLog": true
+            "args": ["testt"],
+            "showLog": true,
         }
     ]
 }

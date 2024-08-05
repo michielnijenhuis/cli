@@ -140,11 +140,11 @@ func (app *Application) doRun(i *Input, o *Output) (int, error) {
 		if ok && len(alternatives) == 1 && interactive {
 			o.Writeln("", 0)
 			formattedBlock := FormatBlock([]string{fmt.Sprintf("command \"%s\" is not defined", name)}, "error", true)
-			o.Writeln(formattedBlock+"\n", 0)
+			o.Writeln(formattedBlock, 0)
 
 			alternative := alternatives[0]
 
-			runAlternative, err := o.Confirm(fmt.Sprintf("Do you want to run \"%s\" instead?", alternative), true)
+			runAlternative, err := o.Confirm(fmt.Sprintf("Do you want to run \"%s\" instead?", alternative), false)
 			if err != nil {
 				return 1, err
 			}
@@ -156,8 +156,6 @@ func (app *Application) doRun(i *Input, o *Output) (int, error) {
 			c, findCommandErr = app.Find(alternative)
 			if findCommandErr != nil {
 				return 1, findCommandErr
-			} else {
-				o.Writeln("", 0)
 			}
 		} else {
 			namespace, err := app.FindNamespace(name)

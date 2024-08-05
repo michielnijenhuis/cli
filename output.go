@@ -35,13 +35,22 @@ const (
 
 func setupNewOutput(input *Input, stream *os.File, formatter *OutputFormatter) *Output {
 	o := &Output{
-		Stream:         stream,
-		verbosity:      VerbosityNormal,
-		decorated:      HasColorSupport(),
-		formatter:      formatter,
-		lineLength:     maxLineLength,
-		bufferedOutput: &TrimmedBufferOutput{},
-		input:          input,
+		Stream:     stream,
+		verbosity:  VerbosityNormal,
+		decorated:  HasColorSupport(),
+		formatter:  formatter,
+		lineLength: maxLineLength,
+		input:      input,
+		bufferedOutput: &TrimmedBufferOutput{
+			Output: &Output{
+				Stream:     stream,
+				verbosity:  VerbosityNormal,
+				decorated:  HasColorSupport(),
+				formatter:  formatter,
+				lineLength: maxLineLength,
+				input:      input,
+			},
+		},
 	}
 
 	if formatter != nil {
@@ -270,7 +279,6 @@ func askQuestion[T any](qi QuestionInterface, i *Input, o *Output) (T, error) {
 	}
 
 	answer, err := Ask[T](i, o, qi)
-
 	if err != nil {
 		var empty T
 		return empty, nil
