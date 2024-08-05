@@ -1,8 +1,12 @@
 package cli
 
 import (
+	"fmt"
 	"os"
 	"regexp"
+	"strings"
+
+	"github.com/michielnijenhuis/cli/helper"
 )
 
 const maxLineLength = 120
@@ -195,47 +199,153 @@ func doSetVerbosity(o *Output, verbose uint) {
 	}
 }
 
-// TODO: implement
-func (o *Output) Title(message string) {}
+func (o *Output) Title(message string) {
+	o.autoPrependBlock()
+	messages := []string{
+		fmt.Sprintf("<comment>%s</>", EscapeTrailingBackslash(message)),
+		fmt.Sprintf("<comment>%s</>", strings.Repeat("=", helper.Width(o.Formatter().RemoveDecoration(message)))),
+	}
+	o.Writelns(messages, 0)
+	o.NewLine(1)
+}
 
-// TODO: implement
-func (o *Output) Section(message string) {}
+func (o *Output) Section(message string) {
+	o.autoPrependBlock()
+	messages := []string{
+		fmt.Sprintf("<comment>%s</>", EscapeTrailingBackslash(message)),
+		fmt.Sprintf("<comment>%s</>", strings.Repeat("-", helper.Width(o.Formatter().RemoveDecoration(message)))),
+	}
+	o.Writelns(messages, 0)
+	o.NewLine(1)
+}
 
-// TODO: implement
-func (o *Output) Listing(elements []string, prefix string) {}
+func (o *Output) Listing(elements []string, prefix string) {
+	o.autoPrependBlock()
+	els := make([]string, len(elements))
+	for i, element := range elements {
+		els[i] = fmt.Sprintf(" %s %s", prefix, element)
+	}
+	o.Writelns(els, 0)
+	o.NewLine(1)
+}
 
-// TODO: implement
-func (o *Output) Text(messages []string) {}
+func (o *Output) Block(messages []string, tag string, style string, prefix string, padding bool, escape bool) {
+	o.autoPrependBlock()
+	o.Writelns(o.createBlock(messages, tag, style, prefix, padding, escape), 0)
+	o.NewLine(1)
+}
 
-// TODO: implement
-func (o *Output) Success(messages []string) {}
+func (o *Output) createBlock(messages []string, tag string, style string, prefix string, padding bool, escape bool) []string {
+	indentLength := 0
+	prefixLength := helper.Width(o.Formatter().RemoveDecoration(prefix))
+	lines := make([]string, 0, len(messages))
+	lineIndentation := ""
 
-// TODO: implement
-func (o *Output) Err(messages []string) {}
+	if tag != "" {
+		tag = "[" + tag + "]"
+		indentLength = helper.Width(tag)
+		lineIndentation = strings.Repeat(" ", indentLength)
+	}
 
-// TODO: implement
-func (o *Output) Warning(messages []string) {}
+	for i, message := range messages {
+		if escape {
+			message = Escape(message)
+		}
 
-// TODO: implement
-func (o *Output) Info(messages []string) {}
+		wrapped := helper.Wrap(message, o.lineLength-prefixLength-indentLength, "\n", false)
+		lines = append(lines, strings.Split(wrapped, "\n")...)
 
-// TODO: implement
-func (o *Output) Note(messages []string) {}
+		if len(messages) > 1 && i < len(messages)-1 {
+			lines = append(lines, "")
+		}
+	}
 
-// TODO: implement
-func (o *Output) Caution(messages []string) {}
+	firstLineIndex := 0
+	if padding && o.IsDecorated() {
+		firstLineIndex = 1
+		helper.Unshift(&lines, "")
+		lines = append(lines, "")
+	}
+
+	for i, line := range lines {
+		if tag != "" {
+			if firstLineIndex == i {
+				line = tag + line
+			} else {
+				line = lineIndentation + line
+			}
+		}
+
+		line = prefix + line
+
+		line += strings.Repeat(" ", max(o.lineLength-helper.Width(o.Formatter().RemoveDecoration(line)), 0))
+
+		if style != "" {
+			line = fmt.Sprintf("<%s>%s</>", style, line)
+		}
+
+		lines[i] = line
+	}
+
+	return lines
+}
+
+func (o *Output) Text(messages []string) {
+	o.autoPrependBlock()
+	for _, m := range messages {
+		o.Writeln(" "+m, 0)
+	}
+}
+
+func (o *Output) Success(messages []string) {
+	o.Block(messages, "OK", "fg=black;bg=green", " ", true, true)
+}
+
+func (o *Output) Err(messages []string) {
+	o.Block(messages, "ERROR", "fg=white;bg=red", " ", true, true)
+}
+
+func (o *Output) Warning(messages []string) {
+	o.Block(messages, "WARNING", "fg=black;bg=yellow", " ", true, true)
+}
+
+func (o *Output) Info(messages []string) {
+	o.Block(messages, "INFO", "fg=white;bg=blue", " ", true, true)
+}
+
+func (o *Output) Note(messages []string) {
+	o.Block(messages, "NOTE", "fg=yellow", " ! ", true, true)
+}
+
+func (o *Output) Caution(messages []string) {
+	o.Block(messages, "CAUTION", "fg=yellow;bg=red", " ! ", true, true)
+}
+
+func (o *Output) Comment(messages []string) {
+	o.Block(messages, "", "", "<fg=default;bg=default> // </>", false, false)
+}
 
 // TODO: implement
 func (o *Output) Table(headers []string, rows map[string]string) {}
 
-// TODO: implement
-func (o *Output) Ask(questions string, defaultValue string, validator func(string) bool) string {
-	return defaultValue
+func (o *Output) Ask(question string, defaultValue string, validator func(string) (string, error)) (string, error) {
+	q := &Question[string]{
+		Query:        question,
+		DefaultValue: defaultValue,
+		Validator:    validator,
+	}
+
+	return askQuestion[string](q, o.input, o)
 }
 
-// TODO: implement
-func (o *Output) AskHidden(question string, validator func(string) bool) string {
-	return ""
+func (o *Output) AskHidden(question string, validator func(string) (string, error)) (string, error) {
+	q := &Question[string]{
+		Query:     question,
+		Hidden:    true,
+		Validator: validator,
+	}
+
+	return askQuestion[string](q, o.input, o)
 }
 
 func (o *Output) Confirm(q string, defaultValue bool) (bool, error) {
@@ -249,9 +359,28 @@ func (o *Output) Confirm(q string, defaultValue bool) (bool, error) {
 	return askQuestion[bool](cq, o.input, o)
 }
 
-// TODO: implement
-func (o *Output) Choice(question string, choices map[string]string, defaultValue string) string {
-	return defaultValue
+func (o *Output) Choice(question string, choices map[string]string, defaultValue string) (string, error) {
+	if defaultValue != "" {
+		values := make(map[string]string)
+		for k, v := range choices {
+			values[v] = k
+		}
+
+		dv, ok := values[defaultValue]
+		if ok {
+			defaultValue = dv
+		}
+	}
+
+	q := &ChoiceQuestion{
+		Question: &Question[string]{
+			Query:        question,
+			DefaultValue: defaultValue,
+		},
+		Choices: choices,
+	}
+
+	return askQuestion[string](q, o.input, o)
 }
 
 func (o *Output) NewLine(count int) {

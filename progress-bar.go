@@ -1,5 +1,7 @@
 package cli
 
+// TODO: implement
+
 // const (
 // 	formatVerbose           = "verbose"
 // 	formatVeryVerbose       = "very_verbose"
@@ -41,5 +43,3 @@ package cli
 // 	cursor                   *Cursor
 // 	placeholders             map[string]Formatter
 // }
-
-// // TODO: implement
