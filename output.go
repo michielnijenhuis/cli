@@ -113,6 +113,10 @@ func (o *Output) Writeln(s string, options uint) {
 	o.Writelns([]string{s}, options)
 }
 
+func (o *Output) Writelnf(f string, options uint, args ...any) {
+	o.Writelns([]string{fmt.Sprintf(f, args...)}, options)
+}
+
 func (o *Output) Writelns(s []string, options uint) {
 	o.WriteMany(s, true, options)
 }
@@ -236,13 +240,17 @@ func (o *Output) Block(messages []string, tag string, style string, prefix strin
 }
 
 func (o *Output) createBlock(messages []string, tag string, style string, prefix string, padding bool, escape bool) []string {
+	if prefix == "" {
+		prefix = " "
+	}
+
 	indentLength := 0
 	prefixLength := helper.Width(o.Formatter().RemoveDecoration(prefix))
 	lines := make([]string, 0, len(messages))
 	lineIndentation := ""
 
 	if tag != "" {
-		tag = "[" + tag + "]"
+		tag = "[" + tag + "] "
 		indentLength = helper.Width(tag)
 		lineIndentation = strings.Repeat(" ", indentLength)
 	}
@@ -290,38 +298,38 @@ func (o *Output) createBlock(messages []string, tag string, style string, prefix
 	return lines
 }
 
-func (o *Output) Text(messages []string) {
+func (o *Output) Text(messages ...string) {
 	o.autoPrependBlock()
 	for _, m := range messages {
 		o.Writeln(" "+m, 0)
 	}
 }
 
-func (o *Output) Success(messages []string) {
+func (o *Output) Success(messages ...string) {
 	o.Block(messages, "OK", "fg=black;bg=green", " ", true, true)
 }
 
-func (o *Output) Err(messages []string) {
+func (o *Output) Err(messages ...string) {
 	o.Block(messages, "ERROR", "fg=white;bg=red", " ", true, true)
 }
 
-func (o *Output) Warning(messages []string) {
+func (o *Output) Warning(messages ...string) {
 	o.Block(messages, "WARNING", "fg=black;bg=yellow", " ", true, true)
 }
 
-func (o *Output) Info(messages []string) {
+func (o *Output) Info(messages ...string) {
 	o.Block(messages, "INFO", "fg=white;bg=blue", " ", true, true)
 }
 
-func (o *Output) Note(messages []string) {
+func (o *Output) Note(messages ...string) {
 	o.Block(messages, "NOTE", "fg=yellow", " ! ", true, true)
 }
 
-func (o *Output) Caution(messages []string) {
+func (o *Output) Caution(messages ...string) {
 	o.Block(messages, "CAUTION", "fg=yellow;bg=red", " ! ", true, true)
 }
 
-func (o *Output) Comment(messages []string) {
+func (o *Output) Comment(messages ...string) {
 	o.Block(messages, "", "", "<fg=default;bg=default> // </>", false, false)
 }
 

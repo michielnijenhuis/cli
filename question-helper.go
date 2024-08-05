@@ -140,7 +140,7 @@ func doAsk[T any](o *Output, question QuestionInterface, inputStream *os.File) (
 	q := getQuestion[T](question)
 	checkPtr(q, "question")
 
-	writePrompt[T](o, q)
+	writePrompt[T](o, question)
 
 	var input string
 	var ret T
@@ -304,7 +304,7 @@ func formatChoiceQuestionChoices(question *ChoiceQuestion, tag string) []string 
 
 func writeError(output *Output, err error) {
 	output.NewLine(1)
-	output.Err([]string{err.Error()})
+	output.Err(err.Error())
 }
 
 func eofShortcut() string {
