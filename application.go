@@ -144,7 +144,7 @@ func (app *Application) doRun(i *Input, o *Output) (int, error) {
 
 			alternative := alternatives[0]
 
-			runAlternative, err := o.Confirm(fmt.Sprintf("Do you want to run \"%s\" instead?", alternative), false)
+			runAlternative, err := o.Confirm(fmt.Sprintf("Do you want to run \"%s\" instead?", alternative), true)
 			if err != nil {
 				return 1, err
 			}
@@ -251,10 +251,8 @@ func (app *Application) Add(commands ...*Command) {
 
 		app.commands[c.Name] = c
 
-		if c.Aliases != nil {
-			for _, alias := range c.Aliases {
-				app.commands[alias] = c
-			}
+		for _, alias := range c.Aliases {
+			app.commands[alias] = c
 		}
 	}
 }

@@ -22,6 +22,7 @@ func (cq *ChoiceQuestion) SetErrorMessage(message string) {
 
 func (cq *ChoiceQuestion) DefaultValidator() QuestionValidator[string] {
 	choices := cq.Choices
+	checkPtr(choices, "choice question choices")
 	errorMessage := cq.errorMessage
 
 	return func(selected string) (string, error) {

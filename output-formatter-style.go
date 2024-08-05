@@ -34,7 +34,7 @@ func NewOutputFormatterStyle(foreground string, background string, options []str
 
 func (s *OutputFormatterStyle) Clone() *OutputFormatterStyle {
 	options := make([]string, 0, len(s.options))
-	copy(options, s.options)
+	options = append(options, s.options...)
 
 	return NewOutputFormatterStyle(s.foreground, s.background, options)
 }
@@ -62,7 +62,12 @@ func (s *OutputFormatterStyle) SetHref(href string) {
 }
 
 func (s *OutputFormatterStyle) SetOption(option string) {
-	s.options = append(s.options, option)
+	if s.options == nil {
+		s.options = []string{option}
+	} else {
+		s.options = append(s.options, option)
+	}
+
 	s.color = &Color{
 		Foreground: s.foreground,
 		Background: s.background,

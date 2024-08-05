@@ -33,7 +33,7 @@ var DefaultOutputTheme = map[string]*OutputFormatterStyle{
 
 func (o *OutputFormatter) init() {
 	if o.Styles == nil {
-		o.Styles = DefaultOutputTheme
+		o.Styles = make(map[string]*OutputFormatterStyle)
 	}
 
 	if o.StyleStack == nil {
@@ -51,12 +51,16 @@ func (o *OutputFormatter) SetStyle(name string, style *OutputFormatterStyle) {
 
 func (o *OutputFormatter) HasStyle(name string) bool {
 	o.init()
-	return o.Styles[strings.ToLower(name)] != nil
+	return o.Styles[strings.ToLower(name)] != nil || DefaultOutputTheme[strings.ToLower(name)] != nil
 }
 
 func (o *OutputFormatter) Style(name string) (*OutputFormatterStyle, error) {
 	if !o.HasStyle(name) {
-		return nil, fmt.Errorf("undefined style: \"%s\"", name)
+		defaultStyle, ok := DefaultOutputTheme[name]
+		if !ok {
+			return nil, fmt.Errorf("undefined style: \"%s\"", name)
+		}
+		return defaultStyle, nil
 	}
 
 	return o.Styles[strings.ToLower(name)], nil

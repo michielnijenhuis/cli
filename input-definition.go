@@ -34,34 +34,28 @@ func (d *InputDefinition) SetArguments(arguments []*InputArgument) {
 }
 
 func (d *InputDefinition) AddArguments(arguments []*InputArgument) {
-	if arguments == nil {
-		return
-	}
-
 	for _, arg := range arguments {
 		d.AddArgument(arg)
 	}
 }
 
 func (d *InputDefinition) AddArgument(argument *InputArgument) {
-	if argument == nil {
-		return
-	}
+	checkPtr(argument, "input argument")
 
 	if d.Arguments == nil {
 		d.Arguments = make([]*InputArgument, 0)
 	}
 
 	if d.HasArgument(argument.Name) {
-		panic(fmt.Sprintf("An argument with name \"%s\" already exists.", argument.Name))
+		panic(fmt.Sprintf("an argument with name \"%s\" already exists", argument.Name))
 	}
 
 	if d.lastArrayArgument != nil {
-		panic(fmt.Sprintf("Cannot add a required argument \"%s\" after an array argument \"%s\".", argument.Name, d.lastArrayArgument.Name))
+		panic(fmt.Sprintf("cannot add a required argument \"%s\" after an array argument \"%s\"", argument.Name, d.lastArrayArgument.Name))
 	}
 
 	if argument.IsRequired() && d.lastOptionalArgument != nil {
-		panic(fmt.Sprintf("Cannot add a required argument \"%s\" after an optional one \"%s\".", argument.Name, d.lastOptionalArgument.Name))
+		panic(fmt.Sprintf("cannot add a required argument \"%s\" after an optional one \"%s\"", argument.Name, d.lastOptionalArgument.Name))
 	}
 
 	if argument.IsArray() {
@@ -83,10 +77,6 @@ func (d *InputDefinition) HasArgument(name string) bool {
 }
 
 func (d *InputDefinition) Argument(name string) (*InputArgument, error) {
-	if d.Arguments == nil {
-		return nil, fmt.Errorf("the \"%s\" argument does not exist", name)
-	}
-
 	for _, a := range d.Arguments {
 		if a.Name == name {
 			return a, nil
@@ -131,10 +121,6 @@ func (d *InputDefinition) ArgumentRequiredCount() uint {
 }
 
 func (d *InputDefinition) ArgumentDefaults() map[string]InputType {
-	if d.Arguments == nil {
-		return nil
-	}
-
 	m := make(map[string]InputType)
 
 	for _, arg := range d.Arguments {
@@ -152,16 +138,18 @@ func (d *InputDefinition) SetOptions(options []*InputOption) {
 }
 
 func (d *InputDefinition) AddOptions(options []*InputOption) {
-	if options == nil {
-		return
-	}
-
 	for _, option := range options {
 		d.AddOption(option)
 	}
 }
 
 func (d *InputDefinition) AddOption(option *InputOption) {
+	checkPtr(option, "input option")
+
+	if d.Options == nil {
+		d.Options = make([]*InputOption, 0)
+	}
+
 	name := option.Name
 
 	if o, _ := d.Option(name); o != nil && !option.Equals(o) {
@@ -209,10 +197,6 @@ func (d *InputDefinition) HasOption(name string) bool {
 }
 
 func (d *InputDefinition) Option(name string) (*InputOption, error) {
-	if d.Options == nil {
-		return nil, fmt.Errorf("the \"--%s\" option does not exist", name)
-	}
-
 	for _, o := range d.Options {
 		if o.Name == name {
 			return o, nil
@@ -248,10 +232,18 @@ func (d *InputDefinition) OptionDefaults() map[string]InputType {
 }
 
 func (d *InputDefinition) ShortcutToName(shortcut string) string {
+	if d.shortcuts == nil {
+		d.shortcuts = make(map[string]string)
+	}
+
 	return d.shortcuts[shortcut]
 }
 
 func (d *InputDefinition) NegationToName(negation string) string {
+	if d.negations == nil {
+		d.negations = make(map[string]string)
+	}
+
 	return d.negations[negation]
 }
 

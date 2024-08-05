@@ -68,6 +68,9 @@ func (c *Command) IsEnabled() bool {
 }
 
 func (c *Command) execute(input *Input, output *Output) (int, error) {
+	checkPtr(input, "input")
+	checkPtr(output, "output")
+
 	c.input = input
 	c.output = output
 
@@ -79,31 +82,31 @@ func (c *Command) Fail(e string) (int, error) {
 }
 
 func (c *Command) StringArgument(name string) (string, error) {
-	return c.input.StringArgument(name)
+	return c.Input().StringArgument(name)
 }
 
 func (c *Command) ArrayArgument(name string) ([]string, error) {
-	return c.input.ArrayArgument(name)
+	return c.Input().ArrayArgument(name)
 }
 
 func (c *Command) Arguments() map[string]InputType {
-	return c.input.Arguments()
+	return c.Input().Arguments()
 }
 
 func (c *Command) BoolOption(name string) (bool, error) {
-	return c.input.BoolOption(name)
+	return c.Input().BoolOption(name)
 }
 
 func (c *Command) StringOption(name string) (string, error) {
-	return c.input.StringOption(name)
+	return c.Input().StringOption(name)
 }
 
 func (c *Command) ArrayOption(name string) ([]string, error) {
-	return c.input.ArrayOption(name)
+	return c.Input().ArrayOption(name)
 }
 
 func (c *Command) Options() map[string]InputType {
-	return c.input.Options()
+	return c.Input().Options()
 }
 
 func (c *Command) Run(i *Input, o *Output) (int, error) {
@@ -406,9 +409,9 @@ func (c *Command) Exec(cmd string, shell string, inherit bool) (string, error) {
 		i := c.input
 		o := c.output
 
-		cp.Stdin = i.Stream()
+		cp.Stdin = i.Stream
 		cp.Stdout = o.Stream
-		cp.Stderr = o.ErrorOutput().Stream
+		cp.Stderr = o.Stderr.Stream
 	}
 
 	return cp.Run()

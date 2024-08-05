@@ -9,7 +9,7 @@ const maxLineLength = 120
 
 type Output struct {
 	Stream         *os.File
-	stderr         *Output
+	Stderr         *Output
 	verbosity      uint
 	decorated      bool
 	formatter      *OutputFormatter
@@ -63,16 +63,17 @@ func NewOutput(input *Input) *Output {
 		Styles: DefaultOutputTheme,
 	}
 	o := setupNewOutput(input, os.Stdout, f)
-	o.stderr = setupNewOutput(input, os.Stderr, f)
+	o.Stderr = setupNewOutput(input, os.Stderr, f)
 	return o
 }
 
 func (o *Output) Formatter() *OutputFormatter {
+	checkPtr(o.formatter, "output formatter")
 	return o.formatter
 }
 
 func (o *Output) IsDecorated() bool {
-	return o.formatter.Decorated
+	return o.Formatter().Decorated
 }
 
 func (o *Output) Verbosity() uint {
@@ -132,9 +133,9 @@ func (o *Output) WriteMany(messages []string, newLine bool, options uint) {
 		message = m
 		switch t {
 		case OutputNormal:
-			message = o.formatter.Format(message)
+			message = o.Formatter().Format(message)
 		case OutputPlain:
-			message = re.ReplaceAllString(o.formatter.Format(message), "")
+			message = re.ReplaceAllString(o.Formatter().Format(message), "")
 		}
 
 		o.DoWrite(message, newLine)
@@ -154,7 +155,7 @@ func (o *Output) DoWrite(message string, newLine bool) {
 
 func (o *Output) SetDecorated(decorated bool) {
 	doSetDecorated(o, decorated)
-	doSetDecorated(o.stderr, decorated)
+	doSetDecorated(o.Stderr, decorated)
 }
 
 func doSetDecorated(o *Output, decorated bool) {
@@ -165,7 +166,7 @@ func doSetDecorated(o *Output, decorated bool) {
 
 func (o *Output) SetFormatter(formatter *OutputFormatter) {
 	doSetFormatter(o, formatter)
-	doSetFormatter(o.stderr, formatter)
+	doSetFormatter(o.Stderr, formatter)
 }
 
 func doSetFormatter(o *Output, formatter *OutputFormatter) {
@@ -176,21 +177,13 @@ func doSetFormatter(o *Output, formatter *OutputFormatter) {
 
 func (o *Output) SetVerbosity(verbose uint) {
 	doSetVerbosity(o, verbose)
-	doSetVerbosity(o.stderr, verbose)
+	doSetVerbosity(o.Stderr, verbose)
 }
 
 func doSetVerbosity(o *Output, verbose uint) {
 	if o != nil {
 		o.verbosity = verbose
 	}
-}
-
-func (o *Output) ErrorOutput() *Output {
-	return o.stderr
-}
-
-func (o *Output) SetErrorOutput(output *Output) {
-	o.stderr = output
 }
 
 // TODO: implement
@@ -285,6 +278,7 @@ func askQuestion[T any](qi QuestionInterface, i *Input, o *Output) (T, error) {
 
 	if i.IsInteractive() {
 		o.NewLine(1)
+		checkPtr(o.bufferedOutput, "output bufferedOutput")
 		o.bufferedOutput.Write("\n", false, 0)
 	}
 
@@ -292,6 +286,7 @@ func askQuestion[T any](qi QuestionInterface, i *Input, o *Output) (T, error) {
 }
 
 func (o *Output) autoPrependBlock() {
+	checkPtr(o.bufferedOutput, "output bufferedOutput")
 	chars := o.bufferedOutput.Fetch()
 
 	if len(chars) > 2 {

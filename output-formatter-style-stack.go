@@ -27,6 +27,10 @@ func (s *OutputFormatterStyleStack) Clone() *OutputFormatterStyleStack {
 }
 
 func (s *OutputFormatterStyleStack) Push(style *OutputFormatterStyle) {
+	if s.Styles == nil {
+		s.Styles = make([]*OutputFormatterStyle, 0)
+	}
+
 	s.Styles = append(s.Styles, style)
 }
 
@@ -53,7 +57,7 @@ func (s *OutputFormatterStyleStack) Pop(style *OutputFormatterStyle) *OutputForm
 		}
 	}
 
-	panic("Incorrectly nested style tag found.")
+	panic("incorrectly nested style tag found")
 }
 
 func (s *OutputFormatterStyleStack) Current() *OutputFormatterStyle {

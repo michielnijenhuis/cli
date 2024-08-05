@@ -22,6 +22,8 @@ type TextDescriptor struct {
 }
 
 func (d *TextDescriptor) DescribeApplication(app *Application, options *DescriptorOptions) {
+	checkPtr(app, "describable application")
+
 	var describedNamespace string
 	if options != nil {
 		describedNamespace = options.namespace
@@ -69,6 +71,7 @@ func (d *TextDescriptor) DescribeApplication(app *Application, options *Descript
 		if describedNamespace != "" && len(namespaces) > 0 {
 			// make sure all alias commands are included when describing a specific namespace
 			describedNamespaceInfo := firstNamespace
+			checkPtr(describedNamespaceInfo, "described namespace info")
 			for _, name := range describedNamespaceInfo.commands {
 				c, err := description.Command(name)
 				if err != nil {
@@ -130,6 +133,8 @@ func (d *TextDescriptor) DescribeApplication(app *Application, options *Descript
 }
 
 func (d *TextDescriptor) DescribeCommand(command *Command, options *DescriptorOptions) {
+	checkPtr(command, "describable command")
+
 	command.MergeApplication(false)
 
 	description := command.Description
@@ -171,6 +176,8 @@ func (d *TextDescriptor) DescribeCommand(command *Command, options *DescriptorOp
 }
 
 func (d *TextDescriptor) DescribeInputDefinition(definition *InputDefinition, options *DescriptorOptions) {
+	checkPtr(definition, "describable input definition")
+
 	totalWidth := calculateTotalWidthForOptions(definition.Options)
 	for _, argument := range definition.Arguments {
 		totalWidth = max(totalWidth, helper.Width(argument.Name))
@@ -231,6 +238,8 @@ func (d *TextDescriptor) DescribeInputDefinition(definition *InputDefinition, op
 }
 
 func (d *TextDescriptor) DescribeInputArgument(argument *InputArgument, options *DescriptorOptions) {
+	checkPtr(argument, "describable input argument")
+
 	var defaultValue string
 	if hasDefaultValue(argument.DefaultValue) {
 		defaultValue = fmt.Sprintf("<header> [default: %s]</header>", formatDefaultValue(argument.DefaultValue))
@@ -254,6 +263,8 @@ func (d *TextDescriptor) DescribeInputArgument(argument *InputArgument, options 
 }
 
 func (d *TextDescriptor) DescribeInputOption(option *InputOption, options *DescriptorOptions) {
+	checkPtr(option, "describable input option")
+
 	var defaultValue string
 	if hasDefaultValue(option.DefaultValue) {
 		defaultValue = fmt.Sprintf("<header> [default: %s]</header>", formatDefaultValue(option.DefaultValue))
@@ -311,10 +322,8 @@ func columnWidth(commands map[string]*Command) int {
 	for _, command := range commands {
 		width = max(width, helper.Width(command.Name))
 
-		if command.Aliases != nil {
-			for _, alias := range command.Aliases {
-				width = max(width, helper.Width(alias))
-			}
+		for _, alias := range command.Aliases {
+			width = max(width, helper.Width(alias))
 		}
 	}
 

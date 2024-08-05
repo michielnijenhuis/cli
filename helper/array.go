@@ -15,6 +15,10 @@ func Shift[T any](tokens *[]T) T {
 }
 
 func Unshift[T any](tokens *[]T, value T) {
+	if tokens == nil {
+		return
+	}
+
 	slice := make([]T, 0, len(*tokens)+1)
 	slice = append(slice, value)
 	slice = append(slice, (*tokens)...)

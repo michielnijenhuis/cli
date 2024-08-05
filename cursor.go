@@ -18,31 +18,37 @@ type Cursor struct {
 }
 
 func (c *Cursor) MoveUp(lines int) *Cursor {
+	checkPtr(c.Output, "cursor output")
 	c.Output.Write(fmt.Sprintf("\x1b[%dA]", lines), false, 0)
 	return c
 }
 
 func (c *Cursor) MoveDown(lines int) *Cursor {
+	checkPtr(c.Output, "cursor output")
 	c.Output.Write(fmt.Sprintf("\x1b[%dB]", lines), false, 0)
 	return c
 }
 
 func (c *Cursor) MoveRight(columns int) *Cursor {
+	checkPtr(c.Output, "cursor output")
 	c.Output.Write(fmt.Sprintf("\x1b[%dC]", columns), false, 0)
 	return c
 }
 
 func (c *Cursor) MoveLeft(columns int) *Cursor {
+	checkPtr(c.Output, "cursor output")
 	c.Output.Write(fmt.Sprintf("\x1b[%dD]", columns), false, 0)
 	return c
 }
 
 func (c *Cursor) MoveToColumn(column int) *Cursor {
+	checkPtr(c.Output, "cursor output")
 	c.Output.Write(fmt.Sprintf("\x1b[%dG]", column), false, 0)
 	return c
 }
 
 func (c *Cursor) Move(x int, y int) *Cursor {
+	checkPtr(c.Output, "cursor output")
 	var sequence string
 
 	if x < 0 {
@@ -62,46 +68,55 @@ func (c *Cursor) Move(x int, y int) *Cursor {
 }
 
 func (c *Cursor) MoveToPosition(column int, row int) *Cursor {
+	checkPtr(c.Output, "cursor output")
 	c.Output.Write(fmt.Sprintf("\x1b[%d;%dH", row+1, column), false, 0)
 	return c
 }
 
 func (c *Cursor) SavePosition() *Cursor {
+	checkPtr(c.Output, "cursor output")
 	c.Output.Write("\x1b7", false, 0)
 	return c
 }
 
 func (c *Cursor) RestorePosition() *Cursor {
+	checkPtr(c.Output, "cursor output")
 	c.Output.Write("\x1b8", false, 0)
 	return c
 }
 
 func (c *Cursor) Hide() *Cursor {
+	checkPtr(c.Output, "cursor output")
 	c.Output.Write("\x1b[?25l]", false, 0)
 	return c
 }
 
 func (c *Cursor) Show() *Cursor {
+	checkPtr(c.Output, "cursor output")
 	c.Output.Write("\x1b[?25h\x1b[?0c", false, 0)
 	return c
 }
 
 func (c *Cursor) ClearLine() *Cursor {
+	checkPtr(c.Output, "cursor output")
 	c.Output.Write("\x1b[2K", false, 0)
 	return c
 }
 
 func (c *Cursor) ClearLineAfter() *Cursor {
+	checkPtr(c.Output, "cursor output")
 	c.Output.Write("\x1b[K", false, 0)
 	return c
 }
 
 func (c *Cursor) ClearOutput() *Cursor {
+	checkPtr(c.Output, "cursor output")
 	c.Output.Write("\x1b[0J", false, 0)
 	return c
 }
 
 func (c *Cursor) ClearScreen() *Cursor {
+	checkPtr(c.Output, "cursor output")
 	c.Output.Write("\x1b[2J", false, 0)
 	return c
 }

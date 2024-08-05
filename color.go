@@ -19,7 +19,6 @@ type Color struct {
 	Foreground string
 	Background string
 	Options    []string
-	options    map[string]AvailableOption
 	parsed     bool
 }
 
@@ -61,17 +60,6 @@ func (c *Color) parse() {
 
 	c.parsed = true
 
-	opts := make(map[string]AvailableOption)
-	if c.Options != nil {
-		for _, opt := range c.Options {
-			_, exists := availableOptions[opt]
-			if exists {
-				opts[opt] = availableOptions[opt]
-			}
-		}
-	}
-	c.options = opts
-
 	fg, _ := parseColor(c.Foreground, false)
 	bg, _ := parseColor(c.Background, true)
 	c.Foreground = fg
@@ -97,8 +85,11 @@ func (c *Color) Set() string {
 		setCodes = append(setCodes, c.Background)
 	}
 
-	for _, opt := range c.options {
-		setCodes = append(setCodes, strconv.Itoa(opt.set))
+	for _, opt := range c.Options {
+		availableOption, ok := availableOptions[opt]
+		if ok {
+			setCodes = append(setCodes, strconv.Itoa(availableOption.set))
+		}
 	}
 
 	if len(setCodes) == 0 {
@@ -121,8 +112,11 @@ func (c *Color) Unset() string {
 		unsetCodes = append(unsetCodes, "49")
 	}
 
-	for _, opt := range c.options {
-		unsetCodes = append(unsetCodes, strconv.Itoa(opt.unset))
+	for _, opt := range c.Options {
+		availableOption, ok := availableOptions[opt]
+		if ok {
+			unsetCodes = append(unsetCodes, strconv.Itoa(availableOption.unset))
+		}
 	}
 
 	if len(unsetCodes) == 0 {

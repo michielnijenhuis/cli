@@ -63,15 +63,21 @@ type QuestionInterface interface {
 }
 
 func Ask[T any](i *Input, o *Output, question QuestionInterface) (T, error) {
-	q := getQuestion[T](question)
+	checkPtr(i, "question input")
+	checkPtr(o, "question output")
 
-	o = o.ErrorOutput()
+	q := getQuestion[T](question)
+	checkPtr(q, "question")
+
+	o = o.Stderr
+	checkPtr(o, "output stderr")
 
 	if !i.IsInteractive() {
 		return q.DefaultValue, nil
 	}
 
-	inputStream := i.Stream()
+	inputStream := i.Stream
+	checkPtr(inputStream, "input stream")
 
 	value, err := doAsk[T](o, q, inputStream)
 	if err != nil {
@@ -86,6 +92,8 @@ func Ask[T any](i *Input, o *Output, question QuestionInterface) (T, error) {
 
 func doAsk[T any](o *Output, question QuestionInterface, inputStream *os.File) (T, error) {
 	q := getQuestion[T](question)
+	checkPtr(q, "question")
+
 	writePrompt[T](o, q)
 
 	var input string

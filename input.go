@@ -14,11 +14,11 @@ type InputParser func(self any) error
 
 type Input struct {
 	definition  *InputDefinition
-	stream      *os.File
+	Stream      *os.File
 	options     map[string]InputType
 	arguments   map[string]InputType
 	interactive bool
-	Tokens      []string
+	Args        []string
 	parsed      []string
 }
 
@@ -31,10 +31,10 @@ func NewInput(args ...string) *Input {
 	}
 
 	i := &Input{
-		Tokens:      args,
+		Args:        args,
 		parsed:      make([]string, 0),
 		definition:  &InputDefinition{},
-		stream:      os.Stdin,
+		Stream:      os.Stdin,
 		options:     make(map[string]InputType),
 		arguments:   make(map[string]InputType),
 		interactive: TerminalIsInteractive(),
@@ -67,8 +67,8 @@ func (i *Input) Bind(definition *InputDefinition) error {
 
 func (i *Input) Parse() error {
 	parseOptions := true
-	i.parsed = make([]string, 0, len(i.Tokens))
-	i.parsed = append(i.parsed, i.Tokens...)
+	i.parsed = make([]string, 0, len(i.Args))
+	i.parsed = append(i.parsed, i.Args...)
 	var token string
 	var err error
 
@@ -89,14 +89,10 @@ func (i *Input) Parse() error {
 
 func (i *Input) Validate() error {
 	definition := i.definition
-	if definition == nil {
-		return errors.New("inputDefinition not found")
-	}
+	checkPtr(definition, "input definiton")
 
 	givenArguments := i.arguments
-	if givenArguments == nil {
-		return errors.New("given arguments not found")
-	}
+	checkPtr(givenArguments, "input arguments")
 
 	arguments := definition.Arguments
 	if arguments != nil {
@@ -136,6 +132,7 @@ func (i *Input) SetInteractive(interactive bool) {
 
 func (i *Input) Arguments() map[string]InputType {
 	definition := i.definition
+	checkPtr(definition, "input definition")
 	args := make(map[string]InputType)
 
 	if definition != nil {
@@ -144,6 +141,7 @@ func (i *Input) Arguments() map[string]InputType {
 		}
 	}
 
+	checkPtr(definition, "input arguments")
 	for k, v := range i.arguments {
 		args[k] = v
 	}
@@ -153,9 +151,7 @@ func (i *Input) Arguments() map[string]InputType {
 
 func (i *Input) StringArgument(name string) (string, error) {
 	definition := i.definition
-	if definition == nil {
-		return "", errors.New("no input definition found")
-	}
+	checkPtr(definition, "input definition")
 
 	if !definition.HasArgument(name) {
 		return "", fmt.Errorf("the \"%s\" argument does not exist", name)
@@ -187,9 +183,7 @@ func (i *Input) StringArgument(name string) (string, error) {
 
 func (i *Input) ArrayArgument(name string) ([]string, error) {
 	definition := i.definition
-	if definition == nil {
-		return []string{}, errors.New("no input definition found")
-	}
+	checkPtr(definition, "input definition")
 
 	if !definition.HasArgument(name) {
 		return []string{}, fmt.Errorf("the \"%s\" argument does not exist", name)
@@ -221,9 +215,7 @@ func (i *Input) ArrayArgument(name string) ([]string, error) {
 
 func (i *Input) SetArgument(name string, value InputType) error {
 	definition := i.definition
-	if definition == nil {
-		return errors.New("no input definition found")
-	}
+	checkPtr(definition, "input definition")
 
 	if !definition.HasArgument(name) {
 		return fmt.Errorf("the \"%s\" argument does not exist", name)
@@ -261,9 +253,7 @@ func (i *Input) Options() map[string]InputType {
 
 func (i *Input) BoolOption(name string) (bool, error) {
 	definition := i.definition
-	if definition == nil {
-		return false, errors.New("no input definition found")
-	}
+	checkPtr(definition, "input definition")
 
 	if !definition.HasOption(name) {
 		return false, fmt.Errorf("the \"%s\" option does not exist", name)
@@ -303,9 +293,7 @@ func (i *Input) BoolOption(name string) (bool, error) {
 
 func (i *Input) StringOption(name string) (string, error) {
 	definition := i.definition
-	if definition == nil {
-		return "", errors.New("no input definition found")
-	}
+	checkPtr(definition, "input definition")
 
 	if !definition.HasOption(name) {
 		return "", fmt.Errorf("the \"%s\" option does not exist", name)
@@ -337,9 +325,7 @@ func (i *Input) StringOption(name string) (string, error) {
 
 func (i *Input) ArrayOption(name string) ([]string, error) {
 	definition := i.definition
-	if definition == nil {
-		return []string{}, errors.New("no input definition found")
-	}
+	checkPtr(definition, "input definition")
 
 	if !definition.HasOption(name) {
 		return []string{}, fmt.Errorf("the \"%s\" option does not exist", name)
@@ -371,9 +357,7 @@ func (i *Input) ArrayOption(name string) ([]string, error) {
 
 func (i *Input) SetOption(name string, value InputType) error {
 	definition := i.definition
-	if definition == nil {
-		return errors.New("no input definition found")
-	}
+	checkPtr(definition, "input definition")
 
 	if definition.HasNegation(name) {
 		i.options[definition.NegationToName(name)] = value
@@ -397,19 +381,9 @@ func (i *Input) HasOption(name string) bool {
 	return definition.HasOption(name) || definition.HasNegation(name)
 }
 
-func (i *Input) SetStream(stream *os.File) {
-	i.stream = stream
-}
-
-func (i *Input) Stream() *os.File {
-	return i.stream
-}
-
 func (i *Input) runArgumentValidators() error {
 	definition := i.definition
-	if definition == nil {
-		return errors.New("no input definition found")
-	}
+	checkPtr(definition, "input definition")
 
 	args := definition.Arguments
 	for _, arg := range args {
@@ -438,9 +412,7 @@ func (i *Input) runArgumentValidators() error {
 
 func (i *Input) runOptionValidators() error {
 	definition := i.definition
-	if definition == nil {
-		return errors.New("no input definition found")
-	}
+	checkPtr(definition, "input definition")
 
 	opts := definition.Options
 	for _, opt := range opts {
@@ -477,6 +449,9 @@ func (i *Input) EscapeToken(token string) string {
 }
 
 func (i *Input) parseToken(token string, parseOptions bool) (bool, error) {
+	checkPtr(i.definition, "input definition")
+	checkPtr(i.arguments, "input arguments")
+
 	if parseOptions && token == "" {
 		err := i.parseArgument(token)
 
@@ -736,10 +711,13 @@ func (i *Input) addLongOption(name string, value InputType) error {
 }
 
 func (i *Input) FirstArgument() InputType {
-	isOption := false
-	tokenCount := len(i.Tokens)
+	checkPtr(i.definition, "input definition")
+	checkPtr(i.options, "input options")
 
-	for idx, token := range i.Tokens {
+	isOption := false
+	tokenCount := len(i.Args)
+
+	for idx, token := range i.Args {
 		if token != "" && strings.HasPrefix(token, "-") {
 			if strings.Contains(token, "=") || idx+1 >= tokenCount {
 				continue
@@ -757,13 +735,13 @@ func (i *Input) FirstArgument() InputType {
 			value := i.options[name]
 			if (value == nil || value == "") && !i.definition.HasShortcut(name) {
 				// noop
-			} else if value != "" && value != nil && i.Tokens[idx+1] == value {
+			} else if value != "" && value != nil && i.Args[idx+1] == value {
 				isOption = true
 			} else {
 				name = i.definition.ShortcutToName(name)
 				value = i.options[name]
 
-				if value != "" && value != nil && i.Tokens[idx+1] == value {
+				if value != "" && value != nil && i.Args[idx+1] == value {
 					isOption = true
 				}
 			}
@@ -783,7 +761,7 @@ func (i *Input) FirstArgument() InputType {
 }
 
 func (i *Input) HasParameterOption(value string, onlyParams bool) bool {
-	for _, token := range i.Tokens {
+	for _, token := range i.Args {
 		if onlyParams && token == "--" {
 			return false
 		}
@@ -802,8 +780,8 @@ func (i *Input) HasParameterOption(value string, onlyParams bool) bool {
 }
 
 func (i *Input) ParameterOption(value string, defaultValue InputType, onlyParams bool) InputType {
-	tokens := make([]string, 0, len(i.Tokens))
-	copy(tokens, i.Tokens)
+	tokens := make([]string, 0, len(i.Args))
+	copy(tokens, i.Args)
 
 	for len(tokens) > 0 {
 		token := helper.Shift(&tokens)
@@ -833,9 +811,9 @@ func (i *Input) ParameterOption(value string, defaultValue InputType, onlyParams
 
 func (i *Input) String() string {
 	re := regexp.MustCompile(`{^(-[^=]+=)(.+)}`)
-	tokens := make([]string, 0, len(i.Tokens))
+	tokens := make([]string, 0, len(i.Args))
 
-	for _, token := range i.Tokens {
+	for _, token := range i.Args {
 		match := re.FindStringSubmatch(token)
 
 		if match != nil {
