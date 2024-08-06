@@ -416,3 +416,75 @@ func (c *Command) Exec(cmd string, shell string, inherit bool) (string, error) {
 
 	return cp.Run()
 }
+
+func (c *Command) NewLine(count uint) {
+	for count > 0 {
+		c.output.Writeln("", 0)
+		count--
+	}
+}
+
+func (c *Command) Err(messages ...string) {
+	c.writeLine(messages, "error", 0)
+}
+
+func (c *Command) Info(messages ...string) {
+	c.writeLine(messages, "info", 0)
+}
+
+func (c *Command) Warn(messages ...string) {
+	c.writeLine(messages, "warning", 0)
+}
+
+func (c *Command) Ok(messages ...string) {
+	c.writeLine(messages, "ok", 0)
+}
+
+func (c *Command) Comment(messages ...string) {
+	c.writeLine(messages, "comment", 0)
+}
+
+func (c *Command) Alert(messages ...string) {
+	length := 0
+	for _, message := range messages {
+		length = max(length, len(message))
+	}
+	length += 12
+
+	c.writeLine([]string{fmt.Sprintf("<fg=yellow>%s </>", strings.Repeat("*", length))}, "alert", 0)
+	for i := range messages {
+		messages[i] = fmt.Sprintf("%s<fg=yellow>*</>     %s     <fg=yellow>*</>", strings.Repeat(" ", 8), messages[i])
+	}
+	c.Writelns(messages, 0)
+	c.Writeln(fmt.Sprintf("<fg=yellow>%s%s</>", strings.Repeat(" ", 8), strings.Repeat("*", length)), 0)
+	c.NewLine(1)
+}
+
+func (c *Command) Writeln(message string, options uint) {
+	c.output.Writeln(message, options)
+}
+
+func (c *Command) Writelns(messages []string, options uint) {
+	c.output.Writelns(messages, options)
+}
+
+func (c *Command) writeLine(messages []string, tag string, options uint) {
+	if len(messages) == 0 {
+		return
+	}
+
+	if tag != "" {
+		messages[0] = fmt.Sprintf("<%s> %s </%s> %s", tag, strings.ToUpper(tag), tag, messages[0])
+
+		for i := 1; i < len(messages); i++ {
+			messages[i] = strings.Repeat(" ", len(tag)+3) + messages[i]
+		}
+	}
+
+	c.output.Writelns(messages, options)
+}
+
+func (c *Command) Spinner(fn func(), message string) {
+	s := NewSpinner(c.input, c.output, message)
+	s.Spin(fn)
+}

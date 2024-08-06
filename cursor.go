@@ -19,31 +19,31 @@ type Cursor struct {
 
 func (c *Cursor) MoveUp(lines int) *Cursor {
 	checkPtr(c.Output, "cursor output")
-	c.Output.Write(fmt.Sprintf("\x1b[%dA]", lines), false, 0)
+	c.Output.Write(fmt.Sprintf("\x1b[%dA", lines), false, 0)
 	return c
 }
 
 func (c *Cursor) MoveDown(lines int) *Cursor {
 	checkPtr(c.Output, "cursor output")
-	c.Output.Write(fmt.Sprintf("\x1b[%dB]", lines), false, 0)
+	c.Output.Write(fmt.Sprintf("\x1b[%dB", lines), false, 0)
 	return c
 }
 
 func (c *Cursor) MoveRight(columns int) *Cursor {
 	checkPtr(c.Output, "cursor output")
-	c.Output.Write(fmt.Sprintf("\x1b[%dC]", columns), false, 0)
+	c.Output.Write(fmt.Sprintf("\x1b[%dC", columns), false, 0)
 	return c
 }
 
 func (c *Cursor) MoveLeft(columns int) *Cursor {
 	checkPtr(c.Output, "cursor output")
-	c.Output.Write(fmt.Sprintf("\x1b[%dD]", columns), false, 0)
+	c.Output.Write(fmt.Sprintf("\x1b[%dD", columns), false, 0)
 	return c
 }
 
 func (c *Cursor) MoveToColumn(column int) *Cursor {
 	checkPtr(c.Output, "cursor output")
-	c.Output.Write(fmt.Sprintf("\x1b[%dG]", column), false, 0)
+	c.Output.Write(fmt.Sprintf("\x1b[%dG", column), false, 0)
 	return c
 }
 
@@ -87,7 +87,7 @@ func (c *Cursor) RestorePosition() *Cursor {
 
 func (c *Cursor) Hide() *Cursor {
 	checkPtr(c.Output, "cursor output")
-	c.Output.Write("\x1b[?25l]", false, 0)
+	c.Output.Write("\x1b[?25l", false, 0)
 	return c
 }
 

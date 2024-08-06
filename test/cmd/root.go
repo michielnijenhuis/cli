@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"time"
+
 	"github.com/michielnijenhuis/cli"
 )
 
@@ -10,15 +12,22 @@ func Execute() {
 		Description: "This is a test command",
 		Help:        "Show some help information",
 		Handle: func(self *cli.Command) (code int, err error) {
-			o := self.Output()
+			self.Spinner(func() {
+				time.Sleep(2000 * time.Millisecond)
+			}, "Waiting...")
 
-			a, e := o.AskHidden("does this work?", nil)
-
-			if e != nil {
-				panic(e)
-			}
-
-			o.Writelnf("a: %s%s", 0, a, "!")
+			self.NewLine(1)
+			self.Ok("Done!")
+			self.NewLine(1)
+			self.Info("Done!")
+			self.NewLine(1)
+			self.Err("Done!")
+			self.NewLine(1)
+			self.Warn("Done!")
+			self.NewLine(1)
+			self.Alert("Done!")
+			self.NewLine(1)
+			self.Comment("Done!")
 
 			return 0, nil
 		},
