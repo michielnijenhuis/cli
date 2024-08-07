@@ -23,25 +23,35 @@ type Theme struct {
 }
 
 var DefaultOutputTheme = map[string]*OutputFormatterStyle{
-	"error":     NewOutputFormatterStyle("white", "red", nil),
-	"info":      NewOutputFormatterStyle("white", "blue", nil),
-	"success":   NewOutputFormatterStyle("white", "green", nil),
-	"ok":        NewOutputFormatterStyle("white", "green", nil),
-	"warn":      NewOutputFormatterStyle("black", "yellow", nil),
-	"warning":   NewOutputFormatterStyle("black", "yellow", nil),
-	"caution":   NewOutputFormatterStyle("black", "yellow", nil),
-	"comment":   NewOutputFormatterStyle("yellow", "", nil),
-	"alert":     NewOutputFormatterStyle("red", "", []string{"bold"}),
-	"header":    NewOutputFormatterStyle("yellow", "", nil),
-	"highlight": NewOutputFormatterStyle("green", "", nil),
-	"prompt":    NewOutputFormatterStyle("cyan", "", nil),
-	"question":  NewOutputFormatterStyle("black", "cyan", nil),
+	"error":    NewOutputFormatterStyle("white", "red", nil),
+	"info":     NewOutputFormatterStyle("white", "blue", nil),
+	"success":  NewOutputFormatterStyle("white", "green", nil),
+	"ok":       NewOutputFormatterStyle("white", "green", nil),
+	"warn":     NewOutputFormatterStyle("black", "yellow", nil),
+	"warning":  NewOutputFormatterStyle("black", "yellow", nil),
+	"caution":  NewOutputFormatterStyle("black", "yellow", nil),
+	"comment":  NewOutputFormatterStyle("yellow", "", nil),
+	"alert":    NewOutputFormatterStyle("red", "", []string{"bold"}),
+	"primary":  NewOutputFormatterStyle("yellow", "", nil),
+	"accent":   NewOutputFormatterStyle("green", "", nil),
+	"prompt":   NewOutputFormatterStyle("cyan", "", nil),
+	"question": NewOutputFormatterStyle("black", "cyan", nil),
 }
 
 var CustomOutputTheme = map[string]*OutputFormatterStyle{}
 
 func AddTheme(tag string, theme Theme) {
 	CustomOutputTheme[tag] = NewOutputFormatterStyle(theme.Foreground, theme.Background, theme.Options)
+}
+
+func SetBaseTheme(primary string, accent string) {
+	AddTheme("primary", Theme{
+		Foreground: primary,
+	})
+
+	AddTheme("accent", Theme{
+		Foreground: accent,
+	})
 }
 
 func (o *OutputFormatter) init() {

@@ -217,7 +217,7 @@ func (app *Application) version() string {
 
 	if app.Name != "" {
 		if app.Version != "" {
-			return fmt.Sprintf("%s <highlight>%s</highlight>", app.Name, app.Version)
+			return fmt.Sprintf("%s <accent>%s</accent>", app.Name, app.Version)
 		}
 
 		return app.Name
@@ -582,7 +582,7 @@ func (app *Application) RenderError(o *Output, err error) {
 
 	if app.runningCommand != nil {
 		o.Writeln(
-			fmt.Sprintf("<highlight>%s %s</highlight>", app.Name, app.runningCommand.Synopsis(false)),
+			fmt.Sprintf("<accent>%s %s</accent>", app.Name, app.runningCommand.Synopsis(false)),
 			VerbosityQuiet,
 		)
 		o.Writeln("", VerbosityQuiet)
@@ -714,7 +714,7 @@ func (app *Application) defaultInputDefinition() *InputDefinition {
 		Name:        "help",
 		Shortcut:    "h",
 		Mode:        InputOptionBool,
-		Description: fmt.Sprintf("Display help for the given command, or the <highlight>%s</highlight> command (if no command is given)", app.DefaultCommand),
+		Description: fmt.Sprintf("Display help for the given command, or the <accent>%s</accent> command (if no command is given)", app.DefaultCommand),
 	}
 	quietOption := &InputOption{
 		Name:        "quiet",
@@ -774,11 +774,11 @@ func (app *Application) newHelpCommand() *Command {
 	c := &Command{
 		Name:        "help",
 		Description: "Display help for a command",
-		Help: `The <highlight>%name%</highlight> command displays help for a given command:
+		Help: `The <accent>%name%</accent> command displays help for a given command:
 
-  <highlight>%full_name% list</highlight>
+  <accent>%full_name% list</accent>
 
-To display the list of available commands, please use the <highlight>list</highlight> 
+To display the list of available commands, please use the <accent>list</accent> 
 `,
 		IgnoreValidationErrors: true,
 		Handle: func(self *Command) (int, error) {
@@ -841,17 +841,17 @@ func (app *Application) newListCommand() *Command {
 	c := &Command{
 		Name:        "list",
 		Description: "List commands",
-		Help: `The <highlight>%name%</highlight> command lists all commands:
+		Help: `The <accent>%name%</accent> command lists all commands:
 
-  <highlight>%full_name%</highlight>
+  <accent>%full_name%</accent>
 
 You can also display the commands for a specific namespace:
 
-  <highlight>%full_name% test</highlight>
+  <accent>%full_name% test</accent>
 
 It's also possible to get raw list of commands (useful for embedding command runner):
 
-  <highlight>%full_name% --raw</highlight>`,
+  <accent>%full_name% --raw</accent>`,
 		IgnoreValidationErrors: true,
 		Handle: func(self *Command) (int, error) {
 			d := TextDescriptor{self.Output()}

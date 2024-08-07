@@ -49,7 +49,7 @@ func (d *TextDescriptor) DescribeApplication(app *Application, options *Descript
 			d.writeText("Help\n\n", options)
 		}
 
-		d.writeText("<header>Usage:</header>\n", options)
+		d.writeText("<primary>Usage:</primary>\n", options)
 		d.writeText("  command [options] [arguments]\n\n", options)
 
 		d.DescribeInputDefinition(&InputDefinition{
@@ -92,9 +92,9 @@ func (d *TextDescriptor) DescribeApplication(app *Application, options *Descript
 		width := columnWidth(availableCommands)
 
 		if describedNamespace != "" {
-			d.writeText(fmt.Sprintf("<header>Available commands for the \"%s\" namespace:</header>", describedNamespace), options)
+			d.writeText(fmt.Sprintf("<primary>Available commands for the \"%s\" namespace:</primary>", describedNamespace), options)
 		} else {
-			d.writeText("<header>Available commands:</header>", options)
+			d.writeText("<primary>Available commands:</primary>", options)
 		}
 
 		for _, namespace := range namespaces {
@@ -111,7 +111,7 @@ func (d *TextDescriptor) DescribeApplication(app *Application, options *Descript
 
 			if describedNamespace == "" && namespace.id != "_global" {
 				d.writeText("\n", nil)
-				d.writeText(fmt.Sprintf(" <header>%s</header>", namespace.id), options)
+				d.writeText(fmt.Sprintf(" <primary>%s</primary>", namespace.id), options)
 			}
 
 			for _, name := range list {
@@ -124,7 +124,7 @@ func (d *TextDescriptor) DescribeApplication(app *Application, options *Descript
 					commandAliases = d.commandAliasesText(command)
 				}
 
-				d.writeText(fmt.Sprintf("  <highlight>%s</highlight>%s%s%s", name, strings.Repeat(" ", max(spacingWidth, 2)), commandAliases, command.Description), options)
+				d.writeText(fmt.Sprintf("  <accent>%s</accent>%s%s%s", name, strings.Repeat(" ", max(spacingWidth, 0)+2), commandAliases, command.Description), options)
 			}
 		}
 
@@ -139,13 +139,13 @@ func (d *TextDescriptor) DescribeCommand(command *Command, options *DescriptorOp
 
 	description := command.Description
 	if description != "" {
-		d.writeText("<header>Description:</header>", options)
+		d.writeText("<primary>Description:</primary>", options)
 		d.writeText("\n", nil)
 		d.writeText("  "+description, nil)
 		d.writeText("\n\n", nil)
 	}
 
-	d.writeText("<header>Usage:</header>", options)
+	d.writeText("<primary>Usage:</primary>", options)
 	usages := make([]string, 0)
 	usages = append(usages, command.Synopsis(true))
 	if command.Aliases != nil {
@@ -168,7 +168,7 @@ func (d *TextDescriptor) DescribeCommand(command *Command, options *DescriptorOp
 	help := command.ProcessedHelp()
 	if help != "" && help != description {
 		d.writeText("\n", nil)
-		d.writeText("<header>Help:</header>", options)
+		d.writeText("<primary>Help:</primary>", options)
 		d.writeText("\n", nil)
 		d.writeText("  "+strings.ReplaceAll(help, "\n", "\n  "), options)
 		d.writeText("\n", nil)
@@ -187,7 +187,7 @@ func (d *TextDescriptor) DescribeInputDefinition(definition *InputDefinition, op
 	hasOptions := len(definition.Options) > 0
 
 	if hasArgs {
-		d.writeText("<header>Arguments:</header>", options)
+		d.writeText("<primary>Arguments:</primary>", options)
 		d.writeText("\n", nil)
 
 		for _, argument := range definition.Arguments {
@@ -208,7 +208,7 @@ func (d *TextDescriptor) DescribeInputDefinition(definition *InputDefinition, op
 	if hasOptions {
 		laterOptions := make([]*InputOption, 0)
 
-		d.writeText("<header>Options:</header>", options)
+		d.writeText("<primary>Options:</primary>", options)
 
 		for _, option := range definition.Options {
 			if len(option.Shortcut) > 1 {
@@ -242,7 +242,7 @@ func (d *TextDescriptor) DescribeInputArgument(argument *InputArgument, options 
 
 	var defaultValue string
 	if hasDefaultValue(argument.DefaultValue) {
-		defaultValue = fmt.Sprintf("<header> [default: %s]</header>", formatDefaultValue(argument.DefaultValue))
+		defaultValue = fmt.Sprintf("<primary> [default: %s]</primary>", formatDefaultValue(argument.DefaultValue))
 	}
 
 	name := argument.Name
@@ -259,7 +259,7 @@ func (d *TextDescriptor) DescribeInputArgument(argument *InputArgument, options 
 	re := regexp.MustCompile(`\s*[\r\n]\s*`)
 	desc := re.ReplaceAllString(argument.Description, strings.Repeat(" ", totalWidth+4))
 
-	d.writeText(fmt.Sprintf("  <highlight>%s</highlight> %s%s%s", name, width, desc, defaultValue), options)
+	d.writeText(fmt.Sprintf("  <accent>%s</accent> %s%s%s", name, width, desc, defaultValue), options)
 }
 
 func (d *TextDescriptor) DescribeInputOption(option *InputOption, options *DescriptorOptions) {
@@ -267,7 +267,7 @@ func (d *TextDescriptor) DescribeInputOption(option *InputOption, options *Descr
 
 	var defaultValue string
 	if hasDefaultValue(option.DefaultValue) {
-		defaultValue = fmt.Sprintf("<header> [default: %s]</header>", formatDefaultValue(option.DefaultValue))
+		defaultValue = fmt.Sprintf("<primary> [default: %s]</primary>", formatDefaultValue(option.DefaultValue))
 	}
 
 	name := option.Name
@@ -310,10 +310,10 @@ func (d *TextDescriptor) DescribeInputOption(option *InputOption, options *Descr
 
 	var arr string
 	if option.IsArray() {
-		arr = "<header> (multiple values allowed)</header>"
+		arr = "<primary> (multiple values allowed)</primary>"
 	}
 
-	d.writeText(fmt.Sprintf("  <highlight>%s</highlight>  %s%s%s%s", synopsis, width, desc, defaultValue, arr), options)
+	d.writeText(fmt.Sprintf("  <accent>%s</accent>  %s%s%s%s", synopsis, width, desc, defaultValue, arr), options)
 }
 
 func columnWidth(commands map[string]*Command) int {

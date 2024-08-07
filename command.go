@@ -8,9 +8,9 @@ import (
 	"strings"
 )
 
-type CommandHandle func(self *Command) (int, error)
-type CommandInitializer func(input *Input, output *Output)
-type CommandInteracter func(input *Input, output *Output)
+type CommandHandle func(c *Command) (int, error)
+type CommandInitializer func(i *Input, o *Output)
+type CommandInteracter func(i *Input, o *Output)
 
 type Command struct {
 	Handle      CommandHandle

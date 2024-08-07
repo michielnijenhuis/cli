@@ -255,7 +255,7 @@ func writePrompt[T any](output *Output, qs any) {
 			highlight = "no"
 		}
 
-		text = fmt.Sprintf(" %s (yes/no) [<highlight>%s</highlight>]", text, highlight)
+		text = fmt.Sprintf(" %s (yes/no) [<accent>%s</accent>]", text, highlight)
 	} else if cq, ok := qs.(*ChoiceQuestion); ok {
 		str, isStr := defaultValue.(string)
 		comment := str

@@ -8,7 +8,7 @@ import (
 
 func Execute() {
 	cmd := &cli.Command{
-		Name:        "test",
+		Name:        "testing",
 		Description: "This is a test command",
 		Help:        "Show some help information",
 		Handle: func(self *cli.Command) (code int, err error) {
@@ -47,6 +47,8 @@ func Execute() {
 		CatchErrors: true,
 		AutoExit:    true,
 	}
+
+	cli.SetBaseTheme("red", "cyan")
 
 	app.Add(cmd)
 	app.Run()

@@ -139,6 +139,6 @@ func prepareCommand(cmd string, shell string) string {
 	case "bash":
 		return fmt.Sprintf("bash -i -c '%s'", cmd)
 	default:
-		return cmd
+		return fmt.Sprintf("sh -i -c '%s'", cmd)
 	}
 }
