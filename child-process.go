@@ -35,11 +35,10 @@ func (cp *ChildProcess) Run() (string, error) {
 }
 
 func (cp *ChildProcess) Start() error {
-	if cp.c != nil {
-		return cp.err
+	if cp.c == nil {
+		cp.c = cp.createCommand()
 	}
 
-	cp.c = cp.createCommand()
 	cp.err = cp.c.Start()
 	return cp.err
 }
@@ -54,7 +53,8 @@ func (cp *ChildProcess) AddEnv(name string, value string) {
 
 func (cp *ChildProcess) Wait() error {
 	if cp.c == nil {
-		return nil
+		cp.c = cp.createCommand()
+		cp.err = cp.c.Start()
 	}
 
 	err := cp.c.Wait()
@@ -83,19 +83,11 @@ func (cp *ChildProcess) createCommand() *os_exec.Cmd {
 
 	if !cp.Pipe {
 		cp.inherit(c)
-	} else {
-		cp.pipe(c)
 	}
 
 	cp.configureEnv(c)
 
 	return c
-}
-
-func (cp *ChildProcess) pipe(c *os_exec.Cmd) {
-	c.Stdin = cp.Stdin
-	c.Stdout = cp.Stdout
-	c.Stderr = cp.Stderr
 }
 
 func (cp *ChildProcess) inherit(c *os_exec.Cmd) {
