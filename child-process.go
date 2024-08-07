@@ -63,8 +63,6 @@ func (cp *ChildProcess) Wait() error {
 }
 
 func (cp *ChildProcess) createCommand() *os_exec.Cmd {
-	cp.init()
-
 	cmd := prepareCommand(cp.Cmd, cp.Shell)
 
 	args := cp.Args
@@ -84,25 +82,23 @@ func (cp *ChildProcess) createCommand() *os_exec.Cmd {
 	c := os_exec.Command(name, args...)
 
 	if !cp.Pipe {
-		c.Stdin = cp.Stdin
-		c.Stdout = cp.Stdout
-		c.Stderr = cp.Stderr
+		cp.inherit(c)
+	} else {
+		cp.pipe(c)
 	}
 
-	if cp.Env != nil {
-		env := os.Environ()
-		env = append(env, cp.Env...)
-		c.Env = env
-	}
+	cp.configureEnv(c)
 
 	return c
 }
 
-func (cp *ChildProcess) init() {
-	if !cp.Inherit {
-		return
-	}
+func (cp *ChildProcess) pipe(c *os_exec.Cmd) {
+	c.Stdin = cp.Stdin
+	c.Stdout = cp.Stdout
+	c.Stderr = cp.Stderr
+}
 
+func (cp *ChildProcess) inherit(c *os_exec.Cmd) {
 	if cp.Stdin == nil {
 		cp.Stdin = os.Stdin
 	}
@@ -114,6 +110,26 @@ func (cp *ChildProcess) init() {
 	if cp.Stderr == nil {
 		cp.Stderr = os.Stderr
 	}
+
+	c.Stdin = cp.Stdin
+	c.Stdout = cp.Stdout
+	c.Stderr = cp.Stderr
+}
+
+func (cp *ChildProcess) configureEnv(c *os_exec.Cmd) {
+	if cp.Env != nil {
+		env := os.Environ()
+		env = append(env, cp.Env...)
+		c.Env = env
+	}
+}
+
+func (cp *ChildProcess) String() string {
+	if cp.c == nil {
+		cp.c = cp.createCommand()
+	}
+
+	return cp.c.String()
 }
 
 func prepareCommand(cmd string, shell string) string {
