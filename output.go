@@ -171,6 +171,10 @@ func (o *Output) DoWrite(message string, newLine bool) {
 func (o *Output) SetDecorated(decorated bool) {
 	doSetDecorated(o, decorated)
 	doSetDecorated(o.Stderr, decorated)
+
+	if o.Formatter() != nil {
+		o.Formatter().Decorated = decorated
+	}
 }
 
 func doSetDecorated(o *Output, decorated bool) {
