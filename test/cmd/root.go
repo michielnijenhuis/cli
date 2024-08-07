@@ -12,8 +12,12 @@ func Execute() {
 		Description: "This is a test command",
 		Help:        "Show some help information",
 		Handle: func(self *cli.Command) (code int, err error) {
+			cli.AddTheme("prompt", cli.Theme{
+				Foreground: "red",
+			})
+
 			self.Spinner(func() {
-				time.Sleep(10000 * time.Millisecond)
+				time.Sleep(2000 * time.Millisecond)
 			}, "Waiting...")
 
 			self.NewLine(1)

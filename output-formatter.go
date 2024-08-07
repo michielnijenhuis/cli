@@ -64,26 +64,29 @@ func (o *OutputFormatter) SetStyle(name string, style *OutputFormatterStyle) {
 
 func (o *OutputFormatter) HasStyle(name string) bool {
 	o.init()
-	name = strings.ToLower(name)
-	return o.Styles[name] != nil || CustomOutputTheme[name] != nil || DefaultOutputTheme[name] != nil
+	style, _ := o.Style(name)
+	return style != nil
 }
 
 func (o *OutputFormatter) Style(name string) (*OutputFormatterStyle, error) {
-	if !o.HasStyle(name) {
-		customStyle, ok := CustomOutputTheme[name]
-		if ok {
-			return customStyle, nil
-		}
+	name = strings.ToLower(name)
 
-		defaultStyle, ok := DefaultOutputTheme[name]
-		if ok {
-			return defaultStyle, nil
-		}
-
-		return nil, fmt.Errorf("undefined style: \"%s\"", name)
+	ownStyle, ok := o.Styles[name]
+	if ok {
+		return ownStyle, nil
 	}
 
-	return o.Styles[strings.ToLower(name)], nil
+	customStyle, ok := CustomOutputTheme[name]
+	if ok {
+		return customStyle, nil
+	}
+
+	defaultStyle, ok := DefaultOutputTheme[name]
+	if ok {
+		return defaultStyle, nil
+	}
+
+	return nil, fmt.Errorf("undefined style: \"%s\"", name)
 }
 
 func (o *OutputFormatter) Format(message string) string {
@@ -211,7 +214,7 @@ func EscapeTrailingBackslash(s string) string {
 }
 
 func (o *OutputFormatter) createStyleFromString(s string) *OutputFormatterStyle {
-	if style, ok := o.Styles[s]; ok {
+	if style, err := o.Style(s); err == nil {
 		return style
 	}
 

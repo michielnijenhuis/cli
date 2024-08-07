@@ -72,9 +72,7 @@ func setupNewOutput(input *Input, stream *os.File, formatter *OutputFormatter) *
 }
 
 func NewOutput(input *Input) *Output {
-	f := &OutputFormatter{
-		Styles: DefaultOutputTheme,
-	}
+	f := &OutputFormatter{}
 	o := setupNewOutput(input, os.Stdout, f)
 	o.Stderr = setupNewOutput(input, os.Stderr, f)
 	return o
