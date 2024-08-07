@@ -11,6 +11,8 @@ type Spinner struct {
 	Interval int
 	Count    int
 	Message  string
+	Frames   []string
+	Color    string
 	spinning bool
 }
 
@@ -31,7 +33,7 @@ func (r *spinnerRenderer) Render(p any) {
 	s.Interval = r.interval
 
 	frame := r.frames[s.Count%len(r.frames)]
-	line := fmt.Sprintf(" <fg=cyan>%s</> %s", frame, s.Message)
+	line := fmt.Sprintf(" <fg=%s>%s</> %s", s.Color, frame, s.Message)
 
 	r.Line(line, true)
 }
@@ -40,25 +42,36 @@ func (r *spinnerRenderer) String() string {
 	return r.ToString(r.state)
 }
 
-func NewSpinnerRenderer() RendererInterface {
+func NewSpinnerRenderer(s *Spinner) RendererInterface {
 	return &spinnerRenderer{
 		Renderer: NewRenderer(),
-		frames:   []string{"⠂", "⠒", "⠐", "⠰", "⠠", "⠤", "⠄", "⠆"}, // https://www.fileformat.info/info/unicode/block/braille_patterns/images.htm
+		frames:   s.Frames, // https://www.fileformat.info/info/unicode/block/braille_patterns/images.htm
 		interval: 75,
 	}
 }
 
-func NewSpinner(i *Input, o *Output, message string) *Spinner {
+func NewSpinner(i *Input, o *Output, message string, frames []string, color string) *Spinner {
 	p := NewPrompt("spinner", i, o)
+
+	if frames == nil {
+		frames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+	}
+
+	if color == "" {
+		color = "cyan"
+	}
+
 	return &Spinner{
 		Interval: 100,
 		Prompt:   p,
 		Message:  message,
+		Frames:   frames,
+		Color:    color,
 	}
 }
 
 func RenderSpinner(s *Spinner) string {
-	r := NewSpinnerRenderer()
+	r := NewSpinnerRenderer(s)
 	r.Render(s)
 	return r.String()
 }

@@ -16,6 +16,12 @@ type OutputFormatter struct {
 
 type OutputTheme map[string]*OutputFormatterStyle
 
+type Theme struct {
+	Foreground string
+	Background string
+	Options    []string
+}
+
 var DefaultOutputTheme = map[string]*OutputFormatterStyle{
 	"error":     NewOutputFormatterStyle("white", "red", nil),
 	"info":      NewOutputFormatterStyle("white", "blue", nil),
@@ -28,7 +34,14 @@ var DefaultOutputTheme = map[string]*OutputFormatterStyle{
 	"alert":     NewOutputFormatterStyle("red", "", []string{"bold"}),
 	"header":    NewOutputFormatterStyle("yellow", "", nil),
 	"highlight": NewOutputFormatterStyle("green", "", nil),
+	"prompt":    NewOutputFormatterStyle("cyan", "", nil),
 	"question":  NewOutputFormatterStyle("black", "cyan", nil),
+}
+
+var CustomOutputTheme = map[string]*OutputFormatterStyle{}
+
+func AddTheme(tag string, theme Theme) {
+	CustomOutputTheme[tag] = NewOutputFormatterStyle(theme.Foreground, theme.Background, theme.Options)
 }
 
 func (o *OutputFormatter) init() {
@@ -51,16 +64,23 @@ func (o *OutputFormatter) SetStyle(name string, style *OutputFormatterStyle) {
 
 func (o *OutputFormatter) HasStyle(name string) bool {
 	o.init()
-	return o.Styles[strings.ToLower(name)] != nil || DefaultOutputTheme[strings.ToLower(name)] != nil
+	name = strings.ToLower(name)
+	return o.Styles[name] != nil || CustomOutputTheme[name] != nil || DefaultOutputTheme[name] != nil
 }
 
 func (o *OutputFormatter) Style(name string) (*OutputFormatterStyle, error) {
 	if !o.HasStyle(name) {
-		defaultStyle, ok := DefaultOutputTheme[name]
-		if !ok {
-			return nil, fmt.Errorf("undefined style: \"%s\"", name)
+		customStyle, ok := CustomOutputTheme[name]
+		if ok {
+			return customStyle, nil
 		}
-		return defaultStyle, nil
+
+		defaultStyle, ok := DefaultOutputTheme[name]
+		if ok {
+			return defaultStyle, nil
+		}
+
+		return nil, fmt.Errorf("undefined style: \"%s\"", name)
 	}
 
 	return o.Styles[strings.ToLower(name)], nil

@@ -13,7 +13,7 @@ func Execute() {
 		Help:        "Show some help information",
 		Handle: func(self *cli.Command) (code int, err error) {
 			self.Spinner(func() {
-				time.Sleep(2000 * time.Millisecond)
+				time.Sleep(10000 * time.Millisecond)
 			}, "Waiting...")
 
 			self.NewLine(1)

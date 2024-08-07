@@ -485,6 +485,7 @@ func (c *Command) writeLine(messages []string, tag string, options uint) {
 }
 
 func (c *Command) Spinner(fn func(), message string) {
-	s := NewSpinner(c.input, c.output, message)
+	style, _ := c.output.Formatter().Style("prompt")
+	s := NewSpinner(c.input, c.output, message, nil, style.foreground)
 	s.Spin(fn)
 }
