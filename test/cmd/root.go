@@ -1,7 +1,8 @@
 package cmd
 
 import (
-	"time"
+	"fmt"
+	"strings"
 
 	"github.com/michielnijenhuis/cli"
 )
@@ -11,31 +12,22 @@ func Execute() {
 		Name:        "testing",
 		Description: "This is a test command",
 		Help:        "Show some help information",
-		Handle: func(self *cli.Command) (code int, err error) {
-			cli.AddTheme("prompt", cli.Theme{
-				Foreground: "red",
-			})
+		Handle: func(c *cli.Command) (int, error) {
+			var branch string
+			var err error
 
-			cli.AddTheme("info", cli.Theme{
-				Background: "magenta",
-			})
+			c.Spinner(func() {
+				// time.Sleep(1000 * time.Millisecond)
+				cp := c.Spawn("wd c && cd cli-go && echo $(current_branch)", "zsh", false)
+				branch, err = cp.Run()
 
-			self.Spinner(func() {
-				time.Sleep(2000 * time.Millisecond)
-			}, "Waiting...")
+			}, "")
 
-			self.NewLine(1)
-			self.Ok("Done!")
-			self.NewLine(1)
-			self.Info("Done!")
-			self.NewLine(1)
-			self.Err("Done!")
-			self.NewLine(1)
-			self.Warn("Done!")
-			self.NewLine(1)
-			self.Alert("Done!")
-			self.NewLine(1)
-			self.Comment("Done!")
+			if err != nil {
+				c.Err(err)
+			} else {
+				c.Comment(fmt.Sprintf("Branch: %s", strings.TrimSpace(branch)))
+			}
 
 			return 0, nil
 		},

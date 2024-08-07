@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	os_exec "os/exec"
+	"strings"
 )
 
 type ChildProcess struct {
@@ -125,12 +126,23 @@ func (cp *ChildProcess) String() string {
 }
 
 func prepareCommand(cmd string, shell string) string {
+	flags := make([]string, 0)
+
+	if TerminalIsInteractive() {
+		flags = append(flags, "-i")
+	}
+
+	var flagsStr string
+	if len(flags) > 0 {
+		flagsStr = " " + strings.Join(flags, " ")
+	}
+
 	switch shell {
 	case "zsh":
-		return fmt.Sprintf("zsh -i -c 'source ~/.zshrc; %s'", cmd)
+		return fmt.Sprintf("zsh %s-c 'source ~/.zshrc; %s'", flagsStr, cmd)
 	case "bash":
-		return fmt.Sprintf("bash -i -c '%s'", cmd)
+		return fmt.Sprintf("bash %s-c '%s'", flagsStr, cmd)
 	default:
-		return fmt.Sprintf("sh -i -c '%s'", cmd)
+		return fmt.Sprintf("sh %s-c '%s'", flagsStr, cmd)
 	}
 }

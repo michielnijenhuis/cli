@@ -428,8 +428,12 @@ func (c *Command) NewLine(count uint) {
 	}
 }
 
-func (c *Command) Err(messages ...string) {
+func (c *Command) Error(messages ...string) {
 	c.writeLine(messages, "error")
+}
+
+func (c *Command) Err(err error) {
+	c.writeLine([]string{err.Error()}, "error")
 }
 
 func (c *Command) Info(messages ...string) {

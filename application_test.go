@@ -280,6 +280,6 @@ func TestCommandCanExecChildProcesses(t *testing.T) {
 	out = strings.TrimSuffix(out, "\n")
 
 	if out != expected {
-		t.Errorf("Expected %v, got %v", expected, out)
+		t.Errorf("Expected \"%s\", got \"%s\"", expected, out)
 	}
 }

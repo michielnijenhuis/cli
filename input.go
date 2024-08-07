@@ -89,7 +89,7 @@ func (i *Input) Parse() error {
 
 func (i *Input) Validate() error {
 	definition := i.definition
-	checkPtr(definition, "input definiton")
+	checkPtr(definition, "input definition")
 
 	givenArguments := i.arguments
 	checkPtr(givenArguments, "input arguments")

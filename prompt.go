@@ -13,12 +13,12 @@ import (
 )
 
 const (
-	PROMPT_STATE_INITIAL   = 1
-	PROMPT_STATE_ACTIVE    = 2
-	PROMPT_STATE_SUBMIT    = 3
-	PROMPT_STATE_CANCEL    = 4
-	PROMPT_STATE_ERROR     = 5
-	PROMPT_STATE_SEARCHING = 6
+	PromptStateInitial   = 1
+	PromptStateActive    = 2
+	PromptStateSubmit    = 3
+	PromptStateCancel    = 4
+	PromptStateError     = 5
+	PromptStateSearching = 6
 )
 
 type RendererInterface interface {
@@ -46,15 +46,15 @@ type Prompt struct {
 	activeTheme         string
 	prevFrame           string
 	validated           bool
-	fallback            any // TODO
 	cursor              Cursor
 	listeners           map[string][]Listener
 	typedValue          string
-	cursorPosition      int
 	allowValueClearance bool
 	CancelUsingFn       AnyFunc
 	ValidateUsingFn     func(any) string
 	RevertUsingFn       AnyFunc
+	// fallback            any // TODO
+	// cursorPosition      int // TODO
 }
 
 func NewPrompt(name string, i *Input, o *Output) *Prompt {
@@ -67,7 +67,7 @@ func NewPrompt(name string, i *Input, o *Output) *Prompt {
 		Name:          name,
 		Input:         i,
 		Output:        o,
-		State:         PROMPT_STATE_INITIAL,
+		State:         PromptStateInitial,
 		CancelMessage: "Cancelled.",
 		activeTheme:   "default",
 		cursor:        cursor,
@@ -144,9 +144,9 @@ func (p *Prompt) Render(frame string) {
 		return
 	}
 
-	if p.State == PROMPT_STATE_INITIAL {
+	if p.State == PromptStateInitial {
 		p.Output.Write(frame, false, 0)
-		p.State = PROMPT_STATE_ACTIVE
+		p.State = PromptStateActive
 		p.prevFrame = frame
 		return
 	}
@@ -177,7 +177,7 @@ func (p *Prompt) validate(value string) {
 	p.validated = true
 
 	if p.Required && strings.TrimSpace(value) == "" {
-		p.State = PROMPT_STATE_ERROR
+		p.State = PromptStateError
 		p.Error = "Required."
 		return
 	}
@@ -193,7 +193,7 @@ func (p *Prompt) validate(value string) {
 		err = p.ValidateUsingFn(p)
 	}
 
-	p.State = PROMPT_STATE_ERROR
+	p.State = PromptStateError
 	if err != "" {
 		p.Error = err
 	}
@@ -202,7 +202,7 @@ func (p *Prompt) validate(value string) {
 func (p *Prompt) defaultValue() (string, error) {
 	p.validate(p.DefaultValue)
 
-	if p.State == PROMPT_STATE_ERROR {
+	if p.State == PromptStateError {
 		return "", errors.New(p.Error)
 	}
 
@@ -238,7 +238,14 @@ func (p *Prompt) setTty(mode string) (string, error) {
 func (p *Prompt) restoreTty() {
 	if initialSttyMode != "" {
 		c := exec.Command("stty", StringToInputArgs(initialSttyMode)...)
-		c.Run()
+
+		err := c.Run()
+		if err != nil {
+			if p.Output.IsDebug() {
+				panic(err)
+			}
+		}
+
 		initialSttyMode = ""
 	}
 }
@@ -258,13 +265,13 @@ func (p *Prompt) Restore() {
 }
 
 func (p *Prompt) handleKeyPress(key string) bool {
-	if p.State == PROMPT_STATE_ERROR {
-		p.State = PROMPT_STATE_ACTIVE
+	if p.State == PromptStateError {
+		p.State = PromptStateActive
 	}
 
 	p.emit("key", key)
 
-	if p.State == PROMPT_STATE_SUBMIT {
+	if p.State == PromptStateSubmit {
 		return false
 	}
 
@@ -275,12 +282,12 @@ func (p *Prompt) handleKeyPress(key string) bool {
 		}
 
 		if p.RevertUsingFn == nil {
-			p.State = PROMPT_STATE_ERROR
+			p.State = PromptStateError
 			p.Error = "This cannot be reverted."
 			return true
 		}
 
-		p.State = PROMPT_STATE_CANCEL
+		p.State = PromptStateCancel
 		p.CancelMessage = "Reverted."
 
 		p.RevertUsingFn()
@@ -288,7 +295,7 @@ func (p *Prompt) handleKeyPress(key string) bool {
 	}
 
 	if key == keys.CtrlC {
-		p.State = PROMPT_STATE_CANCEL
+		p.State = PromptStateCancel
 		return false
 	}
 
@@ -307,6 +314,7 @@ func (p *Prompt) writeDirectly(s string) {
 	p.Output.Write(s, false, 0)
 }
 
-func (p *Prompt) trackTypedValue(defaultValue string, submit bool, ignore func(string) bool, allowNewLine bool) {
-	// TODO: implement
-}
+// TODO: implement
+// func (p *Prompt) trackTypedValue(defaultValue string, submit bool, ignore func(string) bool, allowNewLine bool) {
+// 	//
+// }

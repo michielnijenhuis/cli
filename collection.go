@@ -41,16 +41,12 @@ func (c Collection[T]) Filter(predicate func(T) bool) Collection[T] {
 	return Collect(f)
 }
 
+func noop[T any](v T) T {
+	return v
+}
+
 func (c Collection[T]) FilterInPlace(predicate func(T) bool) Collection[T] {
-	var ptr int
-	for _, v := range c {
-		if predicate(v) {
-			c[ptr] = v
-			ptr++
-		}
-	}
-	c = c[:ptr]
-	return c
+	return c.FilterMapInPlace(predicate, noop)
 }
 
 func (c Collection[T]) FilterMapInPlace(predicate func(T) bool, mapper func(T) T) Collection[T] {
