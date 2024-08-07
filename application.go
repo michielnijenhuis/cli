@@ -899,11 +899,14 @@ func (app *Application) abbreviationSuggestions(abbrevs []string) string {
 }
 
 func (app *Application) ExtractNamespace(name string, limit int) string {
-	parts := strings.Split(name, ":")[1:]
+	parts := strings.Split(name, ":")
+	parts = parts[0 : len(parts)-1]
 
 	if limit < 0 {
 		return strings.Join(parts, ":")
 	}
+
+	limit = max(len(parts), limit)
 
 	return strings.Join(parts[0:limit], ":")
 }

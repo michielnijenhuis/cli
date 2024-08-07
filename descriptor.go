@@ -46,7 +46,7 @@ func (d *TextDescriptor) DescribeApplication(app *Application, options *Descript
 	} else {
 		help := app.Help()
 		if help != "" {
-			d.writeText("Help\n\n", options)
+			d.writeText(help+"\n\n", options)
 		}
 
 		d.writeText("<primary>Usage:</primary>\n", options)
