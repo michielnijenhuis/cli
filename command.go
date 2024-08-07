@@ -397,7 +397,7 @@ func (c *Command) SetMeta(meta any) {
 	c.meta = meta
 }
 
-func (c *Command) Exec(cmd string, shell string, inherit bool) (string, error) {
+func (c *Command) Spawn(cmd string, shell string, inherit bool) *ChildProcess {
 	cp := &ChildProcess{
 		Cmd:     cmd,
 		Shell:   shell,
@@ -414,7 +414,11 @@ func (c *Command) Exec(cmd string, shell string, inherit bool) (string, error) {
 		cp.Stderr = o.Stderr.Stream
 	}
 
-	return cp.Run()
+	return cp
+}
+
+func (c *Command) Exec(cmd string, shell string, inherit bool) (string, error) {
+	return c.Spawn(cmd, shell, inherit).Run()
 }
 
 func (c *Command) NewLine(count uint) {
@@ -425,23 +429,23 @@ func (c *Command) NewLine(count uint) {
 }
 
 func (c *Command) Err(messages ...string) {
-	c.writeLine(messages, "error", 0)
+	c.writeLine(messages, "error")
 }
 
 func (c *Command) Info(messages ...string) {
-	c.writeLine(messages, "info", 0)
+	c.writeLine(messages, "info")
 }
 
 func (c *Command) Warn(messages ...string) {
-	c.writeLine(messages, "warning", 0)
+	c.writeLine(messages, "warning")
 }
 
 func (c *Command) Ok(messages ...string) {
-	c.writeLine(messages, "ok", 0)
+	c.writeLine(messages, "ok")
 }
 
 func (c *Command) Comment(messages ...string) {
-	c.writeLine(messages, "comment", 0)
+	c.output.Comment(messages...)
 }
 
 func (c *Command) Alert(messages ...string) {
@@ -451,28 +455,28 @@ func (c *Command) Alert(messages ...string) {
 	}
 	length += 12
 
-	c.writeLine([]string{fmt.Sprintf("<fg=yellow>%s </>", strings.Repeat("*", length))}, "alert", 0)
+	c.writeLine([]string{fmt.Sprintf("<fg=yellow>%s </>", strings.Repeat("*", length))}, "alert")
 	for i := range messages {
 		messages[i] = fmt.Sprintf("%s<fg=yellow>*</>     %s     <fg=yellow>*</>", strings.Repeat(" ", 8), messages[i])
 	}
-	c.Writelns(messages, 0)
-	c.Writeln(fmt.Sprintf("<fg=yellow>%s%s</>", strings.Repeat(" ", 8), strings.Repeat("*", length)), 0)
+	c.Writelns(messages)
+	c.Writeln(fmt.Sprintf("<fg=yellow>%s%s</>", strings.Repeat(" ", 8), strings.Repeat("*", length)))
 	c.NewLine(1)
 }
 
-func (c *Command) Write(message string, options uint) {
-	c.output.Write(message, false, options)
+func (c *Command) Write(message string) {
+	c.output.Write(message, false, 0)
 }
 
-func (c *Command) Writeln(message string, options uint) {
-	c.output.Writeln(message, options)
+func (c *Command) Writeln(message string) {
+	c.output.Writeln(message, 0)
 }
 
-func (c *Command) Writelns(messages []string, options uint) {
-	c.output.Writelns(messages, options)
+func (c *Command) Writelns(messages []string) {
+	c.output.Writelns(messages, 0)
 }
 
-func (c *Command) writeLine(messages []string, tag string, options uint) {
+func (c *Command) writeLine(messages []string, tag string) {
 	if len(messages) == 0 {
 		return
 	}
@@ -485,11 +489,31 @@ func (c *Command) writeLine(messages []string, tag string, options uint) {
 		}
 	}
 
-	c.output.Writelns(messages, options)
+	c.output.Writelns(messages, 0)
 }
 
 func (c *Command) Spinner(fn func(), message string) {
 	style, _ := c.output.Formatter().Style("prompt")
 	s := NewSpinner(c.input, c.output, message, nil, style.foreground)
 	s.Spin(fn)
+}
+
+func (c *Command) IsQuiet() bool {
+	return c.output.IsQuiet()
+}
+
+func (c *Command) IsVerbose() bool {
+	return c.output.IsVerbose()
+}
+
+func (c *Command) IsVeryVerbose() bool {
+	return c.output.IsVeryVerbose()
+}
+
+func (c *Command) IsDebug() bool {
+	return c.output.IsDebug()
+}
+
+func (c *Command) IsDecorated() bool {
+	return c.output.IsDecorated()
 }

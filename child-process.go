@@ -16,18 +16,21 @@ type ChildProcess struct {
 	Stdout  *os.File
 	Stderr  *os.File
 	err     error
+	Env     []string
 	c       *os_exec.Cmd
 }
 
 func (cp *ChildProcess) Run() (string, error) {
-	c := cp.createCommand()
+	if cp.c == nil {
+		cp.c = cp.createCommand()
+	}
 
 	if cp.Pipe {
-		output, err := c.CombinedOutput()
+		output, err := cp.c.CombinedOutput()
 		return string(output), err
 	}
 
-	err := c.Run()
+	err := cp.c.Run()
 	return "", err
 }
 
@@ -39,6 +42,14 @@ func (cp *ChildProcess) Start() error {
 	cp.c = cp.createCommand()
 	cp.err = cp.c.Start()
 	return cp.err
+}
+
+func (cp *ChildProcess) AddEnv(name string, value string) {
+	if cp.Env == nil {
+		cp.Env = make([]string, 0, 1)
+	}
+
+	cp.Env = append(cp.Env, fmt.Sprintf("%s=%s", name, value))
 }
 
 func (cp *ChildProcess) Wait() error {
@@ -76,6 +87,12 @@ func (cp *ChildProcess) createCommand() *os_exec.Cmd {
 		c.Stdin = cp.Stdin
 		c.Stdout = cp.Stdout
 		c.Stderr = cp.Stderr
+	}
+
+	if cp.Env != nil {
+		env := os.Environ()
+		env = append(env, cp.Env...)
+		c.Env = env
 	}
 
 	return c

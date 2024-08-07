@@ -16,6 +16,10 @@ func Execute() {
 				Foreground: "red",
 			})
 
+			cli.AddTheme("info", cli.Theme{
+				Background: "magenta",
+			})
+
 			self.Spinner(func() {
 				time.Sleep(2000 * time.Millisecond)
 			}, "Waiting...")
