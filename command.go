@@ -460,6 +460,10 @@ func (c *Command) Alert(messages ...string) {
 	c.NewLine(1)
 }
 
+func (c *Command) Write(message string, options uint) {
+	c.output.Write(message, false, options)
+}
+
 func (c *Command) Writeln(message string, options uint) {
 	c.output.Writeln(message, options)
 }
