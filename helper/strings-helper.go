@@ -121,7 +121,13 @@ func StripEscapeSequences(text string) string {
 		}
 		return match
 	})
-	text = re3.ReplaceAllString(text, "$1")
+	text = re3.ReplaceAllStringFunc(text, func(match string) string {
+		submatches := re2.FindStringSubmatch(match)
+		if len(submatches) > 0 {
+			return submatches[0]
+		}
+		return match
+	})
 
 	return text
 }
