@@ -18,6 +18,10 @@ func TestEscapeSequencesCanBeStripped(t *testing.T) {
 		t.Errorf("failed to strip \"fg=cyan\"")
 	}
 
+	if StripEscapeSequences("<fg=bright-white>foo</>") != "foo" {
+		t.Errorf("failed to strip \"fg=cyan\"")
+	}
+
 	if StripEscapeSequences("<bg=cyan>foo</>") != "foo" {
 		t.Errorf("failed to strip \"bg=cyan\"")
 	}
