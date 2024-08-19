@@ -108,8 +108,8 @@ func TruncateStart(text string, width int) string {
 
 func StripEscapeSequences(text string) string {
 	re1 := regexp.MustCompile(`\x1B[^m]*m`)
-	re2 := regexp.MustCompile(`<(info|comment|question|error|header|highlight|primary|accent)>(.*?)<\/([a-z]+)>`)
-	re3 := regexp.MustCompile(`(i?)<(?:(?:[fb]g|options)=[a-z,;]+)+>(.*?)<\/>`)
+	re2 := regexp.MustCompile(`<(error|info|success|ok|warn|warning|caution|comment|alert|primary|accent|prmopt|question)>(.*?)<\/([a-z]+)>`)
+	re3 := regexp.MustCompile(`<(?:fg|bg|option)=[^;>]+(?:;(?:fg|bg|option)=[^;>]+)*>([^<]+)</>`)
 
 	text = re1.ReplaceAllString(text, "")
 	text = re2.ReplaceAllStringFunc(text, func(match string) string {
@@ -122,9 +122,9 @@ func StripEscapeSequences(text string) string {
 		return match
 	})
 	text = re3.ReplaceAllStringFunc(text, func(match string) string {
-		submatches := re2.FindStringSubmatch(match)
-		if len(submatches) > 0 {
-			return submatches[0]
+		submatches := re3.FindStringSubmatch(match)
+		if len(submatches) > 1 {
+			return submatches[1]
 		}
 		return match
 	})
