@@ -174,6 +174,10 @@ func (d *InputDefinition) AddOption(option *InputOption) {
 		}
 
 		for _, s := range shortcuts {
+			if d.shortcuts == nil {
+				d.shortcuts = make(map[string]string)
+			}
+
 			d.shortcuts[s] = name
 		}
 	}
