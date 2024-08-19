@@ -22,11 +22,11 @@ func TestEscapeSequencesCanBeStripped(t *testing.T) {
 		t.Errorf("failed to strip \"bg=cyan\"")
 	}
 
-	if StripEscapeSequences("<option=bold>foo</>") != "foo" {
-		t.Errorf("failed to strip \"option=bold\"")
+	if StripEscapeSequences("<options=bold>foo</>") != "foo" {
+		t.Errorf("failed to strip \"options=bold\"")
 	}
 
-	if StripEscapeSequences("<fg=cyan;bg=white;option=bold>foo</>") != "foo" {
-		t.Errorf("failed to strip \"fg=cyan;bg=white;option=bold\"")
+	if StripEscapeSequences("<fg=cyan;bg=white;options=bold>foo</>") != "foo" {
+		t.Errorf("failed to strip \"fg=cyan;bg=white;options=bold\"")
 	}
 }
