@@ -1,6 +1,6 @@
 module github.com/michielnijenhuis/cli_test
 
-go 1.22.4
+go 1.23
 
 require github.com/michielnijenhuis/cli v0.10.2
 

@@ -335,8 +335,109 @@ func (o *Output) Comment(messages ...string) {
 	o.Block(messages, "", "", "<fg=default;bg=default> // </>", false, false)
 }
 
-// TODO: implement
-func (o *Output) Table(headers []string, rows map[string]string) {}
+func (o *Output) TableFromSlices(headers []string, rows [][]any, options *TableOptions) {
+	o.Table(headers, o.CreateTableRowsFromSlices(rows), options)
+}
+
+func (o *Output) TableFromMap(rows []map[string]any, headers []string, options *TableOptions) {
+	tableRows := o.CreateTableRowsFromMaps(headers, rows)
+
+	if headers == nil && len(rows) > 0 {
+		headers = make([]string, 0, len(rows[0]))
+
+		for k := range rows[0] {
+			headers = append(headers, k)
+		}
+	}
+
+	o.Table(headers, tableRows, options)
+}
+
+type TableOptions struct {
+	DisplayOrientation string
+	HeaderTitle        string
+	FooterTitle        string
+	Style              string
+	Align              string
+}
+
+func (o *Output) Table(headers []string, rows [][]*TableCell, options *TableOptions) {
+	t := o.CreateTable(headers, rows, options)
+	t.Render()
+	o.NewLine(1)
+}
+
+func (o *Output) CreateTableRowsFromMaps(headers []string, rows []map[string]any) [][]*TableCell {
+	tableRows := make([][]*TableCell, 0, len(rows))
+	for _, row := range rows {
+		cells := make([]*TableCell, 0, len(row))
+		for _, h := range headers {
+			cells = append(cells, NewTableCell(fmt.Sprintf("%v", row[h])))
+		}
+		tableRows = append(tableRows, cells)
+	}
+
+	return tableRows
+}
+
+func (o *Output) CreateTableRowsFromSlices(rows [][]any) [][]*TableCell {
+	tableRows, ok := any(rows).([][]*TableCell)
+	if ok {
+		return tableRows
+	}
+
+	tableRows = make([][]*TableCell, 0, len(rows))
+	for _, row := range rows {
+		cells, ok := any(row).([]*TableCell)
+		if ok {
+			tableRows = append(tableRows, cells)
+			continue
+		}
+
+		cells = make([]*TableCell, 0, len(row))
+		for _, v := range row {
+			cells = append(cells, NewTableCell(fmt.Sprintf("%v", v)))
+		}
+		tableRows = append(tableRows, cells)
+	}
+
+	return tableRows
+}
+
+func (o *Output) CreateTable(headers []string, rows [][]*TableCell, options *TableOptions) *Table {
+	t := NewTable(o)
+
+	t.headers = headers
+	t.rows = rows
+
+	styleName := "box"
+	if options != nil && options.Style != "" {
+		styleName = options.Style
+	}
+
+	style := NewTableStyle(styleName)
+	t.style = style
+
+	if options != nil {
+		if options.Align != "" {
+			style.PadType = options.Align
+		}
+
+		if options.DisplayOrientation != "" {
+			t.displayOrientation = options.DisplayOrientation
+		}
+
+		if options.HeaderTitle != "" {
+			t.headerTitle = options.HeaderTitle
+		}
+
+		if options.FooterTitle != "" {
+			t.footerTitle = options.FooterTitle
+		}
+	}
+
+	return t
+}
 
 func (o *Output) Ask(question string, defaultValue string, validator func(string) (string, error)) (string, error) {
 	q := &Question[string]{
@@ -400,16 +501,16 @@ func (o *Output) NewLine(count int) {
 	}
 }
 
-// TODO: implement
+// TODO: impl
 func (o *Output) ProgressStart(max uint) {}
 
-// TODO: implement
+// TODO: impl
 func (o *Output) ProgressAdvance(step uint) {}
 
-// TODO: implement
+// TODO: impl
 func (o *Output) ProgressFinish() {}
 
-// TODO: implement
+// TODO: impl
 func (o *Output) Box(title string, body string, footer string, color string, info string) {}
 
 func askQuestion[T any](qi QuestionInterface, i *Input, o *Output) (T, error) {

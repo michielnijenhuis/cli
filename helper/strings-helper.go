@@ -3,6 +3,7 @@ package helper
 import (
 	"regexp"
 	"strings"
+	"unicode/utf8"
 )
 
 func StrimWidth(str string, start int, width int, trimMarker string) string {
@@ -55,26 +56,46 @@ func TrimWidthBackwards(str string, start int, width int) string {
 }
 
 // Pads while ignoring escape sequences
-func Pad(text string, length int, char byte) string {
-	c := max(0, length-Width(StripEscapeSequences(text)))
-	rightPadding := strings.Repeat(string(char), c)
+func Pad(text string, length int, char string) string {
+	stripped := StripEscapeSequences(text)
+	count := max(0, length-Width(stripped))
+	rightPadding := strings.Repeat(char, count)
 	return text + rightPadding
 }
 
-func PadStart(text string, length int, char byte) string {
-	current := len(text)
-	if length >= current {
-		return text
-	}
-	return strings.Repeat(string(char), length-current) + text
+func PadStart(text string, length int, char string) string {
+	stripped := StripEscapeSequences(text)
+	count := max(0, length-Width(stripped))
+	return strings.Repeat(char, count) + text
 }
 
-func PadEnd(text string, length int, char byte) string {
-	current := len(text)
-	if length >= current {
-		return text
+func PadEnd(text string, length int, char string) string {
+	stripped := StripEscapeSequences(text)
+	count := max(0, length-Width(stripped))
+	return text + strings.Repeat(char, count)
+}
+
+func PadCenter(text string, length int, char string) string {
+	stripped := StripEscapeSequences(text)
+	inputLen := utf8.RuneCountInString(stripped)
+	if inputLen >= length {
+		return stripped
 	}
-	return text + strings.Repeat(string(char), length-current)
+
+	padLen := utf8.RuneCountInString(char)
+	if padLen == 0 {
+		char = " "
+		padLen = 1
+	}
+
+	totalPad := length - inputLen
+	leftPad := totalPad / 2
+	rightPad := totalPad - leftPad
+
+	leftPadStr := strings.Repeat(char, (leftPad+padLen-1)/padLen)[:leftPad]
+	rightPadStr := strings.Repeat(char, (rightPad+padLen-1)/padLen)[:rightPad]
+
+	return leftPadStr + text + rightPadStr
 }
 
 func TruncateStart(text string, width int) string {
@@ -87,11 +108,19 @@ func TruncateStart(text string, width int) string {
 
 func StripEscapeSequences(text string) string {
 	re1 := regexp.MustCompile(`\x1B[^m]*m`)
-	re2 := regexp.MustCompile(`<(info|comment|question|error|header|highlight)>(.*?)<\/\\1>`)
+	re2 := regexp.MustCompile(`<(info|comment|question|error|header|highlight|primary|accent)>(.*?)<\/([a-z]+)>`)
 	re3 := regexp.MustCompile(`(i?)<(?:(?:[fb]g|options)=[a-z,;]+)+>(.*?)<\/>`)
 
 	text = re1.ReplaceAllString(text, "")
-	text = re2.ReplaceAllString(text, "$2")
+	text = re2.ReplaceAllStringFunc(text, func(match string) string {
+		submatches := re2.FindStringSubmatch(match)
+		if len(submatches) > 0 {
+			if submatches[1] == submatches[3] {
+				return submatches[2]
+			}
+		}
+		return match
+	})
 	text = re3.ReplaceAllString(text, "$1")
 
 	return text
@@ -106,4 +135,64 @@ func Longest(lines []string, minWidth int, padding int) int {
 	}
 
 	return longest
+}
+
+func MbSplit(s string, length int) []string {
+	if length < 1 {
+		length = 1
+	}
+	var result []string
+	runeCount := 0
+	start := 0
+
+	for len(s) > 0 {
+		r, size := utf8.DecodeRuneInString(s)
+		if r == utf8.RuneError && size == 1 {
+			// Handle invalid UTF-8 encoding
+			return nil
+		}
+
+		runeCount++
+		if runeCount == length {
+			result = append(result, s[:start+size])
+			s = s[start+size:]
+			start = 0
+			runeCount = 0
+		} else {
+			start += size
+		}
+	}
+
+	if start > 0 {
+		result = append(result, s)
+	}
+
+	return result
+}
+
+func MbSubstr(s string, start int, length int) string {
+	runes := []rune(s)
+	runeCount := len(runes)
+
+	if start < 0 {
+		start = runeCount + start
+		if start < 0 {
+			start = 0
+		}
+	}
+
+	if start > runeCount {
+		return ""
+	}
+
+	if length < 0 {
+		length = runeCount - start + length
+	}
+
+	end := start + length
+	if end > runeCount {
+		end = runeCount
+	}
+
+	return string(runes[start:end])
 }

@@ -11,8 +11,8 @@
             "mode": "debug",
             "program": "${workspaceRoot}/test/main.go",
             "env": {},
-            "args": ["--no-ansi", "list"],
-            "showLog": true,
+            "args": ["testing"],
+            "showLog": true
         }
     ]
 }

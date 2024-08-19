@@ -508,7 +508,7 @@ func (app *Application) Find(name string) (*Command, error) {
 					continue
 				}
 
-				abbrev = helper.PadStart(cmd, maxLen, ' ') + " " + app.commands[cmd].Description
+				abbrev = helper.PadStart(cmd, maxLen, "") + " " + app.commands[cmd].Description
 
 				if helper.Width(abbrev) > usableWidth {
 					filteredAbbrevs = append(filteredAbbrevs, abbrev[:usableWidth-3]+"...")

@@ -1,9 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/michielnijenhuis/cli"
 )
 
@@ -13,21 +10,38 @@ func Execute() {
 		Description: "This is a test command",
 		Help:        "Show some help information",
 		Handle: func(c *cli.Command) (int, error) {
-			var branch string
-			var err error
-
-			c.Spinner(func() {
-				// time.Sleep(1000 * time.Millisecond)
-				cp := c.Spawn("wd c && cd cli-go && echo $(current_branch)", "zsh", false)
-				branch, err = cp.Run()
-
-			}, "")
-
-			if err != nil {
-				c.Err(err)
-			} else {
-				c.Comment(fmt.Sprintf("Branch: %s", strings.TrimSpace(branch)))
+			rows := []map[string]any{
+				{
+					"":    "row 1",
+					"foo": "bar",
+					"bar": "baz",
+					"baz": "yoink",
+				},
+				{
+					"":    "row 2",
+					"foo": "bruh",
+					"bar": "broseph",
+					"baz": "brah",
+				},
 			}
+
+			o := c.Output()
+
+			style := cli.NewTableStyle("box")
+			style.CellRowContentFormat = "<primary> %s </primary>"
+
+			headers := []string{"", "foo", "bar", "baz"}
+			table := o.CreateTable(headers, o.CreateTableRowsFromMaps(headers, rows), &cli.TableOptions{
+				Style:       "box-double",
+				HeaderTitle: "header",
+				FooterTitle: "footer",
+				// Align:       "center",
+				// DisplayOrientation: cli.DisplayOrientationHorizontal,
+			})
+			table.SetColumnStyle(0, style)
+
+			table.Render()
+			o.NewLine(1)
 
 			return 0, nil
 		},

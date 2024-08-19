@@ -53,8 +53,8 @@ type Prompt struct {
 	CancelUsingFn       AnyFunc
 	ValidateUsingFn     func(any) string
 	RevertUsingFn       AnyFunc
-	// fallback            any // TODO
-	// cursorPosition      int // TODO
+	// fallback            any // TODO: fix type
+	// cursorPosition      int // TODO: use
 }
 
 func NewPrompt(name string, i *Input, o *Output) *Prompt {
@@ -314,7 +314,7 @@ func (p *Prompt) writeDirectly(s string) {
 	p.Output.Write(s, false, 0)
 }
 
-// TODO: implement
+// TODO: impl
 // func (p *Prompt) trackTypedValue(defaultValue string, submit bool, ignore func(string) bool, allowNewLine bool) {
 // 	//
 // }

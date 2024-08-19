@@ -24,3 +24,20 @@ func Unshift[T any](tokens *[]T, value T) {
 	slice = append(slice, (*tokens)...)
 	*tokens = slice
 }
+
+func Grow[T any](s []T, l int) []T {
+	if s == nil {
+		return make([]T, l)
+	}
+
+	if len(s) >= l {
+		return s
+	}
+
+	var zero T
+	for i := 0; i < l-len(s); i++ {
+		s = append(s, zero)
+	}
+
+	return s
+}

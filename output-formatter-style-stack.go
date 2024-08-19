@@ -35,7 +35,7 @@ func (s *OutputFormatterStyleStack) Push(style *OutputFormatterStyle) {
 }
 
 func (s *OutputFormatterStyleStack) Pop(style *OutputFormatterStyle) *OutputFormatterStyle {
-	if s.Styles == nil || len(s.Styles) == 0 {
+	if len(s.Styles) == 0 {
 		if s.EmptyStyle == nil {
 			s.EmptyStyle = makeEmptyStyle()
 		}

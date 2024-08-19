@@ -1,6 +1,6 @@
 package cli
 
-// TODO: implement
+// TODO: impl
 
 // const (
 // 	formatVerbose           = "verbose"
