@@ -47,11 +47,18 @@ func Execute() {
 		},
 	}
 
+	cmd.AddOption(&cli.InputOption{
+		Name:         "bro",
+		Description:  "Alternatives for the word `bro`",
+		Mode:         cli.InputOptionIsArray | cli.InputOptionRequired,
+		DefaultValue: []string{"bruh"},
+	})
+
 	app := &cli.Application{
-		Name:        "app",
-		Version:     "v1.0.0",
-		CatchErrors: true,
-		AutoExit:    true,
+		Name:    "app",
+		Version: "v1.0.0",
+		// CatchErrors: true,
+		AutoExit: true,
 	}
 
 	cli.SetBaseTheme("red", "cyan")

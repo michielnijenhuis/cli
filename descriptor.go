@@ -434,19 +434,12 @@ func formatDefaultValue(value InputType) string {
 		return "false"
 	}
 
-	arr, ok := value.([]any)
+	arr, ok := value.([]string)
 	if ok {
-		elements := make([]string, 0, len(arr))
-		for _, el := range arr {
-			str, ok := el.(string)
-			if ok {
-				elements = append(elements, Escape(str))
-			}
-		}
-		return "[" + strings.Join(elements, ",") + "]"
+		return "[" + strings.Join(arr, ",") + "]"
 	}
 
-	return Escape(value.(string))
+	return Escape(fmt.Sprintf("%v", value))
 }
 
 func (d *TextDescriptor) Write(content string, decorated bool) {

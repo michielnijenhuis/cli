@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/michielnijenhuis/cli/helper"
@@ -417,7 +418,14 @@ func (i *Input) runOptionValidators() error {
 	opts := definition.Options
 	for _, opt := range opts {
 		value := i.options[opt.Name]
-		if value == opt.DefaultValue {
+
+		arr, isArr := value.([]string)
+		defaultArr, defaultIsArr := opt.DefaultValue.([]string)
+		if isArr && defaultIsArr && slices.Compare(arr, defaultArr) == 0 {
+			continue
+		}
+
+		if !isArr && !defaultIsArr && value == opt.DefaultValue {
 			continue
 		}
 
