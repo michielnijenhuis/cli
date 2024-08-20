@@ -714,7 +714,12 @@ func (t *Table) renderCell(row []*TableCell, column int, cellFormat string) stri
 	}
 
 	formatter := t.output.Formatter()
-	width += helper.Len(cell.Value) - helper.Len(formatter.RemoveDecoration(cell.Value))
+	width += helper.Len(cell.Value)
+
+	if !cell.Raw {
+		width -= helper.Len(formatter.RemoveDecoration(cell.Value)) - helper.Len(helper.StripEscapeSequences(cell.Value))
+	}
+
 	content := fmt.Sprintf(style.CellRowContentFormat, cell.Value)
 
 	padType := style.PadType
