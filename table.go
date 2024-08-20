@@ -42,7 +42,6 @@ type TableCell struct {
 	ColSpan     uint
 	Style       *TableCellStyle
 	IsSeparator bool
-	Raw         bool
 }
 
 func (c *TableCell) String() string {
@@ -713,13 +712,6 @@ func (t *Table) renderCell(row []*TableCell, column int, cellFormat string) stri
 		return fmt.Sprintf(style.BorderFormat, strings.Repeat(style.HorizontalInsideBorderChar, width))
 	}
 
-	formatter := t.output.Formatter()
-	width += helper.Len(cell.Value)
-
-	if !cell.Raw {
-		width -= helper.Len(formatter.RemoveDecoration(cell.Value)) - helper.Len(helper.StripEscapeSequences(cell.Value))
-	}
-
 	content := fmt.Sprintf(style.CellRowContentFormat, cell.Value)
 
 	padType := style.PadType
@@ -745,6 +737,8 @@ func (t *Table) renderCell(row []*TableCell, column int, cellFormat string) stri
 		padType = cell.Style.Align
 	}
 
+	content = fmt.Sprintf(cellFormat, content)
+
 	if padType == TableCellAlignCenter {
 		content = helper.PadCenter(content, width, style.PaddingChar)
 	} else if padType == TableCellAlignRight {
@@ -753,7 +747,7 @@ func (t *Table) renderCell(row []*TableCell, column int, cellFormat string) stri
 		content = helper.PadEnd(content, width, style.PaddingChar)
 	}
 
-	return fmt.Sprintf(cellFormat, content)
+	return content
 }
 
 func (t *Table) calculateNumberOfColumns(rows [][]*TableCell) {
@@ -1025,13 +1019,7 @@ func (t *Table) calculateColumnsWidth(groups iter.Seq[[][]*TableCell]) {
 				}
 
 				for i, cell := range row {
-					textContent := cell.Value
-
-					if !cell.Raw {
-						textContent = formatter.RemoveDecoration(cell.Value)
-						textContent = helper.StripEscapeSequences(textContent)
-					}
-
+					textContent := formatter.RemoveDecoration(helper.StripEscapeSequences(cell.Value))
 					textLength := helper.Width(textContent)
 
 					if len(textContent) > 0 {
@@ -1069,12 +1057,7 @@ func (t *Table) getCellWidth(row []*TableCell, column int) int {
 
 	if column < len(row) {
 		cell := row[column]
-		cellValue := cell.Value
-		if !cell.Raw {
-			cellValue = t.output.Formatter().RemoveDecoration(cellValue)
-			cellValue = helper.StripEscapeSequences(cellValue)
-		}
-		cellWidth = helper.Width(cellValue)
+		cellWidth = helper.Width(t.output.Formatter().RemoveDecoration(helper.StripEscapeSequences(cell.Value)))
 	}
 
 	columnWidth := 0
