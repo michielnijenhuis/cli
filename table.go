@@ -42,6 +42,7 @@ type TableCell struct {
 	ColSpan     uint
 	Style       *TableCellStyle
 	IsSeparator bool
+	Raw         bool
 }
 
 func (c *TableCell) String() string {
@@ -1019,7 +1020,13 @@ func (t *Table) calculateColumnsWidth(groups iter.Seq[[][]*TableCell]) {
 				}
 
 				for i, cell := range row {
-					textContent := formatter.RemoveDecoration(cell.Value)
+					textContent := cell.Value
+
+					if !cell.Raw {
+						textContent = formatter.RemoveDecoration(cell.Value)
+						textContent = helper.StripEscapeSequences(textContent)
+					}
+
 					textLength := helper.Width(textContent)
 
 					if len(textContent) > 0 {

@@ -109,7 +109,11 @@ func (c *Command) Options() map[string]InputType {
 	return c.Input().Options()
 }
 
-func (c *Command) Run(i *Input, o *Output) (int, error) {
+func (c *Command) Run(args ...string) (int, error) {
+	return c.RunWith(NewInput(args...), nil)
+}
+
+func (c *Command) RunWith(i *Input, o *Output) (int, error) {
 	if i == nil {
 		i = NewInput()
 	}

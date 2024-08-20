@@ -272,7 +272,7 @@ func TestCommandCanExecChildProcesses(t *testing.T) {
 
 	input := NewInput([]string{}...)
 
-	if _, err := cmd.Run(input, nil); err != nil {
+	if _, err := cmd.RunWith(input, nil); err != nil {
 		t.Error(err.Error())
 		return
 	}

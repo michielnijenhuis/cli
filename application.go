@@ -175,7 +175,7 @@ func (app *Application) doRun(i *Input, o *Output) (int, error) {
 	}
 
 	app.runningCommand = c
-	exitCode, runCommandErr := c.Run(i, o)
+	exitCode, runCommandErr := c.RunWith(i, o)
 	app.runningCommand = nil
 
 	return exitCode, runCommandErr
@@ -710,11 +710,18 @@ func (app *Application) defaultInputDefinition() *InputDefinition {
 
 	arguments := []*InputArgument{commandArgument}
 
+	var helpDescription string
+	if app.SingleCommand {
+		helpDescription = fmt.Sprintf("Display help for the <accent>%s</accent> command", app.DefaultCommand)
+	} else {
+		helpDescription = fmt.Sprintf("Display help for the given command, or the <accent>%s</accent> command (if no command is given)", app.DefaultCommand)
+	}
+
 	helpOption := &InputOption{
 		Name:        "help",
 		Shortcut:    "h",
 		Mode:        InputOptionBool,
-		Description: fmt.Sprintf("Display help for the given command, or the <accent>%s</accent> command (if no command is given)", app.DefaultCommand),
+		Description: helpDescription,
 	}
 	quietOption := &InputOption{
 		Name:        "quiet",
