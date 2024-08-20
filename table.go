@@ -1064,7 +1064,12 @@ func (t *Table) getCellWidth(row []*TableCell, column int) int {
 
 	if column < len(row) {
 		cell := row[column]
-		cellWidth = helper.Width(t.output.Formatter().RemoveDecoration(cell.Value))
+		cellValue := cell.Value
+		if !cell.Raw {
+			cellValue = t.output.Formatter().RemoveDecoration(cellValue)
+			cellValue = helper.StripEscapeSequences(cellValue)
+		}
+		cellWidth = helper.Width(cellValue)
 	}
 
 	columnWidth := 0
