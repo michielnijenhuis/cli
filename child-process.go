@@ -27,7 +27,7 @@ func (cp *ChildProcess) Run() (string, error) {
 	}
 
 	if cp.Pipe {
-		output, err := cp.c.CombinedOutput()
+		output, err := cp.c.Output()
 		return string(output), err
 	}
 
