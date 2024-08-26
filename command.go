@@ -35,6 +35,30 @@ type Command struct {
 	meta                   any
 }
 
+func NewCommand(signature string, handle CommandHandle) (*Command, error) {
+	sig, err := ParseSignature(signature)
+	if err != nil {
+		return nil, err
+	}
+
+	c := &Command{
+		Name:        sig.Name,
+		Description: sig.Description,
+		Aliases:     sig.Aliases,
+		Handle:      handle,
+	}
+
+	for _, arg := range sig.Arguments {
+		c.AddArgument(arg)
+	}
+
+	for _, opt := range sig.Options {
+		c.AddOption(opt)
+	}
+
+	return c, nil
+}
+
 func (c *Command) SetApplicationDefinition(definition *InputDefinition) {
 	c.applicationDefinition = definition
 	c.fullDefinition = nil

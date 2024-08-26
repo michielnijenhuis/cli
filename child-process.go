@@ -126,23 +126,26 @@ func (cp *ChildProcess) String() string {
 }
 
 func prepareCommand(cmd string, shell string) string {
-	flags := make([]string, 0)
+	if shell == "" {
+		return cmd
+	}
 
+	flags := make([]string, 0, 2)
 	if TerminalIsInteractive() {
 		flags = append(flags, "-i")
 	}
+	flags = append(flags, "-c")
 
-	var flagsStr string
-	if len(flags) > 0 {
-		flagsStr = " " + strings.Join(flags, " ")
-	}
+	parts := []string{shell, strings.Join(flags, " ")}
 
 	switch shell {
 	case "zsh":
-		return fmt.Sprintf("zsh %s-c 'source ~/.zshrc; %s'", flagsStr, cmd)
-	case "bash":
-		return fmt.Sprintf("bash %s-c '%s'", flagsStr, cmd)
+		parts = append(parts, fmt.Sprintf("'source ~/.zshrc; %s'", cmd))
 	default:
-		return fmt.Sprintf("sh %s-c '%s'", flagsStr, cmd)
+		parts = append(parts, fmt.Sprintf("'%s'", cmd))
 	}
+
+	cmd = strings.Join(parts, " ")
+
+	return cmd
 }

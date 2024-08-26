@@ -39,17 +39,17 @@ func (o *InputOption) validate() {
 
 	if o.Mode == 0 {
 		o.Mode = InputOptionOptional
-	} else if o.Mode >= InputOptionNegatable<<1 || o.Mode < 1 {
+	} else if (o.Mode >= InputOptionNegatable<<1) || o.Mode < 1 {
 		panic(fmt.Sprintf("option mode \"%d\" is not valid", o.Mode))
 	}
 
-	if o.IsArray() && !o.AcceptValue() {
-		panic("impossible to have an option mode IS_ARRAY if the option does not accept a value")
-	}
+	// if o.IsArray() && !o.AcceptValue() {
+	// 	panic("impossible to have an option mode IS_ARRAY if the option does not accept a value")
+	// }
 
-	if o.IsNegatable() && o.AcceptValue() {
-		panic("impossible to have an option mode NEGATABLE if the option also accepts a value")
-	}
+	// if o.IsNegatable() && o.AcceptValue() {
+	// 	panic("impossible to have an option mode NEGATABLE if the option also accepts a value")
+	// }
 }
 
 func (o *InputOption) IsArray() bool {
