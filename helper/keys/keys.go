@@ -69,3 +69,24 @@ const (
 	 */
 	CtrlU = "\x15"
 )
+
+var Home []string = []string{"\x1b[1~", "\x1bOH", "\x1b[H", "\x1b[7~"}
+var End []string = []string{"\x1b[4~", "\x1bOF", "\x1b[F", "\x1b[8~"}
+
+func Is(key string, k string, keys ...string) bool {
+	if key == k {
+		return true
+	}
+
+	for _, x := range keys {
+		if x == key {
+			return true
+		}
+	}
+
+	if len(key) > 1 {
+		return Is(string(key[0]), k, keys...)
+	}
+
+	return false
+}

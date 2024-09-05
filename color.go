@@ -134,9 +134,9 @@ func parseColor(color string, background bool) (string, error) {
 	if color[0] == '#' {
 		var out string
 		if background {
-			out += "4"
+			out = "4"
 		} else {
-			out += "3"
+			out = "3"
 		}
 
 		converted, err := ConvertFromHexToAnsiColorCode(ColorMode(), color)

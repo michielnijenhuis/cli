@@ -60,7 +60,7 @@ func (r *Renderer) When(condition bool, cb func(*Renderer), defaultCb func(*Rend
 }
 
 func (r *Renderer) ToString(state uint) string {
-	s := "\n" + r.output
+	s := r.output
 
 	if state == PromptStateSubmit || state == PromptStateCancel {
 		s += "\n"

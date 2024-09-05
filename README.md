@@ -1,5 +1,7 @@
 # CLI
 
-A project that attempts to rewrite the PHP package `symfony/console` (with added features from the Laravel package `illuminate/console`), to Golang as an exercise, and for personal usage.
+A Go lib to create CLI applications, inspired by `symfony/console`, `illuminate/console`, and `spf13/cobra`.
+
+This was created as an exercise to learn Go, and for personal usage.
 
 Work in progress.

@@ -32,8 +32,8 @@ var DefaultOutputTheme = map[string]*OutputFormatterStyle{
 	"caution":  NewOutputFormatterStyle("black", "yellow", nil),
 	"comment":  NewOutputFormatterStyle("yellow", "", nil),
 	"alert":    NewOutputFormatterStyle("red", "", []string{"bold"}),
-	"primary":  NewOutputFormatterStyle("yellow", "", nil),
-	"accent":   NewOutputFormatterStyle("green", "", nil),
+	"primary":  NewOutputFormatterStyle("bright-magenta", "", nil),
+	"accent":   NewOutputFormatterStyle("bright-cyan", "", nil),
 	"prompt":   NewOutputFormatterStyle("cyan", "", nil),
 	"question": NewOutputFormatterStyle("black", "cyan", nil),
 }
@@ -396,7 +396,7 @@ func Truncate(message string, length int, suffix string) string {
 
 	computedLength := length - helper.Width(suffix)
 	if computedLength > helper.Width(message) {
-		return message + suffix
+		return message
 	}
 
 	return message[:length-1] + suffix

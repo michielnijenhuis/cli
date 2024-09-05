@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"regexp"
-	"slices"
 	"strings"
 
 	"github.com/michielnijenhuis/cli/helper"
@@ -16,8 +15,8 @@ type InputParser func(self any) error
 type Input struct {
 	definition  *InputDefinition
 	Stream      *os.File
-	options     map[string]InputType
-	arguments   map[string]InputType
+	flags       map[string]Flag
+	arguments   map[string]Arg
 	interactive bool
 	Args        []string
 	parsed      []string
@@ -36,8 +35,8 @@ func NewInput(args ...string) *Input {
 		parsed:      make([]string, 0),
 		definition:  &InputDefinition{},
 		Stream:      os.Stdin,
-		options:     make(map[string]InputType),
-		arguments:   make(map[string]InputType),
+		flags:       make(map[string]Flag),
+		arguments:   make(map[string]Arg),
 		interactive: TerminalIsInteractive(),
 	}
 
@@ -59,15 +58,14 @@ func (i *Input) SetDefinition(definition *InputDefinition) error {
 }
 
 func (i *Input) Bind(definition *InputDefinition) error {
-	i.arguments = make(map[string]InputType)
-	i.options = make(map[string]InputType)
+	i.arguments = make(map[string]Arg)
+	i.flags = make(map[string]Flag)
 	i.definition = definition
-
-	return i.Parse()
+	return i.parse()
 }
 
-func (i *Input) Parse() error {
-	parseOptions := true
+func (i *Input) parse() error {
+	parseFlags := true
 	i.parsed = make([]string, 0, len(i.Args))
 	i.parsed = append(i.parsed, i.Args...)
 	var token string
@@ -79,7 +77,7 @@ func (i *Input) Parse() error {
 		}
 
 		token = helper.Shift(&i.parsed)
-		parseOptions, err = i.parseToken(token, parseOptions)
+		parseFlags, err = i.parseToken(token, parseFlags)
 		if err != nil {
 			return err
 		}
@@ -90,16 +88,13 @@ func (i *Input) Parse() error {
 
 func (i *Input) Validate() error {
 	definition := i.definition
-	checkPtr(definition, "input definition")
-
 	givenArguments := i.arguments
-	checkPtr(givenArguments, "input arguments")
 
-	arguments := definition.Arguments
+	arguments := definition.arguments
 	if arguments != nil {
 		missingArguments := make([]string, 0, len(arguments))
 		for _, arg := range arguments {
-			name := arg.Name
+			name := arg.GetName()
 			if givenArguments[name] != nil {
 				continue
 			}
@@ -115,7 +110,7 @@ func (i *Input) Validate() error {
 		}
 	}
 
-	validationError := i.runOptionValidators()
+	validationError := i.runFlagValidators()
 	if validationError != nil {
 		return validationError
 	}
@@ -131,18 +126,8 @@ func (i *Input) SetInteractive(interactive bool) {
 	i.interactive = interactive
 }
 
-func (i *Input) Arguments() map[string]InputType {
-	definition := i.definition
-	checkPtr(definition, "input definition")
-	args := make(map[string]InputType)
-
-	if definition != nil {
-		for k, v := range definition.ArgumentDefaults() {
-			args[k] = v
-		}
-	}
-
-	checkPtr(definition, "input arguments")
+func (i *Input) Arguments() map[string]Arg {
+	args := make(map[string]Arg)
 	for k, v := range i.arguments {
 		args[k] = v
 	}
@@ -150,79 +135,51 @@ func (i *Input) Arguments() map[string]InputType {
 	return args
 }
 
-func (i *Input) StringArgument(name string) (string, error) {
-	definition := i.definition
-	checkPtr(definition, "input definition")
-
-	if !definition.HasArgument(name) {
-		return "", fmt.Errorf("the \"%s\" argument does not exist", name)
+func (i *Input) String(name string) (string, error) {
+	arg, _ := i.definition.Argument(name)
+	if arg != nil {
+		return GetArgStringValue(arg), nil
 	}
 
-	if i.arguments[name] == nil {
-		arg, e := definition.Argument(name)
-		if e != nil {
-			return "", e
-		}
-
-		value := arg.DefaultValue
-		str, isStr := value.(string)
-		if !isStr {
-			return "", nil
-		}
-
-		return str, nil
+	flag, _ := i.definition.Flag(name)
+	if flag != nil {
+		return GetFlagStringValue(flag), nil
 	}
 
-	value := i.arguments[name]
-	str, isStr := value.(string)
-	if !isStr {
-		return "", nil
-	}
-
-	return str, nil
+	return "", fmt.Errorf("the \"%s\" argument or flag does not exist", name)
 }
 
-func (i *Input) ArrayArgument(name string) ([]string, error) {
-	definition := i.definition
-	checkPtr(definition, "input definition")
-
-	if !definition.HasArgument(name) {
-		return []string{}, fmt.Errorf("the \"%s\" argument does not exist", name)
+func (i *Input) Bool(name string) (bool, error) {
+	flag, err := i.definition.Flag(name)
+	if err != nil {
+		return false, err
 	}
-
-	if i.arguments[name] == nil {
-		arg, e := definition.Argument(name)
-		if e != nil {
-			return []string{}, e
-		}
-
-		value := arg.DefaultValue
-		arr, isArr := value.([]string)
-		if !isArr {
-			return []string{}, nil
-		}
-
-		return arr, nil
-	}
-
-	value := i.arguments[name]
-	arr, isArr := value.([]string)
-	if !isArr {
-		return []string{}, nil
-	}
-
-	return arr, nil
+	return GetFlagBoolValue(flag), nil
 }
 
-func (i *Input) SetArgument(name string, value InputType) error {
-	definition := i.definition
-	checkPtr(definition, "input definition")
+func (i *Input) Array(name string) ([]string, error) {
+	arg, _ := i.definition.Argument(name)
+	if arg != nil {
+		return GetArgArrayValue(arg), nil
+	}
 
-	if !definition.HasArgument(name) {
+	flag, _ := i.definition.Flag(name)
+	if flag != nil {
+		return GetFlagArrayValue(flag), nil
+	}
+
+	return nil, fmt.Errorf("the \"%s\" argument or flag does not exist", name)
+}
+
+func (i *Input) SetArgument(name string, token string) error {
+	arg, err := i.definition.Argument(name)
+
+	if err != nil {
 		return fmt.Errorf("the \"%s\" argument does not exist", name)
 	}
 
-	i.arguments[name] = value
+	i.arguments[name] = arg
+	ArgSetValue(arg, token)
 	return nil
 }
 
@@ -231,216 +188,58 @@ func (i *Input) HasArgument(name string) bool {
 	if definition == nil {
 		return false
 	}
-
 	return definition.HasArgument(name)
 }
 
-func (i *Input) Options() map[string]InputType {
+func (i *Input) SetFlag(name string, str string, boolean bool) error {
 	definition := i.definition
-	opts := make(map[string]InputType)
-
-	if definition != nil {
-		for k, v := range definition.OptionDefaults() {
-			opts[k] = v
-		}
+	flag, err := definition.Flag(name)
+	if err != nil {
+		return err
 	}
-
-	for k, v := range i.options {
-		opts[k] = v
-	}
-
-	return opts
-}
-
-func (i *Input) BoolOption(name string) (bool, error) {
-	definition := i.definition
-	checkPtr(definition, "input definition")
-
-	if !definition.HasOption(name) {
-		return false, fmt.Errorf("the \"%s\" option does not exist", name)
-	}
-
-	if i.options[name] == nil {
-		opt, e := definition.Option(name)
-		if e != nil {
-			return false, e
-		}
-
-		value := opt.DefaultValue
-		boolval, isBool := value.(bool)
-		if !isBool {
-			return false, nil
-		}
-
-		if definition.HasNegation(name) {
-			return !boolval, nil
-		}
-
-		return boolval, nil
-	}
-
-	value := i.options[name]
-	boolval, isBool := value.(bool)
-	if !isBool {
-		return false, nil
-	}
-
-	if definition.HasNegation(name) {
-		return !boolval, nil
-	}
-
-	return boolval, nil
-}
-
-func (i *Input) StringOption(name string) (string, error) {
-	definition := i.definition
-	checkPtr(definition, "input definition")
-
-	if !definition.HasOption(name) {
-		return "", fmt.Errorf("the \"%s\" option does not exist", name)
-	}
-
-	if i.options[name] == nil {
-		opt, e := definition.Option(name)
-		if e != nil {
-			return "", e
-		}
-
-		value := opt.DefaultValue
-		str, isStr := value.(string)
-		if !isStr {
-			return "", nil
-		}
-
-		return str, nil
-	}
-
-	value := i.options[name]
-	str, isStr := value.(string)
-	if !isStr {
-		return "", nil
-	}
-
-	return str, nil
-}
-
-func (i *Input) ArrayOption(name string) ([]string, error) {
-	definition := i.definition
-	checkPtr(definition, "input definition")
-
-	if !definition.HasOption(name) {
-		return []string{}, fmt.Errorf("the \"%s\" option does not exist", name)
-	}
-
-	if i.options[name] == nil {
-		opt, e := definition.Option(name)
-		if e != nil {
-			return []string{}, e
-		}
-
-		value := opt.DefaultValue
-		arr, isArr := value.([]string)
-		if !isArr {
-			return []string{}, nil
-		}
-
-		return arr, nil
-	}
-
-	value := i.options[name]
-	arr, isArr := value.([]string)
-	if !isArr {
-		return []string{}, nil
-	}
-
-	return arr, nil
-}
-
-func (i *Input) SetOption(name string, value InputType) error {
-	definition := i.definition
-	checkPtr(definition, "input definition")
-
-	if definition.HasNegation(name) {
-		i.options[definition.NegationToName(name)] = value
-		return nil
-	}
-
-	if !definition.HasOption(name) {
-		return fmt.Errorf("the \"%s\" option does not exist", name)
-	}
-
-	i.options[name] = value
+	i.flags[name] = flag
+	SetFlagValue(flag, str, boolean)
 	return nil
 }
 
-func (i *Input) HasOption(name string) bool {
+func (i *Input) HasFlag(name string) bool {
 	definition := i.definition
 	if definition == nil {
 		return false
 	}
 
-	return definition.HasOption(name) || definition.HasNegation(name)
+	return definition.HasFlag(name) || definition.HasNegation(name)
 }
 
 func (i *Input) runArgumentValidators() error {
 	definition := i.definition
-	checkPtr(definition, "input definition")
 
-	args := definition.Arguments
+	args := definition.arguments
 	for _, arg := range args {
-		value := i.arguments[arg.Name]
-		if value == arg.DefaultValue {
+		_, given := i.arguments[arg.GetName()]
+		if !given {
 			continue
 		}
 
-		if !arg.IsRequired() && value == nil {
-			continue
-		}
-
-		validator := arg.Validator
-		if validator == nil {
-			continue
-		}
-
-		validationError := validator(value)
-		if validationError != nil {
-			return validationError
+		err := ValidateArg(arg)
+		if err != nil {
+			return err
 		}
 	}
 
 	return nil
 }
 
-func (i *Input) runOptionValidators() error {
-	definition := i.definition
-	checkPtr(definition, "input definition")
-
-	opts := definition.Options
-	for _, opt := range opts {
-		value := i.options[opt.Name]
-
-		arr, isArr := value.([]string)
-		defaultArr, defaultIsArr := opt.DefaultValue.([]string)
-		if isArr && defaultIsArr && slices.Compare(arr, defaultArr) == 0 {
+func (i *Input) runFlagValidators() error {
+	for _, flag := range i.definition.flags {
+		_, given := i.flags[flag.GetName()]
+		if !given {
 			continue
 		}
 
-		if !isArr && !defaultIsArr && value == opt.DefaultValue {
-			continue
-		}
-
-		if !opt.IsValueRequired() && value == nil {
-			continue
-		}
-
-		validator := opt.Validator
-		if validator == nil {
-			continue
-		}
-
-		validationError := validator(value)
-		if validationError != nil {
-			return validationError
+		err := ValidateFlag(flag)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -456,25 +255,22 @@ func (i *Input) EscapeToken(token string) string {
 	return re2.ReplaceAllString(token, "'\\''")
 }
 
-func (i *Input) parseToken(token string, parseOptions bool) (bool, error) {
-	checkPtr(i.definition, "input definition")
-	checkPtr(i.arguments, "input arguments")
-
-	if parseOptions && token == "" {
+func (i *Input) parseToken(token string, parseFlags bool) (bool, error) {
+	if parseFlags && token == "" {
 		err := i.parseArgument(token)
 
 		if err != nil {
 			return false, err
 		}
-	} else if parseOptions && token == "" {
+	} else if parseFlags && token == "" {
 		return false, nil
-	} else if parseOptions && strings.HasPrefix(token, "--") {
-		err := i.parseLongOption(token)
+	} else if parseFlags && strings.HasPrefix(token, "--") {
+		err := i.parseLongFlag(token)
 		if err != nil {
 			return false, err
 		}
-	} else if parseOptions && strings.HasPrefix(token, "-") && token != "-" {
-		err := i.parseShortOption(token)
+	} else if parseFlags && strings.HasPrefix(token, "-") && token != "-" {
+		err := i.parseShortFlag(token)
 		if err != nil {
 			return false, err
 		}
@@ -485,13 +281,13 @@ func (i *Input) parseToken(token string, parseOptions bool) (bool, error) {
 		}
 	}
 
-	return parseOptions, nil
+	return parseFlags, nil
 }
 
 func (i *Input) parseArgument(token string) error {
 	definition := i.definition
 	currentCount := uint(len(i.arguments))
-	argsCount := uint(len(definition.Arguments))
+	argsCount := uint(len(definition.arguments))
 
 	if currentCount < argsCount {
 		// if input is expecting another argument, add it
@@ -499,13 +295,9 @@ func (i *Input) parseArgument(token string) error {
 		if err != nil {
 			return err
 		}
+		i.arguments[arg.GetName()] = arg
 
-		if arg.IsArray() {
-			i.arguments[arg.Name] = []string{token}
-		} else {
-			i.arguments[arg.Name] = token
-		}
-
+		ArgSetValue(arg, token)
 		return nil
 	} else {
 		if currentCount == argsCount {
@@ -513,32 +305,25 @@ func (i *Input) parseArgument(token string) error {
 			if err != nil {
 				return err
 			}
+			i.arguments[arg.GetName()] = arg
 
 			// if last argument isArray(), append token to last argument
-			if arg.IsArray() {
-				name := arg.Name
-				current := i.arguments[name]
-				arr, isArr := current.([]string)
-				if isArr {
-					i.arguments[name] = append(arr, token)
-				} else {
-					i.arguments[name] = []string{token}
-				}
-
+			if a, ok := arg.(*ArrayArg); ok {
+				ArgSetValue(a, token)
 				return nil
 			}
 		}
 
-		all := definition.Arguments
+		all := definition.arguments
 
 		var commandName string
 		inputArgument := all[0]
 
-		if inputArgument != nil && inputArgument.Name == "command" {
-			commandValue := i.arguments["command"]
-			str, isStr := commandValue.(string)
+		if inputArgument != nil && inputArgument.GetName() == "command" {
+			cmdArg := i.arguments["command"]
+			str := GetArgStringValue(cmdArg)
 
-			if isStr {
+			if str != "" {
 				commandName = str
 			}
 
@@ -549,7 +334,7 @@ func (i *Input) parseArgument(token string) error {
 		if len(all) > 0 {
 			allCommands := make([]string, 0, len(all))
 			for _, arg := range all {
-				allCommands = append(allCommands, arg.Name)
+				allCommands = append(allCommands, arg.GetName())
 			}
 			allCommandsString := strings.Join(allCommands, " ")
 			if commandName != "" {
@@ -567,7 +352,7 @@ func (i *Input) parseArgument(token string) error {
 	}
 }
 
-func (i *Input) parseLongOption(token string) error {
+func (i *Input) parseLongFlag(token string) error {
 	name := token[2:]
 	pos := strings.Index(name, "=")
 
@@ -576,56 +361,56 @@ func (i *Input) parseLongOption(token string) error {
 		if value == "" {
 			helper.Unshift(&i.parsed, value)
 		}
-		return i.addLongOption(name[0:pos], value)
+		return i.addLongFlag(name[0:pos], value)
 	} else {
-		return i.addLongOption(name, nil)
+		return i.addLongFlag(name, "")
 	}
 }
 
-func (i *Input) parseShortOption(token string) error {
+func (i *Input) parseShortFlag(token string) error {
 	name := token[1:]
 
 	if len(name) > 1 {
 		short := name[0:1]
 		if i.definition.HasShortcut(short) {
-			opt, err := i.definition.OptionForShortcut(short)
+			flag, err := i.definition.FlagForShortcut(short)
 			if err != nil {
 				return err
 			}
 
-			if opt.AcceptValue() {
-				// an option with a value (with no space)
-				return i.addShortOption(short, name[1:])
+			if FlagAcceptsValue(flag) {
+				// a flag with a value (with no space)
+				return i.addShortFlag(short, name[1:])
 			}
 		}
 
-		return i.parseShortOptionSet(name)
+		return i.parseShortFlagSet(name)
 	} else {
-		return i.addShortOption(name, nil)
+		return i.addShortFlag(name, "")
 	}
 }
 
-func (i *Input) parseShortOptionSet(name string) error {
+func (i *Input) parseShortFlagSet(name string) error {
 	length := len(name)
 	for idx := 0; idx < length; idx++ {
 		char := name[idx : idx+1]
 		if !i.definition.HasShortcut(char) {
-			return fmt.Errorf("the \"-%s\" option does not exist", char)
+			return fmt.Errorf("the \"-%s\" flag does not exist", char)
 		}
 
-		opt, err := i.definition.OptionForShortcut(char)
+		flag, err := i.definition.FlagForShortcut(char)
 		if err != nil {
 			return err
 		}
 
-		if opt.AcceptValue() {
+		if FlagAcceptsValue(flag) {
 			if length-1 == idx {
-				err := i.addLongOption(opt.Name, nil)
+				err := i.addLongFlag(flag.GetName(), "")
 				if err != nil {
 					return err
 				}
 			} else {
-				err := i.addLongOption(opt.Name, name[idx+1:])
+				err := i.addLongFlag(flag.GetName(), name[idx+1:])
 				if err != nil {
 					return err
 				}
@@ -633,7 +418,7 @@ func (i *Input) parseShortOptionSet(name string) error {
 
 			break
 		} else {
-			err := i.addLongOption(opt.Name, nil)
+			err := i.addLongFlag(flag.GetName(), "")
 			if err != nil {
 				return err
 			}
@@ -643,132 +428,86 @@ func (i *Input) parseShortOptionSet(name string) error {
 	return nil
 }
 
-func (i *Input) addShortOption(shortcut string, value InputType) error {
+func (i *Input) addShortFlag(shortcut string, token string) error {
 	if !i.definition.HasShortcut(shortcut) {
-		return fmt.Errorf("the \"-%s\" option does not exist", shortcut)
+		return fmt.Errorf("the \"-%s\" flag does not exist", shortcut)
 	}
 
-	opt, err := i.definition.OptionForShortcut(shortcut)
+	opt, err := i.definition.FlagForShortcut(shortcut)
 	if err != nil {
 		return err
 	}
 
-	return i.addLongOption(opt.Name, value)
+	return i.addLongFlag(opt.GetName(), token)
 }
 
-func (i *Input) addLongOption(name string, value InputType) error {
-	if !i.definition.HasOption(name) {
+func (i *Input) addLongFlag(name string, token string) error {
+	boolean := token != ""
+	isNegation := false
+
+	if !i.definition.HasFlag(name) {
 		if !i.definition.HasNegation(name) {
-			return fmt.Errorf("the \"--%s\" option does not exist", name)
+			return fmt.Errorf("the \"--%s\" flag does not exist", name)
 		}
 
-		optName := i.definition.NegationToName(name)
-		i.options[optName] = false
-
-		if value != nil && value != "" {
-			return fmt.Errorf("the \"--%s\" option does not accept a value", name)
-		}
-
-		return nil
+		name = i.definition.NegationToName(name)
+		isNegation = true
 	}
 
-	opt, e := i.definition.Option(name)
+	flag, e := i.definition.Flag(name)
 	if e != nil {
 		return e
 	}
 
-	if value != nil && value != "" && !opt.AcceptValue() {
-		return fmt.Errorf("the \"--%s\" option does not accept a value", name)
+	if isNegation {
+		boolean = false
 	}
 
-	if (value == nil || value == "") && opt.AcceptValue() && len(i.parsed) > 0 {
-		// if option accepts an optional or mandatory argument
+	i.flags[name] = flag
+
+	if token != "" && !FlagAcceptsValue(flag) {
+		return fmt.Errorf("the \"--%s\" flag does not accept a value", name)
+	}
+
+	if token == "" && FlagAcceptsValue(flag) && len(i.parsed) > 0 {
+		// if flag accepts an flagal or mandatory argument
 		// let's see if there is one provided
 		next := helper.Shift(&i.parsed)
 		if (next != "" && next[0:1] != "-") || next == "" {
-			value = next
+			token = next
 		} else {
 			helper.Unshift(&i.parsed, next)
 		}
 	}
 
-	if value == nil || value == "" {
-		if opt.IsValueOptional() {
-			return fmt.Errorf("the \"--%s\" option requires a value", name)
+	if token == "" {
+		if FlagRequiresValue(flag) {
+			return fmt.Errorf("the \"--%s\" flag requires a value", name)
 		}
 
-		if !opt.IsArray() && !opt.IsValueOptional() {
-			value = true
+		if !FlagIsArray(flag) && !FlagValueIsOptional(flag) && (!FlagIsNegatable(flag) || !isNegation) {
+			boolean = true
 		}
 	}
 
-	if opt.IsArray() {
-		cur := i.options[name]
-		arr, isArr := cur.([]string)
-		if !isArr {
-
-		} else {
-			arr = append(arr, value.(string))
-		}
-		i.options[name] = arr
-	} else {
-		i.options[name] = value
-	}
+	SetFlagValue(flag, token, boolean)
 
 	return nil
 }
 
-func (i *Input) FirstArgument() InputType {
-	checkPtr(i.definition, "input definition")
-	checkPtr(i.options, "input options")
-
-	isOption := false
-	tokenCount := len(i.Args)
-
-	for idx, token := range i.Args {
-		if token != "" && strings.HasPrefix(token, "-") {
-			if strings.Contains(token, "=") || idx+1 >= tokenCount {
-				continue
-			}
-
-			// If it's a long option, consider that everything after "--" is the option name.
-			// Otherwise, use the last char (if it's a short option set, only the last one can take a value with space separator)
-			var name string
-			if strings.HasPrefix(token, "--") {
-				name = token[2:]
-			} else {
-				name = token[len(token)-1:]
-			}
-
-			value := i.options[name]
-			if (value == nil || value == "") && !i.definition.HasShortcut(name) {
-				// noop
-			} else if value != "" && value != nil && i.Args[idx+1] == value {
-				isOption = true
-			} else {
-				name = i.definition.ShortcutToName(name)
-				value = i.options[name]
-
-				if value != "" && value != nil && i.Args[idx+1] == value {
-					isOption = true
-				}
-			}
-
-			continue
+func (i *Input) FirstArgument() string {
+	if i.definition.firstArgument == nil {
+		if len(i.definition.arguments) > 0 {
+			return GetArgStringValue(i.definition.arguments[0])
 		}
 
-		if isOption {
-			isOption = false
-			continue
-		}
-
-		return token
+		return ""
 	}
 
-	return ""
+	return GetArgStringValue(i.definition.firstArgument)
 }
 
-func (i *Input) HasParameterOption(value string, onlyParams bool) bool {
+func (i *Input) HasParameterFlag(value string, onlyParams bool) bool {
 	for _, token := range i.Args {
 		if onlyParams && token == "--" {
 			return false
@@ -787,7 +526,7 @@ func (i *Input) HasParameterOption(value string, onlyParams bool) bool {
 	return false
 }
 
-func (i *Input) ParameterOption(value string, defaultValue InputType, onlyParams bool) InputType {
+func (i *Input) ParameterFlag(value string, defaultValue InputType, onlyParams bool) InputType {
 	tokens := make([]string, 0, len(i.Args))
 	copy(tokens, i.Args)
 
@@ -801,9 +540,9 @@ func (i *Input) ParameterOption(value string, defaultValue InputType, onlyParams
 			return helper.Shift(&tokens)
 		}
 
-		// Options with values:
-		//   For long options, test for '--option=' at beginning
-		//   For short options, test for '-o' at beginning
+		// Flags with values:
+		//   For long flags, test for '--flag=' at beginning
+		//   For short flags, test for '-o' at beginning
 		leading := value
 		if strings.HasPrefix(value, "--") {
 			leading = value + "="
@@ -815,27 +554,6 @@ func (i *Input) ParameterOption(value string, defaultValue InputType, onlyParams
 	}
 
 	return nil
-}
-
-func (i *Input) String() string {
-	re := regexp.MustCompile(`{^(-[^=]+=)(.+)}`)
-	tokens := make([]string, 0, len(i.Args))
-
-	for _, token := range i.Args {
-		match := re.FindStringSubmatch(token)
-
-		if match != nil {
-			tokens = append(tokens, match[1]+i.EscapeToken(match[2]))
-		} else {
-			if token != "" && token[0] != '-' {
-				tokens = append(tokens, i.EscapeToken(token))
-			} else {
-				tokens = append(tokens, token)
-			}
-		}
-	}
-
-	return strings.Join(tokens, " ")
 }
 
 func StringToInputArgs(cmd string) []string {

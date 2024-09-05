@@ -101,6 +101,12 @@ func NewTableCell(value string) *TableCell {
 
 var defaultTableStyles map[string]*TableStyle
 
+const (
+	crossingChar                = "┼"
+	horizontalOutsideBorderChar = "─"
+	verticalBorderChar          = "│"
+)
+
 func makeDefaultTableStyles() map[string]*TableStyle {
 	borderless := NewTableStyle("")
 	borderless.HorizontalOutsideBorderChar = "="
@@ -125,11 +131,11 @@ func makeDefaultTableStyles() map[string]*TableStyle {
 	styleGuide.CellRowFormat = "%s"
 
 	box := NewTableStyle("")
-	box.HorizontalOutsideBorderChar = "─"
-	box.HorizontalInsideBorderChar = "─"
-	box.VerticalOutsideBorderChar = "│"
-	box.VerticalInsideBorderChar = "│"
-	box.CrossingChar = "┼"
+	box.HorizontalOutsideBorderChar = horizontalOutsideBorderChar
+	box.HorizontalInsideBorderChar = horizontalOutsideBorderChar
+	box.VerticalOutsideBorderChar = verticalBorderChar
+	box.VerticalInsideBorderChar = verticalBorderChar
+	box.CrossingChar = crossingChar
 	box.CrossingTopLeftChar = "┌"
 	box.CrossingTopMidChar = "┬"
 	box.CrossingTopRightChar = "┐"
@@ -139,15 +145,15 @@ func makeDefaultTableStyles() map[string]*TableStyle {
 	box.CrossingBottomLeftChar = "└"
 	box.CrossingMidLeftChar = "├"
 	box.CrossingTopLeftBottomChar = "├"
-	box.CrossingTopMidBottomChar = "┼"
+	box.CrossingTopMidBottomChar = crossingChar
 	box.CrossingTopRightBottomChar = "┤"
 
 	boxDouble := NewTableStyle("")
 	boxDouble.HorizontalOutsideBorderChar = "═"
-	boxDouble.HorizontalInsideBorderChar = "─"
+	boxDouble.HorizontalInsideBorderChar = horizontalOutsideBorderChar
 	boxDouble.VerticalOutsideBorderChar = "║"
-	boxDouble.VerticalInsideBorderChar = "│"
-	boxDouble.CrossingChar = "┼"
+	boxDouble.VerticalInsideBorderChar = verticalBorderChar
+	boxDouble.CrossingChar = crossingChar
 	boxDouble.CrossingTopLeftChar = "╔"
 	boxDouble.CrossingTopMidChar = "╤"
 	boxDouble.CrossingTopRightChar = "╗"
@@ -215,8 +221,8 @@ func NewTableStyle(name string) *TableStyle {
 	}
 }
 
-func (s *TableStyle) Clone() *TableStyle {
-	clone := *s
+func (ts *TableStyle) Clone() *TableStyle {
+	clone := *ts
 	return &clone
 }
 
@@ -642,7 +648,7 @@ func (t *Table) renderRowSeparator(separatorType int, title string, titleFormat 
 			formattedTitle = fmt.Sprintf(titleFormat, title[:limit-formatLength-3]) + "..."
 		}
 
-		titleStart := int((markupLength - titleLength) / 2)
+		titleStart := (markupLength - titleLength) / 2
 		parts := []string{
 			helper.MbSubstr(markup, 0, titleStart),
 			formattedTitle,
@@ -1023,7 +1029,7 @@ func (t *Table) calculateColumnsWidth(groups iter.Seq[[][]*TableCell]) {
 					textLength := helper.Width(textContent)
 
 					if len(textContent) > 0 {
-						contentColumns := helper.MbSplit(textContent, int(textLength/int(cell.ColSpan)))
+						contentColumns := helper.MbSplit(textContent, textLength/int(cell.ColSpan))
 
 						for position, content := range contentColumns {
 							idx := i + position

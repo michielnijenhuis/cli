@@ -1,8 +1,13 @@
 package cli
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -13,7 +18,6 @@ type Spinner struct {
 	Message  string
 	Frames   []string
 	Color    string
-	spinning bool
 }
 
 type spinnerRenderer struct {
@@ -29,11 +33,16 @@ func (r *spinnerRenderer) Render(p any) {
 		panic("expected a spinner prompt")
 	}
 
+	if s.State == PromptStateCancel {
+		r.Line(fmt.Sprintf("<fg=yellow>%s</>", s.CancelMessage), true)
+		return
+	}
+
 	r.state = s.State
 	s.Interval = r.interval
 
 	frame := r.frames[s.Count%len(r.frames)]
-	line := fmt.Sprintf(" <fg=%s>%s</> %s", s.Color, frame, s.Message)
+	line := fmt.Sprintf("<fg=%s>%s</> %s", s.Color, frame, s.Message)
 
 	r.Line(line, true)
 }
@@ -61,13 +70,15 @@ func NewSpinner(i *Input, o *Output, message string, frames []string, color stri
 		color = "cyan"
 	}
 
-	return &Spinner{
+	s := &Spinner{
 		Interval: 100,
 		Prompt:   p,
 		Message:  message,
 		Frames:   frames,
 		Color:    color,
 	}
+
+	return s
 }
 
 func RenderSpinner(s *Spinner) string {
@@ -76,26 +87,52 @@ func RenderSpinner(s *Spinner) string {
 	return r.String()
 }
 
+var ErrCancelledSpinner = errors.New("cancelled")
+
 func (s *Spinner) Spin(fn func()) {
 	s.cursor.Hide()
 
-	defer s.cursor.Show()
+	sigs := make(chan os.Signal, 2)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	s.Render(RenderSpinner(s))
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan bool)
 
-	s.spinning = true
-	go func(cb func()) {
-		fn()
-		s.spinning = false
-	}(fn)
+	go func(c context.Context) {
+		for {
+			select {
+			case <-c.Done():
+				return
+			default:
+				s.render(RenderSpinner(s))
+				s.Count++
+				time.Sleep(time.Duration(s.Interval) * time.Millisecond)
+			}
+		}
+	}(ctx)
 
-	for s.spinning {
-		time.Sleep(time.Duration(s.Interval) * time.Millisecond)
-		s.Render(RenderSpinner(s))
-		s.Count++
-	}
+	go func(cb func(), d chan<- bool) {
+		cb()
+		done <- true
+	}(fn, done)
+
+	go func(s *Spinner) {
+		<-sigs
+		s.State = PromptStateCancel
+		cancel()
+	}(s)
+
+	<-done
 
 	s.eraseRenderedLines()
+	s.cursor.Show()
+	cancel()
+
+	if s.State == PromptStateCancel {
+		s.writeFrame(RenderSpinner(s))
+		s.Output.NewLine(1)
+		os.Exit(1)
+	}
 }
 
 func (s *Spinner) eraseRenderedLines() {

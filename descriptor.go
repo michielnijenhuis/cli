@@ -22,8 +22,6 @@ type TextDescriptor struct {
 }
 
 func (d *TextDescriptor) DescribeApplication(app *Application, options *DescriptorOptions) {
-	checkPtr(app, "describable application")
-
 	var describedNamespace string
 	if options != nil {
 		describedNamespace = options.namespace
@@ -50,10 +48,10 @@ func (d *TextDescriptor) DescribeApplication(app *Application, options *Descript
 		}
 
 		d.writeText("<primary>Usage:</primary>\n", options)
-		d.writeText("  command [options] [arguments]\n\n", options)
+		d.writeText("  command [flags] [--] [arguments]\n\n", options)
 
 		d.DescribeInputDefinition(&InputDefinition{
-			Options: app.Definition().Options,
+			flags: app.Definition().flags,
 		}, options)
 
 		d.writeText("\n", nil)
@@ -71,7 +69,6 @@ func (d *TextDescriptor) DescribeApplication(app *Application, options *Descript
 		if describedNamespace != "" && len(namespaces) > 0 {
 			// make sure all alias commands are included when describing a specific namespace
 			describedNamespaceInfo := firstNamespace
-			checkPtr(describedNamespaceInfo, "described namespace info")
 			for _, name := range describedNamespaceInfo.commands {
 				c, err := description.Command(name)
 				if err != nil {
@@ -92,9 +89,9 @@ func (d *TextDescriptor) DescribeApplication(app *Application, options *Descript
 		width := columnWidth(availableCommands)
 
 		if describedNamespace != "" {
-			d.writeText(fmt.Sprintf("<primary>Available commands for the \"%s\" namespace:</primary>", describedNamespace), options)
+			d.writeText(fmt.Sprintf("<primary>Commands for the \"%s\" namespace:</primary>", describedNamespace), options)
 		} else {
-			d.writeText("<primary>Available commands:</primary>", options)
+			d.writeText("<primary>Commands:</primary>", options)
 		}
 
 		for _, namespace := range namespaces {
@@ -133,8 +130,6 @@ func (d *TextDescriptor) DescribeApplication(app *Application, options *Descript
 }
 
 func (d *TextDescriptor) DescribeCommand(command *Command, options *DescriptorOptions) {
-	checkPtr(command, "describable command")
-
 	command.MergeApplication(false)
 
 	description := command.Description
@@ -159,7 +154,7 @@ func (d *TextDescriptor) DescribeCommand(command *Command, options *DescriptorOp
 	d.writeText("\n", nil)
 
 	definition := command.Definition()
-	if len(definition.Options) > 0 || len(definition.Arguments) > 0 {
+	if len(definition.flags) > 0 || len(definition.arguments) > 0 {
 		d.writeText("\n", nil)
 		d.DescribeInputDefinition(definition, options)
 		d.writeText("\n", nil)
@@ -176,22 +171,20 @@ func (d *TextDescriptor) DescribeCommand(command *Command, options *DescriptorOp
 }
 
 func (d *TextDescriptor) DescribeInputDefinition(definition *InputDefinition, options *DescriptorOptions) {
-	checkPtr(definition, "describable input definition")
-
-	totalWidth := calculateTotalWidthForOptions(definition.Options)
-	for _, argument := range definition.Arguments {
-		totalWidth = max(totalWidth, helper.Width(argument.Name))
+	totalWidth := calculateTotalWidthForFlags(definition.flags)
+	for _, argument := range definition.arguments {
+		totalWidth = max(totalWidth, helper.Width(argument.GetName()))
 	}
 
-	hasArgs := len(definition.Arguments) > 0
-	hasOptions := len(definition.Options) > 0
+	hasArgs := len(definition.arguments) > 0
+	hasFlags := len(definition.flags) > 0
 
 	if hasArgs {
 		d.writeText("<primary>Arguments:</primary>", options)
 		d.writeText("\n", nil)
 
-		for _, argument := range definition.Arguments {
-			d.DescribeInputArgument(argument, &DescriptorOptions{
+		for _, argument := range definition.arguments {
+			d.DescribeArgument(argument, &DescriptorOptions{
 				namespace:  options.namespace,
 				rawText:    options.rawText,
 				short:      options.short,
@@ -201,23 +194,23 @@ func (d *TextDescriptor) DescribeInputDefinition(definition *InputDefinition, op
 		}
 	}
 
-	if hasArgs && hasOptions {
+	if hasArgs && hasFlags {
 		d.writeText("\n", nil)
 	}
 
-	if hasOptions {
-		laterOptions := make([]*InputOption, 0)
+	if hasFlags {
+		laterFlags := make([]Flag, 0)
 
-		d.writeText("<primary>Options:</primary>", options)
+		d.writeText("<primary>Flags:</primary>", options)
 
-		for _, option := range definition.Options {
-			if len(option.Shortcut) > 1 {
-				laterOptions = append(laterOptions, option)
+		for _, flag := range definition.flags {
+			if len(flag.GetShortcutString()) > 1 {
+				laterFlags = append(laterFlags, flag)
 				continue
 			}
 
 			d.writeText("\n", nil)
-			d.DescribeInputOption(option, &DescriptorOptions{
+			d.DescribeFlag(flag, &DescriptorOptions{
 				namespace:  options.namespace,
 				rawText:    options.rawText,
 				short:      options.short,
@@ -225,9 +218,9 @@ func (d *TextDescriptor) DescribeInputDefinition(definition *InputDefinition, op
 			})
 		}
 
-		for _, option := range laterOptions {
+		for _, flag := range laterFlags {
 			d.writeText("\n", nil)
-			d.DescribeInputOption(option, &DescriptorOptions{
+			d.DescribeFlag(flag, &DescriptorOptions{
 				namespace:  options.namespace,
 				rawText:    options.rawText,
 				short:      options.short,
@@ -237,15 +230,13 @@ func (d *TextDescriptor) DescribeInputDefinition(definition *InputDefinition, op
 	}
 }
 
-func (d *TextDescriptor) DescribeInputArgument(argument *InputArgument, options *DescriptorOptions) {
-	checkPtr(argument, "describable input argument")
-
+func (d *TextDescriptor) DescribeArgument(argument Arg, options *DescriptorOptions) {
 	var defaultValue string
-	if hasDefaultValue(argument.DefaultValue) {
-		defaultValue = fmt.Sprintf("<primary> [default: %s]</primary>", formatDefaultValue(argument.DefaultValue))
+	if argHasDefaultValue(argument) {
+		defaultValue = fmt.Sprintf("<primary> [default: %s]</primary>", formatArgValue(argument))
 	}
 
-	name := argument.Name
+	name := argument.GetName()
 
 	var totalWidth int
 	if options != nil && options.totalWidth > 0 {
@@ -257,26 +248,45 @@ func (d *TextDescriptor) DescribeInputArgument(argument *InputArgument, options 
 	spacingWidth := totalWidth - len(name) + 1
 	width := strings.Repeat(" ", spacingWidth)
 	re := regexp.MustCompile(`\s*[\r\n]\s*`)
-	desc := re.ReplaceAllString(argument.Description, strings.Repeat(" ", totalWidth+4))
+	desc := re.ReplaceAllString(argument.GetDescription(), strings.Repeat(" ", totalWidth+4))
 
 	d.writeText(fmt.Sprintf("  <accent>%s</accent> %s%s%s", name, width, desc, defaultValue), options)
 }
 
-func (d *TextDescriptor) DescribeInputOption(option *InputOption, options *DescriptorOptions) {
-	checkPtr(option, "describable input option")
+func argHasDefaultValue(arg Arg) bool {
+	if a, ok := arg.(*StringArg); ok {
+		return a.Value != ""
+	}
+	if a, ok := arg.(*ArrayArg); ok {
+		return len(a.Value) > 0
+	}
+	return false
+}
 
+func formatArgValue(arg Arg) string {
+	switch a := arg.(type) {
+	case *StringArg:
+		return formatDefaultValue(a.Value)
+	case *ArrayArg:
+		return formatDefaultValue(a.Value)
+	default:
+		panic("invalid argument type")
+	}
+}
+
+func (d *TextDescriptor) DescribeFlag(flag Flag, options *DescriptorOptions) {
 	var defaultValue string
-	if hasDefaultValue(option.DefaultValue) {
-		defaultValue = fmt.Sprintf("<primary> [default: %s]</primary>", formatDefaultValue(option.DefaultValue))
+	if FlagHasDefaultValue(flag) {
+		defaultValue = fmt.Sprintf("<primary> [default: %s]</primary>", formatDefaultValue(flag))
 	}
 
-	name := option.Name
+	name := flag.GetName()
 
 	var value string
-	if option.AcceptValue() {
+	if FlagAcceptsValue(flag) {
 		value = "=" + strings.ToUpper(name)
 
-		if option.IsValueOptional() {
+		if FlagValueIsOptional(flag) {
 			value = "[" + value + "]"
 		}
 	}
@@ -285,35 +295,35 @@ func (d *TextDescriptor) DescribeInputOption(option *InputOption, options *Descr
 	if options != nil && options.totalWidth > 0 {
 		totalWidth = options.totalWidth
 	} else {
-		totalWidth = calculateTotalWidthForOptions([]*InputOption{option})
+		totalWidth = calculateTotalWidthForFlags([]Flag{flag})
 	}
 
-	var synopsis string
-	if option.Shortcut != "" {
-		synopsis = fmt.Sprintf("-%s, ", option.Shortcut)
+	var synopsis strings.Builder
+	if s := flag.GetShortcutString(); s != "" {
+		synopsis.WriteString(fmt.Sprintf("-%s, ", s))
 	} else {
-		synopsis = "    "
+		synopsis.WriteString("    ")
 	}
 
-	if option.IsNegatable() {
-		synopsis += fmt.Sprintf("--%s|--no-%s", name, name)
+	if FlagIsNegatable(flag) {
+		synopsis.WriteString(fmt.Sprintf("--%s|--no-%s", name, name))
 	} else {
-		synopsis += "--" + name
+		synopsis.WriteString("--" + name)
 	}
 
-	synopsis += value
-
-	spacingWidth := max(0, totalWidth-helper.Width(synopsis))
+	synopsis.WriteString(value)
+	synopsisString := synopsis.String()
+	spacingWidth := max(0, totalWidth-helper.Width(synopsisString))
 	width := strings.Repeat(" ", spacingWidth)
 	re := regexp.MustCompile(`\s*[\r\n]\s*`)
-	desc := re.ReplaceAllString(option.Description, strings.Repeat(" ", totalWidth+4))
+	desc := re.ReplaceAllString(flag.GetDescription(), strings.Repeat(" ", totalWidth+4))
 
 	var arr string
-	if option.IsArray() {
+	if FlagIsArray(flag) {
 		arr = "<primary> (multiple values allowed)</primary>"
 	}
 
-	d.writeText(fmt.Sprintf("  <accent>%s</accent>  %s%s%s%s", synopsis, width, desc, defaultValue, arr), options)
+	d.writeText(fmt.Sprintf("  <accent>%s</accent>  %s%s%s%s", synopsisString, width, desc, defaultValue, arr), options)
 }
 
 func columnWidth(commands map[string]*Command) int {
@@ -330,18 +340,18 @@ func columnWidth(commands map[string]*Command) int {
 	return width
 }
 
-func calculateTotalWidthForOptions(options []*InputOption) int {
+func calculateTotalWidthForFlags(flags []Flag) int {
 	var totalWidth int
 
-	for _, option := range options {
+	for _, flag := range flags {
 		// "-" + shortcut + ", --" + name
-		nameLength := 1 + max(helper.Width(option.Shortcut), 1) + 4 + helper.Width(option.Name)
+		nameLength := 1 + max(helper.Width(flag.GetShortcutString()), 1) + 4 + helper.Width(flag.GetName())
 
-		if option.IsNegatable() {
-			nameLength += 6 + helper.Width(option.Name) // |--no- + name
-		} else if option.AcceptValue() {
-			valueLength := 1 + helper.Width(option.Name) // = + value
-			if option.IsValueOptional() {
+		if FlagIsNegatable(flag) {
+			nameLength += 6 + helper.Width(flag.GetName()) // |--no- + name
+		} else if FlagAcceptsValue(flag) {
+			valueLength := 1 + helper.Width(flag.GetName()) // = + value
+			if FlagValueIsOptional(flag) {
 				valueLength += 2 // [ + ]
 			}
 
@@ -390,29 +400,6 @@ func (d *TextDescriptor) writeText(content string, options *DescriptorOptions) {
 	}
 
 	d.Write(content, decorated)
-}
-
-func hasDefaultValue(value InputType) bool {
-	if value == nil {
-		return false
-	}
-
-	arr, ok := value.([]any)
-	if ok {
-		return len(arr) > 0
-	}
-
-	_, isBool := value.(bool)
-	if isBool {
-		return false
-	}
-
-	str, ok := value.(string)
-	if ok {
-		return str != ""
-	}
-
-	return true
 }
 
 func formatDefaultValue(value InputType) string {

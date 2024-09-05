@@ -55,14 +55,10 @@ type QuestionInterface interface {
 }
 
 func Ask[T any](i *Input, o *Output, question QuestionInterface) (T, error) {
-	checkPtr(i, "question input")
-	checkPtr(o, "question output")
 	o = o.Stderr
-	checkPtr(o, "output stderr")
 
 	if !i.IsInteractive() {
 		q := getQuestion[T](question)
-		checkPtr(q, "question")
 		return q.DefaultValue, nil
 	}
 
@@ -89,7 +85,10 @@ func normalizeAnswer(answer string, question QuestionInterface) any {
 			return n(answer)
 		}
 	} else if chq, ok := question.(*ChoiceQuestion); ok {
-		n := chq.DefaultNormalizer()
+		n := chq.Normalizer
+		if n == nil {
+			n = chq.DefaultNormalizer()
+		}
 		if n != nil {
 			return n(answer)
 		}
@@ -138,7 +137,6 @@ func validateAnswer[T any](answer T, question QuestionInterface) (T, error) {
 
 func doAsk[T any](o *Output, question QuestionInterface, inputStream *os.File) (T, error) {
 	q := getQuestion[T](question)
-	checkPtr(q, "question")
 
 	writePrompt[T](o, question)
 
@@ -185,11 +183,9 @@ func doAsk[T any](o *Output, question QuestionInterface, inputStream *os.File) (
 	}
 
 	normalized := normalizeAnswer(input, question)
-	if normalized != input {
-		typed, ok := normalized.(T)
-		if ok {
-			ret = typed
-		}
+	typed, ok := normalized.(T)
+	if ok {
+		ret = typed
 	}
 
 	validated, err := validateAnswer(ret, question)
@@ -203,7 +199,6 @@ func doAsk[T any](o *Output, question QuestionInterface, inputStream *os.File) (
 
 func defaultAnswer[T any](qs QuestionInterface) T {
 	q := getQuestion[T](qs)
-	checkPtr(q, "question")
 
 	defaultValue := q.DefaultValue
 
@@ -247,15 +242,13 @@ func writePrompt[T any](output *Output, qs any) {
 		text += fmt.Sprintf(" (press %s to continue)", eofShortcut())
 	}
 
-	if str, ok := defaultValue.(string); ok && str == "" {
-		text = fmt.Sprintf(" <info>%s</info>", text)
-	} else if cq, ok := qs.(*ConfirmationQuestion); ok {
+	if cq, ok := qs.(*ConfirmationQuestion); ok {
 		highlight := "yes"
 		if !cq.DefaultValue {
 			highlight = "no"
 		}
 
-		text = fmt.Sprintf(" %s (yes/no) [<accent>%s</accent>]", text, highlight)
+		text = fmt.Sprintf("%s (yes/no) [<accent>%s</accent>]", text, highlight)
 	} else if cq, ok := qs.(*ChoiceQuestion); ok {
 		str, isStr := defaultValue.(string)
 		comment := str
@@ -265,12 +258,14 @@ func writePrompt[T any](output *Output, qs any) {
 				comment = val
 			}
 		}
-		text = fmt.Sprintf(" <info>%s</info> [<comment>%s</comment>]", text, comment)
+		if comment != "" {
+			text = fmt.Sprintf("%s [<accent>%s</accent>]", text, comment)
+		}
 	}
 
 	output.Writeln(text, 0)
 
-	prompt := " > "
+	prompt := " <fg=green>?</> "
 
 	choice, ok := qs.(*ChoiceQuestion)
 	if ok {

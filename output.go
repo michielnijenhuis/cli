@@ -79,7 +79,6 @@ func NewOutput(input *Input) *Output {
 }
 
 func (o *Output) Formatter() *OutputFormatter {
-	checkPtr(o.formatter, "output formatter")
 	return o.formatter
 }
 
@@ -514,27 +513,16 @@ func (o *Output) ProgressFinish() {}
 func (o *Output) Box(title string, body string, footer string, color string, info string) {}
 
 func askQuestion[T any](qi QuestionInterface, i *Input, o *Output) (T, error) {
-	if i.IsInteractive() {
-		o.autoPrependBlock()
-	}
-
 	answer, err := Ask[T](i, o, qi)
 	if err != nil {
 		var empty T
 		return empty, nil
 	}
 
-	if i.IsInteractive() {
-		o.NewLine(1)
-		checkPtr(o.bufferedOutput, "output bufferedOutput")
-		o.bufferedOutput.Write("\n", false, 0)
-	}
-
 	return answer, nil
 }
 
 func (o *Output) autoPrependBlock() {
-	checkPtr(o.bufferedOutput, "output bufferedOutput")
 	chars := o.bufferedOutput.Fetch()
 
 	if len(chars) > 2 {
