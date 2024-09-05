@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"math"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/michielnijenhuis/cli/helper"
+	"github.com/michielnijenhuis/cli/helper/array"
 )
 
 type DescriptorOptions struct {
@@ -94,9 +96,11 @@ func (d *TextDescriptor) DescribeApplication(app *Application, options *Descript
 			d.writeText("<primary>Commands:</primary>", options)
 		}
 
-		for _, namespace := range namespaces {
+		for _, namespace := range array.SortedKeys(namespaces) {
+			ns := namespaces[namespace]
 			list := make([]string, 0)
-			for _, command := range namespace.commands {
+			sort.Strings(ns.commands)
+			for _, command := range ns.commands {
 				if _, exists := commands[command]; exists {
 					list = append(list, command)
 				}
@@ -106,9 +110,9 @@ func (d *TextDescriptor) DescribeApplication(app *Application, options *Descript
 				continue
 			}
 
-			if describedNamespace == "" && namespace.id != "_global" {
+			if describedNamespace == "" && ns.id != "_global" {
 				d.writeText("\n", nil)
-				d.writeText(fmt.Sprintf(" <primary>%s</primary>", namespace.id), options)
+				d.writeText(fmt.Sprintf(" <primary>%s</primary>", ns.id), options)
 			}
 
 			for _, name := range list {
