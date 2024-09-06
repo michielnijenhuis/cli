@@ -126,7 +126,7 @@ func (app *Application) doRun(i *Input, o *Output) (int, error) {
 	}
 
 	name := app.commandName(i)
-	if i.HasParameterFlag("--help", true) || i.HasParameterFlag("-h", true) || len(i.Args) == 0 {
+	if i.HasParameterFlag("--help", true) || i.HasParameterFlag("-h", true) || name == "" {
 		if name != "" {
 			c, err := app.Find(name)
 			if err != nil {
@@ -140,8 +140,7 @@ func (app *Application) doRun(i *Input, o *Output) (int, error) {
 		return 0, nil
 	}
 
-	// Makes ArgvInput.FirstArgument() able to distinguish a flag from an argument.
-	// Errors must be ignored, full binding/validation happens later when the command is known.
+	// Ignore errors, full binding/validation happens later when running the command.
 	i.Bind(app.Definition())
 
 	if name == "" {
@@ -162,9 +161,14 @@ func (app *Application) doRun(i *Input, o *Output) (int, error) {
 		interactive := i.IsInteractive()
 
 		if ok && len(alternatives) == 1 && interactive {
-			o.Writeln("", 0)
-			formattedBlock := FormatBlock([]string{fmt.Sprintf("command \"%s\" is not defined", name)}, "error", true)
-			o.Writeln(formattedBlock, 0)
+			theme, _ := GetTheme("error")
+			if !theme.Padding {
+				o.Writeln("", 0)
+			}
+			o.Block([]string{fmt.Sprintf("command \"%s\" is not defined", name)}, "error", true)
+			if !theme.Padding {
+				o.Writeln("", 0)
+			}
 
 			alternative := alternatives[0]
 
@@ -176,6 +180,8 @@ func (app *Application) doRun(i *Input, o *Output) (int, error) {
 			if !runAlternative {
 				return 1, nil
 			}
+
+			// TODO: cleanup rendered lines
 
 			c, findCommandErr = app.Find(alternative)
 			if findCommandErr != nil {
@@ -618,10 +624,7 @@ func (app *Application) Abbreviations(names []string) map[string][]string {
 func (app *Application) RenderError(o *Output, err error) {
 	theme, _ := GetTheme("error")
 
-	if theme.Padding {
-		o.Writeln("", VerbosityQuiet)
-	}
-
+	o.Writeln("", VerbosityQuiet)
 	o.Err(err)
 
 	if !theme.Padding {
@@ -895,10 +898,6 @@ func (app *Application) init() {
 	}
 
 	app.initialized = true
-
-	if app.DefaultCommand == "" {
-		app.DefaultCommand = "help"
-	}
 
 	if app.commands == nil {
 		app.commands = make(map[string]*Command)
