@@ -3,8 +3,6 @@ package cli
 import (
 	"fmt"
 	"strings"
-
-	"github.com/michielnijenhuis/cli/helper"
 )
 
 type Renderer struct {
@@ -46,7 +44,7 @@ func (r *Renderer) Hint(message string) {
 	}
 
 	terminalWidth, _ := TerminalWidth()
-	message = helper.TruncateStart(message, terminalWidth-6)
+	message = TruncateStart(message, terminalWidth-6)
 
 	r.Line(fmt.Sprintf("  <fg=gray>%s</>", message), true)
 }

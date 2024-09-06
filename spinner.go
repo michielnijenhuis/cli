@@ -63,7 +63,7 @@ func NewSpinner(i *Input, o *Output, message string, frames []string, color stri
 	p := NewPrompt("spinner", i, o)
 
 	if frames == nil {
-		frames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+		frames = DotSpinner
 	}
 
 	if color == "" {

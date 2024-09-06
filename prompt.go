@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/michielnijenhuis/cli/helper"
 	"github.com/michielnijenhuis/cli/helper/keys"
 )
 
@@ -460,7 +459,7 @@ func (p *Prompt) addCursor(value string, cursorPosition int, maxWidth int) strin
 	truncatedBefore := before
 	wasTruncatedBefore := false
 	if len(before) > spaceBefore {
-		truncatedBefore = helper.TrimWidthBackwards(before, 0, spaceBefore-1)
+		truncatedBefore = TrimWidthBackwards(before, 0, spaceBefore-1)
 		wasTruncatedBefore = true
 	}
 
@@ -478,7 +477,7 @@ func (p *Prompt) addCursor(value string, cursorPosition int, maxWidth int) strin
 	truncatedAfter := after
 	wasTruncatedAfter := false
 	if len(after) > spaceAfter {
-		truncatedAfter = helper.StrimWidth(after, 0, spaceAfter-1, "")
+		truncatedAfter = StrimWidth(after, 0, spaceAfter-1, "")
 		wasTruncatedBefore = true
 	}
 

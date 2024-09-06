@@ -234,15 +234,27 @@ func (o *Output) Listing(elements []string, prefix string) {
 	o.NewLine(1)
 }
 
-func (o *Output) Block(messages []string, tag string, style string, prefix string, padding bool, escape bool) {
-	o.autoPrependBlock()
-	o.Writelns(o.createBlock(messages, tag, style, prefix, padding, escape), 0)
-	o.NewLine(1)
+func (o *Output) Block(messages []string, tag string, escape bool) {
+	theme, _ := GetTheme(tag)
+
+	if theme.Padding {
+		o.autoPrependBlock()
+	}
+
+	o.Writelns(o.createBlock(messages, tag, theme, escape), 0)
+
+	if theme.Padding {
+		o.NewLine(1)
+	}
 }
 
-func (o *Output) createBlock(messages []string, tag string, style string, prefix string, padding bool, escape bool) []string {
-	if prefix == "" {
-		prefix = " "
+func (o *Output) createBlock(messages []string, tag string, theme *Theme, escape bool) []string {
+	prefix := ""
+	if theme != nil && theme.Icon != "" {
+		prefix = fmt.Sprintf("%s ", theme.Icon)
+	}
+	if theme != nil && theme.Label != "" {
+		prefix += theme.Label
 	}
 
 	indentLength := 0
@@ -250,9 +262,8 @@ func (o *Output) createBlock(messages []string, tag string, style string, prefix
 	lines := make([]string, 0, len(messages))
 	lineIndentation := ""
 
-	if tag != "" {
-		tag = "[" + tag + "] "
-		indentLength = helper.Width(tag)
+	if prefix != "" {
+		indentLength = helper.Width(prefix)
 		lineIndentation = strings.Repeat(" ", indentLength)
 	}
 
@@ -270,27 +281,29 @@ func (o *Output) createBlock(messages []string, tag string, style string, prefix
 	}
 
 	firstLineIndex := 0
-	if padding && o.IsDecorated() {
+	if theme != nil && theme.Padding && o.IsDecorated() {
 		firstLineIndex = 1
 		helper.Unshift(&lines, "")
 		lines = append(lines, "")
 	}
 
 	for i, line := range lines {
-		if tag != "" {
+		if prefix != "" {
 			if firstLineIndex == i {
-				line = tag + line
+				if tag != "" && theme != nil && !theme.FullyColored {
+					prefix = fmt.Sprintf("<%s>%s</>", tag, prefix)
+				}
+
+				line = prefix + line
 			} else {
 				line = lineIndentation + line
 			}
 		}
 
-		line = prefix + line
-
 		line += strings.Repeat(" ", max(o.lineLength-helper.Width(o.Formatter().RemoveDecoration(line)), 0))
 
-		if style != "" {
-			line = fmt.Sprintf("<%s>%s</>", style, line)
+		if tag != "" && theme.FullyColored {
+			line = fmt.Sprintf("<%s>%s</>", tag, line)
 		}
 
 		lines[i] = line
@@ -306,32 +319,40 @@ func (o *Output) Text(messages ...string) {
 	}
 }
 
-func (o *Output) Success(messages ...string) {
-	o.Block(messages, "OK", "fg=black;bg=green", " ", true, true)
+func (o *Output) Ok(messages ...string) {
+	o.Block(messages, "ok", true)
 }
 
-func (o *Output) Err(messages ...string) {
-	o.Block(messages, "ERROR", "fg=white;bg=red", " ", true, true)
+func (o *Output) Success(messages ...string) {
+	o.Block(messages, "success", true)
+}
+
+func (o *Output) Error(messages ...string) {
+	o.Block(messages, "error", true)
+}
+
+func (o *Output) Err(err error) {
+	o.Error(err.Error())
 }
 
 func (o *Output) Warning(messages ...string) {
-	o.Block(messages, "WARNING", "fg=black;bg=yellow", " ", true, true)
+	o.Block(messages, "warning", true)
 }
 
 func (o *Output) Info(messages ...string) {
-	o.Block(messages, "INFO", "fg=white;bg=blue", " ", true, true)
+	o.Block(messages, "info", true)
 }
 
 func (o *Output) Note(messages ...string) {
-	o.Block(messages, "NOTE", "fg=yellow", " ! ", true, true)
+	o.Block(messages, "note", true)
 }
 
 func (o *Output) Caution(messages ...string) {
-	o.Block(messages, "CAUTION", "fg=yellow;bg=red", " ! ", true, true)
+	o.Block(messages, "caution", true)
 }
 
 func (o *Output) Comment(messages ...string) {
-	o.Block(messages, "", "", "<fg=default;bg=default> // </>", false, false)
+	o.Block(messages, "comment", false)
 }
 
 func (o *Output) TableFromSlices(headers []string, rows [][]any, options *TableOptions) {

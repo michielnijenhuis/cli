@@ -464,7 +464,7 @@ func (t *Table) Render() {
 							val := fmt.Sprintf("<comment>%s%s</>: %s", strings.Repeat(" ", maxHeaderLength-helper.Width(formatter.RemoveDecoration(header))), header, part)
 							rows = append(rows, []*TableCell{NewTableCell(val)})
 						} else {
-							val := fmt.Sprintf("%s  %s", helper.PadStart("", maxHeaderLength, " "), part)
+							val := fmt.Sprintf("%s  %s", PadStart("", maxHeaderLength, " "), part)
 							rows = append(rows, []*TableCell{NewTableCell(val)})
 						}
 					} else if cellValue != "" {
@@ -650,9 +650,9 @@ func (t *Table) renderRowSeparator(separatorType int, title string, titleFormat 
 
 		titleStart := (markupLength - titleLength) / 2
 		parts := []string{
-			helper.MbSubstr(markup, 0, titleStart),
+			MbSubstr(markup, 0, titleStart),
 			formattedTitle,
-			helper.MbSubstr(markup, titleStart+titleLength, markupLength),
+			MbSubstr(markup, titleStart+titleLength, markupLength),
 		}
 		markup = strings.Join(parts, "")
 	}
@@ -746,11 +746,11 @@ func (t *Table) renderCell(row []*TableCell, column int, cellFormat string) stri
 	content = fmt.Sprintf(cellFormat, content)
 
 	if padType == TableCellAlignCenter {
-		content = helper.PadCenter(content, width, style.PaddingChar)
+		content = PadCenter(content, width, style.PaddingChar)
 	} else if padType == TableCellAlignRight {
-		content = helper.PadStart(content, width, style.PaddingChar)
+		content = PadStart(content, width, style.PaddingChar)
 	} else if padType == TableCellAlignLeft {
-		content = helper.PadEnd(content, width, style.PaddingChar)
+		content = PadEnd(content, width, style.PaddingChar)
 	}
 
 	return content
@@ -1025,11 +1025,11 @@ func (t *Table) calculateColumnsWidth(groups iter.Seq[[][]*TableCell]) {
 				}
 
 				for i, cell := range row {
-					textContent := formatter.RemoveDecoration(helper.StripEscapeSequences(cell.Value))
+					textContent := formatter.RemoveDecoration(StripEscapeSequences(cell.Value))
 					textLength := helper.Width(textContent)
 
 					if len(textContent) > 0 {
-						contentColumns := helper.MbSplit(textContent, textLength/int(cell.ColSpan))
+						contentColumns := MbSplit(textContent, textLength/int(cell.ColSpan))
 
 						for position, content := range contentColumns {
 							idx := i + position
@@ -1063,7 +1063,7 @@ func (t *Table) getCellWidth(row []*TableCell, column int) int {
 
 	if column < len(row) {
 		cell := row[column]
-		cellWidth = helper.Width(t.output.Formatter().RemoveDecoration(helper.StripEscapeSequences(cell.Value)))
+		cellWidth = helper.Width(t.output.Formatter().RemoveDecoration(StripEscapeSequences(cell.Value)))
 	}
 
 	columnWidth := 0

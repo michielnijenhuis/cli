@@ -10,6 +10,7 @@ type Flag interface {
 	GetShortcuts() []string
 	GetShortcutString() string
 	GetDescription() string
+	HasValue() bool
 }
 
 type StringFlag struct {
@@ -143,6 +144,10 @@ func (f *StringFlag) GetDescription() string {
 	return f.Description
 }
 
+func (f *StringFlag) HasValue() bool {
+	return f.Value != ""
+}
+
 func (f *BoolFlag) GetName() string {
 	return f.Name
 }
@@ -157,6 +162,10 @@ func (f *BoolFlag) GetShortcutString() string {
 
 func (f *BoolFlag) GetDescription() string {
 	return f.Description
+}
+
+func (f *BoolFlag) HasValue() bool {
+	return f.Value
 }
 
 func (f *ArrayFlag) GetName() string {
@@ -175,6 +184,10 @@ func (f *ArrayFlag) GetDescription() string {
 	return f.Description
 }
 
+func (f *ArrayFlag) HasValue() bool {
+	return len(f.Value) > 0
+}
+
 func (f *OptionalStringFlag) GetName() string {
 	return f.Name
 }
@@ -185,6 +198,10 @@ func (f *OptionalStringFlag) GetShortcuts() []string {
 
 func (f *OptionalStringFlag) GetShortcutString() string {
 	return joinShortcuts(f.Shortcuts)
+}
+
+func (f *OptionalStringFlag) HasValue() bool {
+	return f.Boolean || f.Value != ""
 }
 
 func (f *OptionalStringFlag) GetDescription() string {
@@ -205,6 +222,10 @@ func (f *OptionalArrayFlag) GetShortcutString() string {
 
 func (f *OptionalArrayFlag) GetDescription() string {
 	return f.Description
+}
+
+func (f *OptionalArrayFlag) HasValue() bool {
+	return f.Boolean || len(f.Value) > 0
 }
 
 const (

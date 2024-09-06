@@ -299,7 +299,7 @@ func formatChoiceQuestionChoices(question *ChoiceQuestion, tag string) []string 
 
 func writeError(output *Output, err error) {
 	output.NewLine(1)
-	output.Err(err.Error())
+	output.Err(err)
 }
 
 func eofShortcut() string {

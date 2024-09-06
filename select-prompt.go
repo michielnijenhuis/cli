@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/michielnijenhuis/cli/helper"
 	"github.com/michielnijenhuis/cli/helper/array"
 	"github.com/michielnijenhuis/cli/helper/keys"
 )
@@ -160,7 +159,7 @@ func (p *SelectPrompt) renderOptions() string {
 		options = append(options, label)
 	}
 
-	return strings.Join(ScrollBar(options, p.FirstVisible, p.Scroll, len(values), min(helper.Longest(values, -1, 6), width-6), color), "\n")
+	return strings.Join(ScrollBar(options, p.FirstVisible, p.Scroll, len(values), min(Longest(values, -1, 6), width-6), color), "\n")
 }
 
 func (p *SelectPrompt) Render() (string, error) {

@@ -3,8 +3,6 @@ package cli
 import (
 	"fmt"
 	"regexp"
-
-	"github.com/michielnijenhuis/cli/helper"
 )
 
 func ScrollBar(visible []string, firstVisible int, height int, total int, width int, color string) []string {
@@ -16,7 +14,7 @@ func ScrollBar(visible []string, firstVisible int, height int, total int, width 
 
 	list := make([]string, 0, len(visible))
 	for i, v := range visible {
-		line := helper.Pad(v, width, " ")
+		line := Pad(v, width, " ")
 		if i != scrollPosition {
 			color = "gray"
 		}

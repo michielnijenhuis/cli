@@ -3,7 +3,6 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"math"
 	"os"
 	"regexp"
 	"sort"
@@ -126,10 +125,6 @@ func (app *Application) doRun(i *Input, o *Output) (int, error) {
 		app.Commands = nil
 	}
 
-	// Makes ArgvInput.FirstArgument() able to distinguish a flag from an argument.
-	// Errors must be ignored, full binding/validation happens later when the command is known.
-	i.Bind(app.Definition())
-
 	name := app.commandName(i)
 	if i.HasParameterFlag("--help", true) || i.HasParameterFlag("-h", true) || len(i.Args) == 0 {
 		if name != "" {
@@ -144,6 +139,10 @@ func (app *Application) doRun(i *Input, o *Output) (int, error) {
 		app.printHelp(o, nil)
 		return 0, nil
 	}
+
+	// Makes ArgvInput.FirstArgument() able to distinguish a flag from an argument.
+	// Errors must be ignored, full binding/validation happens later when the command is known.
+	i.Bind(app.Definition())
 
 	if name == "" {
 		name = app.DefaultCommand
@@ -549,7 +548,7 @@ func (app *Application) Find(name string) (*Command, error) {
 					continue
 				}
 
-				abbrev = helper.PadStart(cmd, maxLen, "") + " " + app.commands[cmd].Description
+				abbrev = PadStart(cmd, maxLen, "") + " " + app.commands[cmd].Description
 
 				if helper.Width(abbrev) > usableWidth {
 					filteredAbbrevs = append(filteredAbbrevs, abbrev[:usableWidth-3]+"...")
@@ -617,52 +616,28 @@ func (app *Application) Abbreviations(names []string) map[string][]string {
 }
 
 func (app *Application) RenderError(o *Output, err error) {
-	o.Writeln("", VerbosityQuiet)
+	theme, _ := GetTheme("error")
 
-	app.doRenderError(o, err)
+	if theme.Padding {
+		o.Writeln("", VerbosityQuiet)
+	}
+
+	o.Err(err)
+
+	if !theme.Padding {
+		o.Writeln("", VerbosityQuiet)
+	}
 
 	if app.runningCommand != nil {
 		o.Writeln(
 			fmt.Sprintf("<accent>%s %s</accent>", app.Name, app.runningCommand.Synopsis(false)),
 			VerbosityQuiet,
 		)
-		o.Writeln("", VerbosityQuiet)
-	}
-}
 
-func (app *Application) doRenderError(o *Output, err error) {
-	message := strings.TrimSpace(err.Error())
-	length := 0
-	width, _ := TerminalWidth()
-	lines := make([]string, 0)
-	linesLength := make([]int, 0)
-	messageLines := strings.Split(strings.ReplaceAll(message, "\r\n", "\n"), "\n")
-
-	for i := 0; i < len(messageLines); i++ {
-		message := messageLines[i]
-		splitMessage := splitStringByWidth(message, width-4)
-
-		for _, line := range splitMessage {
-			lineLength := len(line) + 4
-			lines = append(lines, line)
-			linesLength = append(linesLength, lineLength)
-
-			length = int(math.Max(float64(lineLength), float64(length)))
+		if theme.Padding {
+			o.Writeln("", VerbosityQuiet)
 		}
 	}
-
-	messages := make([]string, 0)
-	emptyLine := fmt.Sprintf("<error>%s</error>", strings.Repeat(" ", length))
-	messages = append(messages, emptyLine)
-
-	for i, line := range lines {
-		formattedLine := fmt.Sprintf("<error>  %s  %s</error>", Escape(line), strings.Repeat(" ", length-linesLength[i]))
-		messages = append(messages, formattedLine)
-	}
-
-	messages = append(messages, emptyLine, "")
-
-	o.Writelns(messages, VerbosityQuiet)
 }
 
 func (app *Application) configureIO(i *Input, o *Output) {
@@ -744,7 +719,7 @@ func (app *Application) defaultInputDefinition() *InputDefinition {
 	if app.SingleCommand {
 		helpDescription = fmt.Sprintf("Display help for the <accent>%s</accent> command", app.DefaultCommand)
 	} else {
-		helpDescription = fmt.Sprintf("Display help for the given command, or the <accent>%s</accent> command (if no command is given)", app.DefaultCommand)
+		helpDescription = "Display help the application or a given command"
 	}
 
 	helpFlag := &BoolFlag{
@@ -982,20 +957,6 @@ func levenshtein(a string, b string) int {
 	}
 
 	return matrix[aLen][bLen]
-}
-
-func splitStringByWidth(s string, w int) []string {
-	if w < 1 {
-		w = 1
-	}
-
-	result := make([]string, 0)
-	for i := 0; i < len(s); i += w {
-		m := min(i+w, len(s))
-		result = append(result, s[i:m])
-	}
-
-	return result
 }
 
 func (app *Application) ExitCode() int {

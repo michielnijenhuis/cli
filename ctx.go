@@ -50,23 +50,31 @@ func (c *Ctx) NewLine(count uint) {
 }
 
 func (c *Ctx) Error(messages ...string) {
-	c.writeLine(messages, "error")
+	c.Output.Error(messages...)
 }
 
 func (c *Ctx) Err(err error) {
-	c.writeLine([]string{err.Error()}, "error")
+	c.Output.Err(err)
 }
 
 func (c *Ctx) Info(messages ...string) {
-	c.writeLine(messages, "info")
+	c.Output.Info(messages...)
 }
 
 func (c *Ctx) Warn(messages ...string) {
-	c.writeLine(messages, "warning")
+	c.Output.Warning(messages...)
+}
+
+func (c *Ctx) Note(messages ...string) {
+	c.Output.Note(messages...)
 }
 
 func (c *Ctx) Ok(messages ...string) {
-	c.writeLine(messages, "ok")
+	c.Output.Ok(messages...)
+}
+
+func (c *Ctx) Success(messages ...string) {
+	c.Output.Success(messages...)
 }
 
 func (c *Ctx) Comment(messages ...string) {
@@ -80,7 +88,7 @@ func (c *Ctx) Alert(messages ...string) {
 	}
 	length += 12
 
-	c.writeLine([]string{fmt.Sprintf("<fg=yellow>%s </>", strings.Repeat("*", length))}, "alert")
+	c.writeLine([]string{fmt.Sprintf("<fg=yellow>%s </>", strings.Repeat("*", length))}, "alert", "", false)
 	for i := range messages {
 		messages[i] = fmt.Sprintf("%s<fg=yellow>*</>     %s     <fg=yellow>*</>", strings.Repeat(" ", 8), messages[i])
 	}
@@ -109,13 +117,29 @@ func (c *Ctx) Writelns(messages []string) {
 	c.Output.Writelns(messages, 0)
 }
 
-func (c *Ctx) writeLine(messages []string, tag string) {
+func (c *Ctx) writeLine(messages []string, tag string, label string, fullyColored bool) {
 	if len(messages) == 0 {
 		return
 	}
 
 	if tag != "" {
-		messages[0] = fmt.Sprintf("<%s> %s </%s> %s", tag, strings.ToUpper(tag), tag, messages[0])
+		if label == "" {
+			label = fmt.Sprintf(" %s ", strings.ToUpper(tag))
+		}
+
+		closingTagLabelFmt := "</%s>"
+		closingTagLabel := tag
+		closingTagTextFmt := "%s"
+		closingTagText := ""
+		if fullyColored {
+			closingTagTextFmt = closingTagLabelFmt
+			closingTagText = closingTagLabel
+			closingTagLabelFmt = "%s"
+			closingTagLabel = ""
+		}
+
+		format := `<%s>%s` + closingTagLabelFmt + ` %s` + closingTagTextFmt
+		messages[0] = fmt.Sprintf(format, tag, label, closingTagLabel, messages[0], closingTagText)
 
 		for i := 1; i < len(messages); i++ {
 			messages[i] = strings.Repeat(" ", len(tag)+3) + messages[i]

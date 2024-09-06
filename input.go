@@ -496,15 +496,52 @@ func (i *Input) addLongFlag(name string, token string) error {
 }
 
 func (i *Input) FirstArgument() string {
-	if i.definition.firstArgument == nil {
-		if len(i.definition.arguments) > 0 {
-			return GetArgStringValue(i.definition.arguments[0])
+	isOption := false
+	tokenCount := len(i.Args)
+
+	for idx, token := range i.Args {
+		// Is option
+		if strings.HasPrefix(token, "-") {
+			// Has value, or is last token
+			if strings.Contains(token, "=") || idx+1 >= tokenCount {
+				continue
+			}
+
+			// If it's a long option, consider that everything after "--" is the option name.
+			// Otherwise, use the last char (if it's a short option set, only the last one can take a value with space separator)
+			var name string
+			if strings.HasPrefix(token, "--") {
+				name = token[2:]
+			} else {
+				name = token[len(token)-1:]
+			}
+
+			flag, _ := i.definition.Flag(name)
+			if flag == nil {
+				// Try again with the shortcut
+				flag, _ = i.definition.FlagForShortcut(name)
+
+				if flag == nil {
+					continue
+				}
+			}
+
+			// If flag accepts a value, check if the next token is not an option value
+			if FlagAcceptsValue(flag) && !strings.HasPrefix(i.Args[idx+1], "-") {
+				isOption = true
+			}
 		}
 
-		return ""
+		// Is value for option
+		if isOption {
+			isOption = false
+			continue
+		}
+
+		return token
 	}
 
-	return GetArgStringValue(i.definition.firstArgument)
+	return ""
 }
 
 func (i *Input) HasParameterFlag(value string, onlyParams bool) bool {

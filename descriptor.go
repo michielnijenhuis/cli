@@ -2,10 +2,8 @@ package cli
 
 import (
 	"fmt"
-	"math"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/michielnijenhuis/cli/helper"
@@ -278,10 +276,35 @@ func formatArgValue(arg Arg) string {
 	}
 }
 
+func formatFlagValue(flag Flag) string {
+	switch f := flag.(type) {
+	case *StringFlag:
+		return formatDefaultValue(f.Value)
+	case *ArrayFlag:
+		return formatDefaultValue(f.Value)
+	case *BoolFlag:
+		return formatDefaultValue(f.Value)
+	case *OptionalStringFlag:
+		v := formatDefaultValue(f.Value)
+		if v != "" {
+			return v
+		}
+		return formatDefaultValue(f.Boolean)
+	case *OptionalArrayFlag:
+		v := formatDefaultValue(f.Value)
+		if v != "" {
+			return v
+		}
+		return formatDefaultValue(f.Boolean)
+	default:
+		panic("invalid argument type")
+	}
+}
+
 func (d *TextDescriptor) DescribeFlag(flag Flag, options *DescriptorOptions) {
 	var defaultValue string
 	if FlagHasDefaultValue(flag) {
-		defaultValue = fmt.Sprintf("<primary> [default: %s]</primary>", formatDefaultValue(flag))
+		defaultValue = fmt.Sprintf("<primary> [default: %s]</primary>", formatFlagValue(flag))
 	}
 
 	name := flag.GetName()
@@ -407,15 +430,6 @@ func (d *TextDescriptor) writeText(content string, options *DescriptorOptions) {
 }
 
 func formatDefaultValue(value InputType) string {
-	if value == math.Inf(0) || value == math.Inf(-1) {
-		return "INF"
-	}
-
-	number, ok := value.(int)
-	if ok {
-		return strconv.Itoa(number)
-	}
-
 	boolean, ok := value.(bool)
 	if ok {
 		if boolean {

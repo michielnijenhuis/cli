@@ -14,46 +14,6 @@ type OutputFormatter struct {
 	StyleStack *OutputFormatterStyleStack
 }
 
-type OutputTheme map[string]*OutputFormatterStyle
-
-type Theme struct {
-	Foreground string
-	Background string
-	Options    []string
-}
-
-var DefaultOutputTheme = map[string]*OutputFormatterStyle{
-	"error":    NewOutputFormatterStyle("white", "red", nil),
-	"info":     NewOutputFormatterStyle("white", "blue", nil),
-	"success":  NewOutputFormatterStyle("white", "green", nil),
-	"ok":       NewOutputFormatterStyle("white", "green", nil),
-	"warn":     NewOutputFormatterStyle("black", "yellow", nil),
-	"warning":  NewOutputFormatterStyle("black", "yellow", nil),
-	"caution":  NewOutputFormatterStyle("black", "yellow", nil),
-	"comment":  NewOutputFormatterStyle("yellow", "", nil),
-	"alert":    NewOutputFormatterStyle("red", "", []string{"bold"}),
-	"primary":  NewOutputFormatterStyle("bright-magenta", "", nil),
-	"accent":   NewOutputFormatterStyle("bright-cyan", "", nil),
-	"prompt":   NewOutputFormatterStyle("cyan", "", nil),
-	"question": NewOutputFormatterStyle("black", "cyan", nil),
-}
-
-var CustomOutputTheme = map[string]*OutputFormatterStyle{}
-
-func AddTheme(tag string, theme Theme) {
-	CustomOutputTheme[tag] = NewOutputFormatterStyle(theme.Foreground, theme.Background, theme.Options)
-}
-
-func SetBaseTheme(primary string, accent string) {
-	AddTheme("primary", Theme{
-		Foreground: primary,
-	})
-
-	AddTheme("accent", Theme{
-		Foreground: accent,
-	})
-}
-
 func (o *OutputFormatter) init() {
 	if o.Styles == nil {
 		o.Styles = make(map[string]*OutputFormatterStyle)
@@ -86,14 +46,14 @@ func (o *OutputFormatter) Style(name string) (*OutputFormatterStyle, error) {
 		return ownStyle, nil
 	}
 
-	customStyle, ok := CustomOutputTheme[name]
-	if ok {
-		return customStyle, nil
+	theme, err := GetTheme(name)
+	if err != nil {
+		return nil, err
 	}
 
-	defaultStyle, ok := DefaultOutputTheme[name]
-	if ok {
-		return defaultStyle, nil
+	style := theme.GetStyle()
+	if style != nil {
+		return style, nil
 	}
 
 	return nil, fmt.Errorf("undefined style: \"%s\"", name)
