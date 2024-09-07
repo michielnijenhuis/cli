@@ -163,11 +163,11 @@ func (app *Application) doRun(i *Input, o *Output) (int, error) {
 		if ok && len(alternatives) == 1 && interactive {
 			theme, _ := GetTheme("error")
 			if !theme.Padding {
-				o.Writeln("", 0)
+				o.NewLine(1)
 			}
 			o.Block([]string{fmt.Sprintf("command \"%s\" is not defined", name)}, "error", true)
 			if !theme.Padding {
-				o.Writeln("", 0)
+				o.NewLine(1)
 			}
 
 			alternative := alternatives[0]
@@ -180,6 +180,8 @@ func (app *Application) doRun(i *Input, o *Output) (int, error) {
 			if !runAlternative {
 				return 1, nil
 			}
+
+			o.NewLine(1)
 
 			// TODO: cleanup rendered lines
 

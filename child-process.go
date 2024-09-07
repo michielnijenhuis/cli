@@ -5,6 +5,7 @@ import (
 	"os"
 	os_exec "os/exec"
 	"strings"
+	"syscall"
 )
 
 type ChildProcess struct {
@@ -63,6 +64,14 @@ func (cp *ChildProcess) Wait() error {
 	return err
 }
 
+func (cp *ChildProcess) Kill() error {
+	if cp.c == nil {
+		return nil
+	}
+
+	return syscall.Kill(-cp.c.Process.Pid, syscall.SIGKILL)
+}
+
 func (cp *ChildProcess) createCommand() *os_exec.Cmd {
 	cmd := prepareCommand(cp.Cmd, cp.Shell)
 
@@ -81,6 +90,10 @@ func (cp *ChildProcess) createCommand() *os_exec.Cmd {
 	}
 
 	c := os_exec.Command(name, args...)
+
+	c.SysProcAttr = &syscall.SysProcAttr{
+		Setpgid: true,
+	}
 
 	if !cp.Pipe {
 		cp.inherit(c)

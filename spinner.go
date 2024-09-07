@@ -20,6 +20,16 @@ type Spinner struct {
 	Color    string
 }
 
+type SpinnerFrame struct {
+	Frames []string
+	i      int
+}
+
+func (s *SpinnerFrame) Next() string {
+	s.i++
+	return s.Frames[s.i%len(s.Frames)]
+}
+
 type spinnerRenderer struct {
 	*Renderer
 	frames   []string

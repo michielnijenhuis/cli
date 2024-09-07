@@ -2,7 +2,10 @@ package cli
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 )
 
 type Ctx struct {
@@ -218,4 +221,27 @@ func (c *Ctx) Confirm(question string, defaultValue bool) (bool, error) {
 
 func (c *Ctx) Choice(question string, choices map[string]string, defaultValue string) (string, error) {
 	return c.Output.Choice(question, choices, defaultValue)
+}
+
+func (c *Ctx) View() *View {
+	return NewView(c.Output)
+}
+
+func (c *Ctx) WithGracefulExit(fn func(done <-chan bool)) bool {
+	sigs := make(chan os.Signal, 2)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	done := make(chan bool)
+
+	go func(d chan bool) {
+		fn(d)
+		d <- true
+	}(done)
+
+	go func(s chan os.Signal, d chan bool) {
+		<-s
+		d <- false
+	}(sigs, done)
+
+	success := <-done
+	return success
 }

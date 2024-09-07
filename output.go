@@ -530,8 +530,9 @@ func (o *Output) ProgressAdvance(step uint) {}
 // TODO: impl
 func (o *Output) ProgressFinish() {}
 
-// TODO: impl
-func (o *Output) Box(title string, body string, footer string, color string, info string) {}
+func (o *Output) Box(title string, body string, footer string, color string, info string) {
+	o.Writeln(Box(title, body, footer, color, info), 0)
+}
 
 func askQuestion[T any](qi QuestionInterface, i *Input, o *Output) (T, error) {
 	answer, err := Ask[T](i, o, qi)

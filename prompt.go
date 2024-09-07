@@ -43,7 +43,6 @@ type Prompt struct {
 	DefaultValue        string
 	Input               *Input
 	Output              *Output
-	shouldFallback      bool
 	activeTheme         string
 	prevFrame           string
 	validated           bool
@@ -54,9 +53,8 @@ type Prompt struct {
 	CancelUsingFn       AnyFunc
 	ValidateUsingFn     func(any) string
 	RevertUsingFn       AnyFunc
-	// fallback            any // TODO: fix type
-	cursorPosition int
-	isChild        bool
+	cursorPosition      int
+	isChild             bool
 }
 
 func NewPrompt(name string, i *Input, o *Output) *Prompt {
@@ -78,10 +76,6 @@ func NewPrompt(name string, i *Input, o *Output) *Prompt {
 }
 
 func (p *Prompt) doPrompt(renderer func() string) (string, error) {
-	if p.ShouldFallback() {
-		return p.Fallback(), nil
-	}
-
 	if !p.Input.IsInteractive() {
 		return p.defaultValue()
 	}
@@ -92,7 +86,7 @@ func (p *Prompt) doPrompt(renderer func() string) (string, error) {
 	_, err = p.setTty("-icanon -isig -echo")
 	if err != nil {
 		p.Output.Writeln(fmt.Sprintf("<comment>%s</comment>", err.Error()), 0)
-		return p.Fallback(), err
+		return "", err
 	}
 
 	if !p.isChild {
@@ -178,14 +172,6 @@ func (p *Prompt) render(frame string) {
 	p.Output.Write(strings.Join(renderableLines, "\n"), false, 0)
 
 	p.prevFrame = frame
-}
-
-func (p *Prompt) ShouldFallback() bool {
-	return p.shouldFallback
-}
-
-func (p *Prompt) Fallback() string {
-	return ""
 }
 
 func (p *Prompt) validate(value string) {
