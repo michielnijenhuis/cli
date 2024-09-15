@@ -3,11 +3,10 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"math"
 	"os"
-	"os/exec"
 	"strings"
 
+	"github.com/michielnijenhuis/cli/helper"
 	"github.com/michielnijenhuis/cli/helper/keys"
 )
 
@@ -30,43 +29,49 @@ type AnyFunc func() any
 type Listener func(key string)
 
 type Prompt struct {
-	Name                string
+	*View
 	State               uint
 	Error               string
 	CancelMessage       string
-	Required            bool
 	Validator           func(string) string
-	Value               func() string
-	Scroll              int
-	Highlighted         int
-	FirstVisible        int
-	DefaultValue        string
-	Input               *Input
-	Output              *Output
+	GetValue            func() string
+	input               *Input
+	output              *Output
 	activeTheme         string
-	prevFrame           string
 	validated           bool
 	cursor              Cursor
 	listeners           map[string][]Listener
-	typedValue          string
 	allowValueClearance bool
 	CancelUsingFn       AnyFunc
 	ValidateUsingFn     func(any) string
 	RevertUsingFn       AnyFunc
-	cursorPosition      int
 	isChild             bool
+
+	// Value tracking
+	AllowNewLine   bool
+	Submit         bool
+	Ignore         func(key string) bool
+	submitted      bool
+	typedValue     string
+	cursorPosition int
+
+	// Scrolling
+	Highlighted  int
+	Scroll       int
+	FirstVisible int
+	Required     bool
 }
 
-func NewPrompt(name string, i *Input, o *Output) *Prompt {
+func NewPrompt(i *Input, o *Output) *Prompt {
 	cursor := Cursor{
 		Input:  i.Stream,
 		Output: o,
 	}
 
 	return &Prompt{
-		Name:          name,
-		Input:         i,
-		Output:        o,
+		View:          NewView(o),
+		input:         i,
+		output:        o,
 		State:         PromptStateInitial,
 		CancelMessage: "Cancelled.",
 		activeTheme:   "default",
@@ -76,47 +81,43 @@ func NewPrompt(name string, i *Input, o *Output) *Prompt {
 }
 
 func (p *Prompt) doPrompt(renderer func() string) (string, error) {
-	if !p.Input.IsInteractive() {
+	if !p.input.IsInteractive() {
 		return p.defaultValue()
 	}
 
 	var err error
 	var answer string
 
-	_, err = p.setTty("-icanon -isig -echo")
-	if err != nil {
-		p.Output.Writeln(fmt.Sprintf("<comment>%s</comment>", err.Error()), 0)
-		return "", err
-	}
-
 	if !p.isChild {
-		p.cursor.Hide()
-	}
-
-	p.render(renderer())
-
-	stream := p.Input.Stream
-	buffer := make([]byte, 3)
-
-	for {
-		// reset buffer
-		for i := 0; i < len(buffer); i++ {
-			buffer[i] = 0
-		}
-
-		_, err := stream.Read(buffer)
+		_, err = p.input.SetTty("-icanon -isig -echo")
 		if err != nil {
-			p.cursor.Show()
+			p.output.Writeln(fmt.Sprintf("<comment>%s</comment>", err.Error()), 0)
 			return "", err
 		}
 
-		key := string(buffer)
+		p.cursor.Hide()
+
+		defer p.Restore(false)
+	}
+
+	p.render(renderer)
+
+	stream := p.input.Stream
+	buffer := make([]byte, 3)
+
+	for {
+		read, err := stream.Read(buffer)
+		if err != nil {
+			return "", err
+		}
+
+		key := string(buffer[:read])
 		if key == "" {
 			break
 		}
 
 		shouldContinue := p.handleKeyPress(key)
-		p.render(renderer())
+		p.render(renderer)
 
 		if !shouldContinue || keys.Is(key, keys.CtrlC) {
 			if keys.Is(key, keys.CtrlC) {
@@ -124,14 +125,13 @@ func (p *Prompt) doPrompt(renderer func() string) (string, error) {
 					p.CancelUsingFn()
 					break
 				} else {
-					p.cursor.Show()
+					p.Restore(true)
 					os.Exit(1)
 					break
 				}
 			}
 
 			if keys.Is(key, keys.CtrlU) && p.RevertUsingFn != nil {
-				p.cursor.Show()
 				return answer, errors.New("form reverted")
 			}
 
@@ -140,38 +140,22 @@ func (p *Prompt) doPrompt(renderer func() string) (string, error) {
 		}
 	}
 
-	p.cursor.Show()
 	return answer, nil
 }
 
-func (p *Prompt) writeFrame(frame string) {
-	p.Output.Write(frame, false, 0)
-	p.prevFrame = frame
+func (p *Prompt) Restore(force bool) {
+	if !p.isChild || force {
+		p.input.RestoreTty()
+		p.cursor.Show()
+	}
 }
 
-func (p *Prompt) render(frame string) {
-	if frame == p.prevFrame {
-		return
-	}
+func (p *Prompt) render(renderer func() string) {
+	p.Render(renderer())
 
 	if p.State == PromptStateInitial {
-		p.writeFrame(frame)
 		p.State = PromptStateActive
-		return
 	}
-
-	terminalHeight, _ := TerminalHeight()
-	previousFrameHeight := len(strings.Split(p.prevFrame, "\n"))
-	start := int(math.Abs(float64(min(0, terminalHeight-previousFrameHeight))))
-	renderableLines := strings.Split(frame, "\n")[start:]
-
-	p.cursor.MoveToColumn(1)
-	up := min(terminalHeight, previousFrameHeight) - 1
-	p.cursor.MoveUp(up)
-	p.eraseDown()
-	p.Output.Write(strings.Join(renderableLines, "\n"), false, 0)
-
-	p.prevFrame = frame
 }
 
 func (p *Prompt) validate(value string) {
@@ -201,54 +185,13 @@ func (p *Prompt) validate(value string) {
 }
 
 func (p *Prompt) defaultValue() (string, error) {
-	p.validate(p.DefaultValue)
+	p.validate(p.value())
 
 	if p.State == PromptStateError {
 		return "", errors.New(p.Error)
 	}
 
-	return p.DefaultValue, nil
-}
-
-var initialSttyMode string
-
-func (p *Prompt) setTty(mode string) (string, error) {
-	if initialSttyMode == "" {
-		c := exec.Command("stty", "-g")
-		c.Stdin = p.Input.Stream
-
-		out, err := c.Output()
-		if err != nil {
-			return "", err
-		}
-
-		initialSttyMode = string(out)
-	}
-
-	c := exec.Command("stty", StringToInputArgs(mode)...)
-	c.Stdin = p.Input.Stream
-
-	out, err := c.Output()
-	if err != nil {
-		return "", err
-	}
-
-	return string(out), nil
-}
-
-func (p *Prompt) restoreTty() {
-	if initialSttyMode != "" {
-		c := exec.Command("stty", StringToInputArgs(initialSttyMode)...)
-
-		err := c.Run()
-		if err != nil {
-			if p.Output.IsDebug() {
-				panic(err)
-			}
-		}
-
-		initialSttyMode = ""
-	}
+	return p.value(), nil
 }
 
 func (p *Prompt) emit(event string, key string) {
@@ -259,11 +202,6 @@ func (p *Prompt) emit(event string, key string) {
 	for _, listener := range p.listeners[event] {
 		listener(key)
 	}
-}
-
-func (p *Prompt) Restore() {
-	p.cursor.Show()
-	p.restoreTty()
 }
 
 func (p *Prompt) handleKeyPress(key string) bool {
@@ -308,14 +246,6 @@ func (p *Prompt) handleKeyPress(key string) bool {
 	return true
 }
 
-func (p *Prompt) eraseDown() {
-	p.writeDirectly("\x1b[J")
-}
-
-func (p *Prompt) writeDirectly(s string) {
-	p.Output.Write(s, false, 0)
-}
-
 func (p *Prompt) on(event string, fn func(key string)) {
 	if p.listeners == nil {
 		p.listeners = make(map[string][]Listener)
@@ -333,8 +263,8 @@ func (p *Prompt) ClearListeners() {
 }
 
 func (p *Prompt) value() string {
-	if p.Value != nil {
-		return p.Value()
+	if p.GetValue != nil {
+		return p.GetValue()
 	}
 
 	return ""
@@ -349,111 +279,152 @@ func (p *Prompt) submit() {
 }
 
 func (p *Prompt) trackTypedValue(defaultValue string, submit bool, ignore func(key string) bool, allowNewLine bool) {
-	p.typedValue = defaultValue
-
-	if p.typedValue != "" {
-		p.cursorPosition = len(p.typedValue)
-	}
+	p.SetValue(defaultValue)
+	p.Submit = submit
+	p.Ignore = ignore
+	p.AllowNewLine = allowNewLine
 
 	p.on("key", func(key string) {
-		if string(key[0]) == "\x1b" || keys.Is(key, keys.CtrlB, keys.CtrlF, keys.CtrlA, keys.CtrlE) {
-			if ignore != nil && ignore(key) {
-				return
-			}
+		p.Track(key)
+	})
+}
 
-			switch {
-			case keys.Is(key, keys.Left, keys.LeftArrow, keys.CtrlB):
-				p.cursorPosition = max(0, p.cursorPosition-1)
-			case keys.Is(key, keys.Right, keys.RightArrow, keys.CtrlF):
-				p.cursorPosition = min(len(p.typedValue), p.cursorPosition+1)
-			case keys.Is(key, keys.CtrlA, keys.Home...):
-				p.cursorPosition = 0
-			case keys.Is(key, keys.CtrlE, keys.End...):
-				p.cursorPosition = len(p.typedValue)
-			case keys.Is(key, keys.Delete):
-				p.typedValue = p.typedValue[:p.cursorPosition] + p.typedValue[p.cursorPosition+1:]
-			default:
-			}
+func (p *Prompt) TypedValue() string {
+	return p.typedValue
+}
 
+func (p *Prompt) SetValue(value string) {
+	p.typedValue = value
+	p.cursorPosition = len(value)
+}
+
+func (p *Prompt) Track(key string) {
+	if keys.Is(key, "\x1b") || keys.Is(key, keys.CtrlB, keys.CtrlF, keys.CtrlA, keys.CtrlE) {
+		if p.ignoreKey(key) {
 			return
 		}
 
-		for _, k := range strings.Split(key, "") {
-			if ignore != nil && ignore(k) {
-				return
-			}
-
-			if keys.Is(k, keys.Enter) {
-				if submit {
-					p.submit()
-					return
-				}
-
-				if allowNewLine {
-					p.typedValue = p.typedValue[:p.cursorPosition] + "\n" + p.typedValue[p.cursorPosition:]
-					p.cursorPosition++
-				}
-			} else if keys.Is(k, keys.Backspace) || keys.Is(k, keys.CtrlH) {
-				if p.cursorPosition == 0 {
-					return
-				}
-
-				p.typedValue = p.typedValue[:p.cursorPosition-1] + p.typedValue[p.cursorPosition:]
-				p.cursorPosition--
-			} else if k[0] >= 32 {
-				p.typedValue = p.typedValue[:p.cursorPosition] + k + p.typedValue[p.cursorPosition:]
-				p.cursorPosition++
-			}
+		switch {
+		case keys.Is(key, keys.Left, keys.LeftArrow, keys.CtrlB):
+			p.cursorPosition = max(0, p.cursorPosition-1)
+		case keys.Is(key, keys.Right, keys.RightArrow, keys.CtrlF):
+			p.cursorPosition = min(len(p.typedValue), p.cursorPosition+1)
+		case keys.Is(key, keys.CtrlA, keys.Home...):
+			p.cursorPosition = 0
+		case keys.Is(key, keys.CtrlE, keys.End...):
+			p.cursorPosition = len(p.typedValue)
+		case keys.Is(key, keys.Delete):
+			p.typedValue = p.typedValue[:p.cursorPosition] + p.typedValue[p.cursorPosition+1:]
+		default:
 		}
-	})
-	//
+
+		return
+	}
+
+	if p.ignoreKey(key) {
+		return
+	}
+
+	if keys.Is(key, keys.Enter) {
+		if p.Submit {
+			p.submit()
+			return
+		}
+
+		if p.AllowNewLine {
+			p.typedValue = p.typedValue[:p.cursorPosition] + Eol + p.typedValue[p.cursorPosition:]
+			p.cursorPosition++
+		}
+	} else if keys.Is(key, keys.Backspace) || keys.Is(key, keys.CtrlH) {
+		if p.cursorPosition == 0 {
+			return
+		}
+
+		p.typedValue = p.typedValue[:p.cursorPosition-1] + p.typedValue[p.cursorPosition:]
+		p.cursorPosition--
+	} else if k := string(key[0]); key[0] >= 32 {
+		p.typedValue = p.typedValue[:p.cursorPosition] + k + p.typedValue[p.cursorPosition:]
+		p.cursorPosition++
+	}
 }
 
-func (p *Prompt) addCursor(value string, cursorPosition int, maxWidth int) string {
+func (p *Prompt) CursorPosition() int {
+	return p.cursorPosition
+}
+
+func (p *Prompt) Submitted() bool {
+	return p.submitted
+}
+
+func (p *Prompt) ignoreKey(key string) bool {
+	if p.Ignore != nil {
+		return p.Ignore(key)
+	}
+
+	return false
+}
+
+func (p *Prompt) Reset() {
+	p.submitted = false
+	p.typedValue = ""
+	p.cursorPosition = 0
+}
+
+func (p *Prompt) Resetvalue() {
+	p.typedValue = ""
+	p.cursorPosition = 0
+}
+
+func (p *Prompt) AddCursor(value string, cursorPosition int, maxWidth int) string {
+	if maxWidth <= 0 {
+		tw, _ := TerminalWidth()
+		maxWidth = tw
+	}
+
 	before := ""
 	current := ""
 	after := ""
 
-	if len(value) >= cursorPosition {
+	if helper.Len(value) >= cursorPosition {
 		before = value[0:cursorPosition]
 
-		if len(value) >= cursorPosition+1 {
+		if helper.Len(value) >= cursorPosition+1 {
 			current = value[cursorPosition : cursorPosition+1]
 		}
 
-		if len(value) >= cursorPosition+2 {
+		if helper.Len(value) >= cursorPosition+2 {
 			after = value[cursorPosition+1:]
 		}
 	}
 
 	cursor := " "
-	if len(current) > 0 && current != "\n" {
+	if helper.Len(current) > 0 && current != Eol {
 		cursor = current
 	}
 
 	var spaceBefore int
 	if maxWidth <= 0 {
-		spaceBefore = len(before)
+		spaceBefore = helper.Len(before)
 	} else {
-		spaceBefore = maxWidth - len(cursor)
+		spaceBefore = maxWidth - helper.Len(cursor)
 
-		if len(after) > 0 {
+		if helper.Len(after) > 0 {
 			spaceBefore--
 		}
 	}
 
 	truncatedBefore := before
 	wasTruncatedBefore := false
-	if len(before) > spaceBefore {
+	if helper.Len(before) > spaceBefore {
 		truncatedBefore = TrimWidthBackwards(before, 0, spaceBefore-1)
 		wasTruncatedBefore = true
 	}
 
 	var spaceAfter int
 	if maxWidth <= 0 {
-		spaceAfter = len(after)
+		spaceAfter = helper.Len(after)
 	} else {
-		spaceAfter = maxWidth - len(truncatedBefore) - len(cursor)
+		spaceAfter = maxWidth - helper.Len(truncatedBefore) - helper.Len(cursor)
 
 		if wasTruncatedBefore {
 			spaceAfter--
@@ -462,7 +433,7 @@ func (p *Prompt) addCursor(value string, cursorPosition int, maxWidth int) strin
 
 	truncatedAfter := after
 	wasTruncatedAfter := false
-	if len(after) > spaceAfter {
+	if helper.Len(after) > spaceAfter {
 		truncatedAfter = StrimWidth(after, 0, spaceAfter-1, "")
 		wasTruncatedBefore = true
 	}
@@ -473,8 +444,8 @@ func (p *Prompt) addCursor(value string, cursorPosition int, maxWidth int) strin
 	}
 	out.WriteString(truncatedBefore)
 	out.WriteString(Inverse(cursor))
-	if current == "\n" {
-		out.WriteString("\n")
+	if current == Eol {
+		out.WriteString(Eol)
 	}
 	out.WriteString(truncatedAfter)
 	if wasTruncatedAfter {
@@ -484,18 +455,18 @@ func (p *Prompt) addCursor(value string, cursorPosition int, maxWidth int) strin
 	return out.String()
 }
 
-func (p *Prompt) initializeScrolling(highlighted int) {
+func (p *Prompt) InitializeScrolling(highlighted int) {
 	p.Highlighted = highlighted
 
-	p.reduceScrollingToFitTerminal()
+	p.ReduceScrollingToFitTerminal()
 }
 
-func (p *Prompt) reduceScrollingToFitTerminal() {
-	terminalHeight, _ := TerminalHeight()
+func (p *Prompt) ReduceScrollingToFitTerminal() {
+	terminalHeight := TerminalHeight()
 	p.Scroll = max(1, min(p.Scroll, terminalHeight))
 }
 
-func (p *Prompt) highlight(index int) {
+func (p *Prompt) Highlight(index int) {
 	p.Highlighted = index
 
 	if index < 0 {
@@ -509,57 +480,57 @@ func (p *Prompt) highlight(index int) {
 	}
 }
 
-func (p *Prompt) highlightPrevious(total int) {
+func (p *Prompt) HighlightPrevious(total int) {
 	if total <= 0 {
 		return
 	}
 
 	if p.Highlighted < 0 {
-		p.highlight(total - 1)
+		p.Highlight(total - 1)
 	} else if p.Highlighted == 0 {
 		if !p.Required {
-			p.highlight(-1)
+			p.Highlight(-1)
 		} else {
-			p.highlight(total - 1)
+			p.Highlight(total - 1)
 		}
 	} else {
-		p.highlight(p.Highlighted - 1)
+		p.Highlight(p.Highlighted - 1)
 	}
 }
 
-func (p *Prompt) highlightNext(total int) {
+func (p *Prompt) HighlightNext(total int) {
 	if total <= 0 {
 		return
 	}
 
 	if p.Highlighted == total-1 {
 		if !p.Required {
-			p.highlight(-1)
+			p.Highlight(-1)
 		} else {
-			p.highlight(0)
+			p.Highlight(0)
 		}
 	} else {
 		if p.Highlighted < -1 {
 			p.Highlighted = -1
 		}
 
-		p.highlight(p.Highlighted + 1)
+		p.Highlight(p.Highlighted + 1)
 	}
 }
 
 // TODO: fix
-// func (p *Prompt) scrollToHighlighted(total int) {
-// 	if p.Highlighted < 0 || p.Highlighted < p.Scroll {
-// 		return
-// 	}
+func (p *Prompt) ScrollToHighlighted(total int) {
+	if p.Highlighted < 0 || p.Highlighted < p.Scroll {
+		return
+	}
 
-// 	remaining := total - p.Highlighted - 1
-// 	halfScroll := p.Scroll / 2
-// 	endOffset := max(0, halfScroll-remaining)
+	remaining := total - p.Highlighted - 1
+	halfScroll := p.Scroll / 2
+	endOffset := max(0, halfScroll-remaining)
 
-// 	if p.Scroll%2 == 0 {
-// 		endOffset--
-// 	}
+	if p.Scroll%2 == 0 {
+		endOffset--
+	}
 
-// 	p.FirstVisible = max(0, p.Highlighted-halfScroll-endOffset)
-// }
+	p.FirstVisible = max(0, p.Highlighted-halfScroll-endOffset)
+}

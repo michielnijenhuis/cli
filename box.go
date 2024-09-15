@@ -7,9 +7,11 @@ import (
 	"github.com/michielnijenhuis/cli/helper"
 )
 
+const defaultBoxColor = "gray"
+
 func Box(title string, body string, footer string, color string, info string) string {
 	if color == "" {
-		color = "gray"
+		color = defaultBoxColor
 	}
 
 	var output strings.Builder
@@ -18,10 +20,10 @@ func Box(title string, body string, footer string, color string, info string) st
 	terminalWidth, _ := TerminalWidth()
 	minWidth = min(minWidth, terminalWidth-6)
 
-	bodyLines := strings.Split(body, "\n")
+	bodyLines := strings.Split(body, Eol)
 	var footerLines []string
 	if footer != "" {
-		footerLines = strings.Split(footer, "\n")
+		footerLines = strings.Split(footer, Eol)
 	}
 
 	lines := make([]string, 0, len(bodyLines)+len(footerLines)+1)

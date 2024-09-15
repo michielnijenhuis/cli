@@ -1,26 +1,29 @@
 package cli
 
+import "strings"
+
 type TrimmedBufferOutput struct {
-	buffer    string
+	buffer    strings.Builder
 	maxLength uint
 	*Output
 }
 
 func (o *TrimmedBufferOutput) DoWrite(message string, newLine bool) {
-	o.buffer += message
+	o.buffer.WriteString(message)
 
 	if newLine {
-		o.buffer += "\n"
+		o.buffer.WriteString(Eol)
 	}
 
-	if len(o.buffer) >= int(o.maxLength) {
-		o.buffer = o.buffer[0:o.maxLength]
+	if o.buffer.Len() >= int(o.maxLength) {
+		var newBuffer strings.Builder
+		newBuffer.WriteString(o.buffer.String()[0:o.maxLength])
 	}
 }
 
 func (o *TrimmedBufferOutput) Fetch() string {
 	content := o.buffer
-	o.buffer = ""
+	o.buffer = strings.Builder{}
 
-	return content
+	return content.String()
 }

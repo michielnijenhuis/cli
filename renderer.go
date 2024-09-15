@@ -6,7 +6,7 @@ import (
 )
 
 type Renderer struct {
-	output   string
+	output   strings.Builder
 	minWidth int
 }
 
@@ -17,15 +17,15 @@ func NewRenderer() *Renderer {
 }
 
 func (r *Renderer) Line(message string, newLine bool) {
-	r.output += message
+	r.output.WriteString(message)
 	if newLine {
-		r.output += "\n"
+		r.output.WriteString(Eol)
 	}
 }
 
 func (r *Renderer) NewLine(count int) {
 	for count > 0 {
-		r.output += "\n"
+		r.output.WriteString(Eol)
 		count--
 	}
 }
@@ -58,11 +58,9 @@ func (r *Renderer) When(condition bool, cb func(*Renderer), defaultCb func(*Rend
 }
 
 func (r *Renderer) ToString(state uint) string {
-	s := r.output
-
 	if state == PromptStateSubmit || state == PromptStateCancel {
-		s += "\n"
+		r.output.WriteString(Eol)
 	}
 
-	return s
+	return r.output.String()
 }

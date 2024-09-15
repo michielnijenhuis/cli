@@ -377,7 +377,7 @@ func rowIsTableSeparator(row []*TableCell) bool {
 }
 
 func getEol(s string) string {
-	eol := "\n"
+	eol := Eol
 	if strings.Contains(s, "\r\n") {
 		eol = "\r\n"
 	}
@@ -671,25 +671,26 @@ func (t *Table) renderColumnSeparator(separatorType int) string {
 }
 
 func (t *Table) renderRow(row []*TableCell, cellFormat string, firstCellFormat string) {
-	rowContent := t.renderColumnSeparator(BorderOutside)
+	var rowContent strings.Builder
+	rowContent.WriteString(t.renderColumnSeparator(BorderOutside))
 	columns := t.getRowColumns(row)
 	last := columns[len(columns)-1]
 
 	for i, column := range columns {
 		if firstCellFormat != "" && i == 0 {
-			rowContent += t.renderCell(row, column, firstCellFormat)
+			rowContent.WriteString(t.renderCell(row, column, firstCellFormat))
 		} else {
-			rowContent += t.renderCell(row, column, cellFormat)
+			rowContent.WriteString(t.renderCell(row, column, cellFormat))
 		}
 
 		if i == last {
-			rowContent += t.renderColumnSeparator(BorderOutside)
+			rowContent.WriteString(t.renderColumnSeparator(BorderOutside))
 		} else {
-			rowContent += t.renderColumnSeparator(BorderInside)
+			rowContent.WriteString(t.renderColumnSeparator(BorderInside))
 		}
 	}
 
-	t.output.Writeln(rowContent, 0)
+	t.output.Writeln(rowContent.String(), 0)
 }
 
 func (t *Table) renderCell(row []*TableCell, column int, cellFormat string) string {
@@ -779,7 +780,7 @@ func (t *Table) buildTableRows(rows [][]*TableCell) iter.Seq[[][]*TableCell] {
 				cell.Value = formatter.FormatAndWrap(cell.Value, t.columnMaxWidths[column]*int(colSpan))
 			}
 
-			if !strings.Contains(cell.Value, "\n") {
+			if !strings.Contains(cell.Value, Eol) {
 				continue
 			}
 
@@ -876,7 +877,7 @@ func (t *Table) fillNextRows(rows [][]*TableCell, line int) [][]*TableCell {
 			nbLines := cell.RowSpan - 1
 			lines := []*TableCell{cell}
 
-			if strings.Contains(cell.Value, "\n") {
+			if strings.Contains(cell.Value, Eol) {
 				eol := getEol(cell.Value)
 
 				lineParts := strings.Split(strings.ReplaceAll(cell.Value, eol, "<fg=default;bg=default>"+eol+"</>"), eol)

@@ -2,9 +2,14 @@ package helper
 
 import (
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"golang.org/x/text/encoding"
+	"golang.org/x/text/encoding/charmap"
+	"golang.org/x/text/transform"
 )
 
 func Width(str string) int {
@@ -64,8 +69,31 @@ func Width(str string) int {
 	return length
 }
 
-func Len(s string) int {
-	return len(s)
+func Len(str string) int {
+	if utf8.ValidString(str) {
+		return utf8.RuneCountInString(str)
+	}
+
+	encoding, err := detectEncoding(str)
+	if err != nil || encoding == nil {
+		return len(str)
+	}
+
+	decoded, _, _ := transform.String(encoding.NewDecoder(), str)
+	return utf8.RuneCountInString(decoded)
+}
+
+func detectEncoding(s string) (encoding.Encoding, error) {
+	for _, enc := range []encoding.Encoding{
+		charmap.ISO8859_1, charmap.Windows1252,
+	} {
+		decoded, _, err := transform.String(enc.NewDecoder(), s)
+		if err == nil && utf8.ValidString(decoded) {
+			return enc, nil
+		}
+	}
+
+	return nil, io.EOF
 }
 
 func Substring(s string, from int, length int) string {

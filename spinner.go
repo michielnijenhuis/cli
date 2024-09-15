@@ -70,7 +70,7 @@ func NewSpinnerRenderer(s *Spinner) RendererInterface {
 }
 
 func NewSpinner(i *Input, o *Output, message string, frames []string, color string) *Spinner {
-	p := NewPrompt("spinner", i, o)
+	p := NewPrompt(i, o)
 
 	if frames == nil {
 		frames = DotSpinner
@@ -114,7 +114,9 @@ func (s *Spinner) Spin(fn func()) {
 			case <-c.Done():
 				return
 			default:
-				s.render(RenderSpinner(s))
+				s.render(func() string {
+					return RenderSpinner(s)
+				})
 				s.Count++
 				time.Sleep(time.Duration(s.Interval) * time.Millisecond)
 			}
@@ -139,14 +141,14 @@ func (s *Spinner) Spin(fn func()) {
 	cancel()
 
 	if s.State == PromptStateCancel {
-		s.writeFrame(RenderSpinner(s))
-		s.Output.NewLine(1)
+		s.Render(RenderSpinner(s))
+		s.output.NewLine(1)
 		os.Exit(1)
 	}
 }
 
 func (s *Spinner) eraseRenderedLines() {
-	lines := strings.Split(s.prevFrame, "\n")
+	lines := strings.Split(s.prevFrame, Eol)
 	s.cursor.Move(-999, (-1*len(lines))+1)
 	s.eraseDown()
 }

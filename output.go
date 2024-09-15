@@ -20,6 +20,7 @@ type Output struct {
 	lineLength     int
 	bufferedOutput *TrimmedBufferOutput
 	input          *Input
+	Logger
 	// progressBar    *ProgressBar
 }
 
@@ -56,6 +57,8 @@ func setupNewOutput(input *Input, stream *os.File, formatter *OutputFormatter) *
 			},
 		},
 	}
+
+	o.Logger = NewLogger(o, -1)
 
 	if formatter != nil {
 		formatter.Decorated = o.decorated
@@ -122,6 +125,14 @@ func (o *Output) Write(message string, newLine bool, options uint) {
 	o.WriteMany([]string{message}, newLine, options)
 }
 
+func (o *Output) Format(message string) string {
+	return o.Formatter().Format(message)
+}
+
+func (o *Output) Formatf(format string, args ...any) string {
+	return o.Formatter().Format(fmt.Sprintf(format, args...))
+}
+
 func (o *Output) WriteMany(messages []string, newLine bool, options uint) {
 	types := OutputNormal | OutputRaw | OutputPlain
 
@@ -158,7 +169,7 @@ func (o *Output) WriteMany(messages []string, newLine bool, options uint) {
 
 func (o *Output) DoWrite(message string, newLine bool) {
 	if newLine {
-		message += "\n"
+		message += Eol
 	}
 
 	_, err := o.Stream.WriteString(message)
@@ -202,6 +213,26 @@ func doSetVerbosity(o *Output, verbose uint) {
 	if o != nil {
 		o.verbosity = verbose
 	}
+
+	if o.Logger != nil {
+		logLevel := -1
+		switch verbose {
+		case VerbosityQuiet:
+			logLevel = LogLevelFatal
+		case VerbosityNormal:
+			logLevel = LogLevelError
+		case VerbosityVerbose:
+			logLevel = LogLevelWarn
+		case VerbosityVeryVerbose:
+			logLevel = LogLevelInfo
+		case VerbosityDebug:
+			logLevel = LogLevelDebug
+		default:
+			logLevel = LogLevelError
+		}
+
+		o.Logger.SetLogLevel(logLevel)
+	}
 }
 
 func (o *Output) Title(message string) {
@@ -241,14 +272,14 @@ func (o *Output) Block(messages []string, tag string, escape bool) {
 		o.autoPrependBlock()
 	}
 
-	o.Writelns(o.createBlock(messages, tag, theme, escape), 0)
+	o.Writelns(o.CreateBlock(messages, tag, theme, escape), 0)
 
 	if theme.Padding {
 		o.NewLine(1)
 	}
 }
 
-func (o *Output) createBlock(messages []string, tag string, theme *Theme, escape bool) []string {
+func (o *Output) CreateBlock(messages []string, tag string, theme *Theme, escape bool) []string {
 	prefix := ""
 	if theme != nil && theme.Icon != "" {
 		prefix = fmt.Sprintf("%s ", theme.Icon)
@@ -272,8 +303,8 @@ func (o *Output) createBlock(messages []string, tag string, theme *Theme, escape
 			message = Escape(message)
 		}
 
-		wrapped := helper.Wrap(message, o.lineLength-prefixLength-indentLength, "\n", false)
-		lines = append(lines, strings.Split(wrapped, "\n")...)
+		wrapped := helper.Wrap(message, o.lineLength-prefixLength-indentLength, Eol, false)
+		lines = append(lines, strings.Split(wrapped, Eol)...)
 
 		if len(messages) > 1 && i < len(messages)-1 {
 			lines = append(lines, "")
@@ -459,59 +490,25 @@ func (o *Output) CreateTable(headers []string, rows [][]*TableCell, options *Tab
 	return t
 }
 
-func (o *Output) Ask(question string, defaultValue string, validator func(string) (string, error)) (string, error) {
-	q := &Question[string]{
-		Query:        question,
-		DefaultValue: defaultValue,
-		Validator:    validator,
-	}
-
-	return askQuestion[string](q, o.input, o)
-}
-
-func (o *Output) AskHidden(question string, validator func(string) (string, error)) (string, error) {
-	q := &Question[string]{
-		Query:     question,
-		Hidden:    true,
-		Validator: validator,
-	}
-
-	return askQuestion[string](q, o.input, o)
+func (o *Output) Ask(question string, defaultValue string) (string, error) {
+	textPrompt := NewTextPrompt(o.input, o, question, defaultValue)
+	return textPrompt.Render()
 }
 
 func (o *Output) Confirm(q string, defaultValue bool) (bool, error) {
-	cq := &ConfirmationQuestion{
-		Question: &Question[bool]{
-			Query:        q,
-			DefaultValue: defaultValue,
-		},
-	}
-
-	return askQuestion[bool](cq, o.input, o)
+	confirmPrompt := NewConfirmPrompt(o.input, o, q, defaultValue)
+	return confirmPrompt.Render()
 }
 
 func (o *Output) Choice(question string, choices map[string]string, defaultValue string) (string, error) {
-	if defaultValue != "" {
-		values := make(map[string]string)
-		for k, v := range choices {
-			values[v] = k
-		}
-
-		dv, ok := values[defaultValue]
-		if ok {
-			defaultValue = dv
-		}
+	labels := make([]string, 0, len(choices))
+	values := make([]string, 0, len(choices))
+	for k, v := range choices {
+		labels = append(labels, v)
+		values = append(values, k)
 	}
-
-	q := &ChoiceQuestion{
-		Question: &Question[string]{
-			Query:        question,
-			DefaultValue: defaultValue,
-		},
-		Choices: choices,
-	}
-
-	return askQuestion[string](q, o.input, o)
+	choicePrompt := NewSelectPrompt(o.input, o, question, values, labels, defaultValue)
+	return choicePrompt.Render()
 }
 
 func (o *Output) NewLine(count int) {
@@ -534,16 +531,6 @@ func (o *Output) Box(title string, body string, footer string, color string, inf
 	o.Writeln(Box(title, body, footer, color, info), 0)
 }
 
-func askQuestion[T any](qi QuestionInterface, i *Input, o *Output) (T, error) {
-	answer, err := Ask[T](i, o, qi)
-	if err != nil {
-		var empty T
-		return empty, nil
-	}
-
-	return answer, nil
-}
-
 func (o *Output) autoPrependBlock() {
 	chars := o.bufferedOutput.Fetch()
 
@@ -552,7 +539,7 @@ func (o *Output) autoPrependBlock() {
 	}
 
 	if chars == "" {
-		o.NewLine(1) // empty history, so we should start with a new line.
+		o.NewLine(1)
 		return
 	}
 
@@ -564,6 +551,5 @@ func (o *Output) autoPrependBlock() {
 		}
 	}
 
-	// Prepend new line for each non LF chars (This means no blank line was output before)
 	o.NewLine(2 - lineBreakCount)
 }

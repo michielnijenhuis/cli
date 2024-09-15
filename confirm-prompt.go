@@ -13,20 +13,21 @@ type ConfirmPrompt struct {
 	Yes          string
 	No           string
 	Hint         string
+	Prefix       string
 	Confirmed    bool
 }
 
-func NewConfirmPrompt(i *Input, o *Output, label string) *ConfirmPrompt {
+func NewConfirmPrompt(i *Input, o *Output, label string, defaultValue bool) *ConfirmPrompt {
 	cp := &ConfirmPrompt{
-		Prompt:       NewPrompt("confirm-prompt", i, o),
+		Prompt:       NewPrompt(i, o),
 		Label:        label,
-		DefaultValue: true,
-		Confirmed:    true,
+		DefaultValue: defaultValue,
+		Confirmed:    defaultValue,
 		Yes:          "yes",
 		No:           "no",
 	}
 
-	cp.Value = func() string {
+	cp.GetValue = func() string {
 		if cp.Confirmed {
 			return cp.Yes
 		}
@@ -71,14 +72,14 @@ func (cp *ConfirmPrompt) String() string {
 	state := cp.State
 
 	if state == PromptStateSubmit {
-		renderer.Line(fmt.Sprintf("<fg=green>?</> <options=bold>%s</> <fg=cyan>%s</>", cp.Label, cp.value()), false)
+		renderer.Line(fmt.Sprintf("%s<fg=green>?</> <options=bold>%s</> <fg=cyan>%s</>", cp.Prefix, cp.Label, cp.value()), false)
 	} else if state == PromptStateCancel {
-		renderer.Line(fmt.Sprintf("<fg=green>?</> <options=bold>%s</> <fg=yellow>%s</>", cp.Label, cp.CancelMessage), true)
+		renderer.Line(fmt.Sprintf("%s<fg=green>?</> <options=bold>%s</> <fg=yellow>%s</>", cp.Prefix, cp.Label, cp.CancelMessage), true)
 	} else if state == PromptStateError {
-		renderer.Line(fmt.Sprintf("<fg=green>?</> <options=bold>%s</> <fg=red>%s</>", cp.Label, cp.Error), true)
+		renderer.Line(fmt.Sprintf("%s<fg=green>?</> <options=bold>%s</> <fg=red>%s</>", cp.Prefix, cp.Label, cp.Error), true)
 		renderer.Line(cp.renderOptions(), true)
 	} else {
-		renderer.Line(fmt.Sprintf("<fg=green>?</> <options=bold>%s</>", cp.Label), true)
+		renderer.Line(fmt.Sprintf("%s<fg=green>?</> <options=bold>%s</>", cp.Prefix, cp.Label), true)
 		renderer.Line(cp.renderOptions(), true)
 	}
 

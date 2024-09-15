@@ -39,7 +39,7 @@ func (d *TextDescriptor) DescribeApplication(app *Application, options *Descript
 		for _, command := range commands {
 			name := command.Name
 			d.writeText(fmt.Sprintf("%s %s", name[0:width], command.Description), options)
-			d.writeText("\n", nil)
+			d.writeText(Eol, nil)
 		}
 	} else {
 		help := app.Help()
@@ -54,8 +54,8 @@ func (d *TextDescriptor) DescribeApplication(app *Application, options *Descript
 			flags: app.Definition().flags,
 		}, options)
 
-		d.writeText("\n", nil)
-		d.writeText("\n", nil)
+		d.writeText(Eol, nil)
+		d.writeText(Eol, nil)
 
 		commands := description.Commands()
 		namespaces := description.Namespaces()
@@ -109,12 +109,12 @@ func (d *TextDescriptor) DescribeApplication(app *Application, options *Descript
 			}
 
 			if describedNamespace == "" && ns.id != "_global" {
-				d.writeText("\n", nil)
+				d.writeText(Eol, nil)
 				d.writeText(fmt.Sprintf(" <primary>%s</primary>", ns.id), options)
 			}
 
 			for _, name := range list {
-				d.writeText("\n", nil)
+				d.writeText(Eol, nil)
 				spacingWidth := width - helper.Width(name)
 				command := commands[name]
 
@@ -127,7 +127,7 @@ func (d *TextDescriptor) DescribeApplication(app *Application, options *Descript
 			}
 		}
 
-		d.writeText("\n", nil)
+		d.writeText(Eol, nil)
 	}
 }
 
@@ -137,7 +137,7 @@ func (d *TextDescriptor) DescribeCommand(command *Command, options *DescriptorOp
 	description := command.Description
 	if description != "" {
 		d.writeText("<primary>Description:</primary>", options)
-		d.writeText("\n", nil)
+		d.writeText(Eol, nil)
 		d.writeText("  "+description, nil)
 		d.writeText("\n\n", nil)
 	}
@@ -150,25 +150,25 @@ func (d *TextDescriptor) DescribeCommand(command *Command, options *DescriptorOp
 	}
 	usages = append(usages, command.Usages()...)
 	for _, usage := range usages {
-		d.writeText("\n", nil)
+		d.writeText(Eol, nil)
 		d.writeText("  "+Escape(usage), options)
 	}
-	d.writeText("\n", nil)
+	d.writeText(Eol, nil)
 
 	definition := command.Definition()
 	if len(definition.flags) > 0 || len(definition.arguments) > 0 {
-		d.writeText("\n", nil)
+		d.writeText(Eol, nil)
 		d.DescribeInputDefinition(definition, options)
-		d.writeText("\n", nil)
+		d.writeText(Eol, nil)
 	}
 
 	help := command.ProcessedHelp()
 	if help != "" && help != description {
-		d.writeText("\n", nil)
+		d.writeText(Eol, nil)
 		d.writeText("<primary>Help:</primary>", options)
-		d.writeText("\n", nil)
-		d.writeText("  "+strings.ReplaceAll(help, "\n", "\n  "), options)
-		d.writeText("\n", nil)
+		d.writeText(Eol, nil)
+		d.writeText("  "+strings.ReplaceAll(help, Eol, "\n  "), options)
+		d.writeText(Eol, nil)
 	}
 }
 
@@ -183,7 +183,7 @@ func (d *TextDescriptor) DescribeInputDefinition(definition *InputDefinition, op
 
 	if hasArgs {
 		d.writeText("<primary>Arguments:</primary>", options)
-		d.writeText("\n", nil)
+		d.writeText(Eol, nil)
 
 		for _, argument := range definition.arguments {
 			d.DescribeArgument(argument, &DescriptorOptions{
@@ -192,12 +192,12 @@ func (d *TextDescriptor) DescribeInputDefinition(definition *InputDefinition, op
 				short:      options.short,
 				totalWidth: totalWidth,
 			})
-			d.writeText("\n", nil)
+			d.writeText(Eol, nil)
 		}
 	}
 
 	if hasArgs && hasFlags {
-		d.writeText("\n", nil)
+		d.writeText(Eol, nil)
 	}
 
 	if hasFlags {
@@ -211,7 +211,7 @@ func (d *TextDescriptor) DescribeInputDefinition(definition *InputDefinition, op
 				continue
 			}
 
-			d.writeText("\n", nil)
+			d.writeText(Eol, nil)
 			d.DescribeFlag(flag, &DescriptorOptions{
 				namespace:  options.namespace,
 				rawText:    options.rawText,
@@ -221,7 +221,7 @@ func (d *TextDescriptor) DescribeInputDefinition(definition *InputDefinition, op
 		}
 
 		for _, flag := range laterFlags {
-			d.writeText("\n", nil)
+			d.writeText(Eol, nil)
 			d.DescribeFlag(flag, &DescriptorOptions{
 				namespace:  options.namespace,
 				rawText:    options.rawText,

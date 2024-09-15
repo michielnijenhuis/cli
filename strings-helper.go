@@ -10,7 +10,7 @@ import (
 )
 
 func StrimWidth(str string, start int, width int, trimMarker string) string {
-	var result string
+	var result strings.Builder
 	var currentWidth int
 	var i int
 
@@ -27,7 +27,7 @@ func StrimWidth(str string, start int, width int, trimMarker string) string {
 		}
 
 		if currentWidth >= start {
-			result += string(char)
+			result.WriteByte(char)
 		}
 
 		currentWidth += charWidth
@@ -35,10 +35,10 @@ func StrimWidth(str string, start int, width int, trimMarker string) string {
 	}
 
 	if currentWidth > start+width {
-		result += trimMarker
+		result.WriteString(trimMarker)
 	}
 
-	return result
+	return result.String()
 }
 
 func TrimWidthBackwards(str string, start int, width int) string {

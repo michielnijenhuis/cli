@@ -24,7 +24,7 @@ func NewSelectPrompt(i *Input, o *Output, label string, values []string, labels 
 	}
 
 	p := &SelectPrompt{
-		Prompt:       NewPrompt("select", i, o),
+		Prompt:       NewPrompt(i, o),
 		Label:        label,
 		Values:       values,
 		Labels:       labels,
@@ -33,7 +33,7 @@ func NewSelectPrompt(i *Input, o *Output, label string, values []string, labels 
 	}
 
 	p.Required = true
-	p.Value = func() string {
+	p.GetValue = func() string {
 		if !TerminalIsInteractive() {
 			return p.DefaultValue
 		}
@@ -50,27 +50,27 @@ func NewSelectPrompt(i *Input, o *Output, label string, values []string, labels 
 		if i < 0 {
 			i = 0
 		}
-		p.initializeScrolling(i)
+		p.InitializeScrolling(i)
 		// p.scrollToHighlighted(len(values)) // TODO: fix
 	} else {
-		p.initializeScrolling(0)
+		p.InitializeScrolling(0)
 	}
 
 	p.on("key", func(key string) {
 		total := len(p.Values)
 
 		if keys.Is(key, keys.Up, keys.UpArrow, keys.Left, keys.LeftArrow, keys.ShiftTab, keys.CtrlP, keys.CtrlB, "k", "h") {
-			p.highlightPrevious(total)
+			p.HighlightPrevious(total)
 			return
 		}
 
 		if keys.Is(key, keys.Down, keys.DownArrow, keys.Right, keys.RightArrow, keys.Tab, keys.CtrlN, keys.CtrlF, "j", "l") {
-			p.highlightNext(total)
+			p.HighlightNext(total)
 			return
 		}
 
 		if keys.Is(key, keys.CtrlE, keys.End...) {
-			p.highlight(total - 1)
+			p.Highlight(total - 1)
 			return
 		}
 
@@ -159,7 +159,7 @@ func (p *SelectPrompt) renderOptions() string {
 		options = append(options, label)
 	}
 
-	return strings.Join(ScrollBar(options, p.FirstVisible, p.Scroll, len(values), min(Longest(values, -1, 6), width-6), color), "\n")
+	return strings.Join(ScrollBar(options, p.FirstVisible, p.Scroll, len(values), min(Longest(values, -1, 6), width-6), color), Eol)
 }
 
 func (p *SelectPrompt) Render() (string, error) {

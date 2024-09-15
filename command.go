@@ -11,6 +11,7 @@ type CommandHandle func(ctx *Ctx)
 type CommandHandleE func(ctx *Ctx) error
 type CommandInitializer func(i *Input, o *Output)
 type CommandInteracter func(i *Input, o *Output)
+type PromptFunc func(i *Input, o *Output, arg Arg) error
 
 type Command struct {
 	Run         CommandHandle
@@ -18,14 +19,15 @@ type Command struct {
 	Initializer CommandInitializer
 	Interacter  CommandInteracter
 
-	Name        string
-	Description string
-	Aliases     []string
-	Help        string
-	Signature   string
-	Flags       []Flag
-	Arguments   []Arg
-	Debug       bool
+	Name           string
+	Description    string
+	Aliases        []string
+	Help           string
+	Signature      string
+	Flags          []Flag
+	Arguments      []Arg
+	Debug          bool
+	PromptForInput bool
 
 	definition             *InputDefinition
 	applicationDefinition  *InputDefinition
@@ -77,6 +79,7 @@ func (c *Command) execute(input *Input, output *Output) (int, error) {
 		definition: c.fullDefinition,
 		Args:       input.Args,
 		Debug:      c.Debug,
+		Logger:     output.Logger,
 	}
 
 	if c.RunE != nil {
@@ -127,7 +130,19 @@ func (c *Command) ExecuteWith(i *Input, o *Output) (int, error) {
 	validationErr := i.Validate()
 
 	if validationErr != nil {
-		return 1, validationErr
+		if c.PromptForInput {
+			missingArgsErr, ok := validationErr.(ErrMissingArguments)
+			if !ok {
+				return 1, validationErr
+			}
+
+			err = c.doPromptForInput(i, o, missingArgsErr.MissingArguments())
+			if err != nil {
+				return 1, validationErr
+			}
+		} else {
+			return 1, validationErr
+		}
 	}
 
 	return c.execute(i, o)
@@ -289,5 +304,73 @@ func (c *Command) validateName(name string) {
 	re := regexp.MustCompile("^[^:]+(:[^:]+)*")
 	if !re.MatchString(name) {
 		panic(fmt.Sprintf("Command name \"%s\" is invalid.", name))
+	}
+}
+
+func (c *Command) doPromptForInput(i *Input, o *Output, missingArgs []string) error {
+	for _, arg := range missingArgs {
+		a, err := i.definition.Argument(arg)
+		if err != nil {
+			return err
+		}
+
+		err = c.promptArgument(i, o, a)
+		if err != nil {
+			return err
+		}
+	}
+
+	o.NewLine(1)
+
+	return i.Validate()
+}
+
+func (c *Command) promptArgument(i *Input, o *Output, arg Arg) error {
+	name := arg.GetName()
+
+	desc := arg.GetDescription()
+	if desc == "" {
+		panic(fmt.Sprintf("argument \"%s\" is missing a description", name))
+	}
+
+	q := strings.ToLower(string(desc[0])) + desc[1:]
+
+	switch a := arg.(type) {
+	case *StringArg:
+		var answer string
+		var err error
+		if a.Options != nil {
+			prompt := NewSelectPrompt(i, o, fmt.Sprintf("What is %s?", q), a.Options, nil, "")
+			prompt.Required = true
+			answer, err = prompt.Render()
+		} else {
+			prompt := NewTextPrompt(i, o, fmt.Sprintf("What is %s?", q), "")
+			prompt.Required = true
+			answer, err = prompt.Render()
+		}
+
+		if err != nil {
+			return err
+		}
+
+		i.SetArgument(name, answer)
+
+		return nil
+	case *ArrayArg:
+		// TODO: implement options (requires multiselect prompt)
+		prompt := NewArrayPrompt(i, o, fmt.Sprintf("What is %s?", q), nil)
+		prompt.Required = true
+		answers, err := prompt.Render()
+		if err != nil {
+			return err
+		}
+
+		for _, answer := range answers {
+			i.SetArgument(name, answer)
+		}
+
+		return nil
+	default:
+		panic("unsupported argument type")
 	}
 }

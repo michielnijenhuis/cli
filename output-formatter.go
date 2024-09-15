@@ -240,18 +240,18 @@ func (o *OutputFormatter) applyCurrentStyle(text string, current string, width i
 	if currentLineLength != 0 {
 		prefixLength := width - currentLineLength
 		if len(text) > prefixLength {
-			prefix = text[:prefixLength] + "\n"
+			prefix = text[:prefixLength] + Eol
 			text = text[prefixLength:]
 		}
 	}
 
 	text = prefix + o.addLineBreaks(text, width)
 	text = strings.TrimRight(text, " ")
-	if currentLineLength == 0 && current != "" && !strings.HasSuffix(current, "\n") {
-		text = "\n" + text
+	if currentLineLength == 0 && current != "" && !strings.HasSuffix(current, Eol) {
+		text = Eol + text
 	}
 
-	lines := strings.Split(text, "\n")
+	lines := strings.Split(text, Eol)
 	for _, line := range lines {
 		currentLineLength += len(line)
 		if width <= currentLineLength {
@@ -265,7 +265,7 @@ func (o *OutputFormatter) applyCurrentStyle(text string, current string, width i
 		}
 	}
 
-	return strings.Join(lines, "\n")
+	return strings.Join(lines, Eol)
 }
 
 func (o *OutputFormatter) addLineBreaks(text string, width int) string {
@@ -285,25 +285,25 @@ func (o *OutputFormatter) addLineBreaks(text string, width int) string {
 		}
 	}
 
-	result := ""
+	var result strings.Builder
 	lineLength := 0
 
 	for _, word := range words {
 		wordLength := helper.Len(word)
 		if lineLength+wordLength > width {
-			result += "\n" + word
+			result.WriteString(Eol + word)
 			lineLength = wordLength
 		} else {
-			if result != "" {
-				result += " "
+			if result.Len() != 0 {
+				result.WriteString(" ")
 				lineLength++
 			}
-			result += word
+			result.WriteString(word)
 			lineLength += wordLength
 		}
 	}
 
-	return result
+	return result.String()
 }
 
 func FormatSection(section string, message string, style string) string {
@@ -346,7 +346,7 @@ func FormatBlock(messages []string, style string, large bool) string {
 		messages[i] = fmt.Sprintf("<%s>%s</%s>", style, messages[i], style)
 	}
 
-	return strings.Join(messages, "\n")
+	return strings.Join(messages, Eol)
 }
 
 func Truncate(message string, length int, suffix string) string {

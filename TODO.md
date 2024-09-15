@@ -1,6 +1,14 @@
 # TODO
 
-- signal handling
+- progress bar
 - various prompts
-- prompt for input
-- use string builder more instead of concatting
+    - multi search
+    - multi select
+    - note
+    - password
+    - search
+    - suggest
+    - textarea
+- prompt themes (default, box)
+- subcommands
+- zsh completion

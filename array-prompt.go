@@ -21,15 +21,15 @@ type ArrayPrompt struct {
 func NewArrayPrompt(i *Input, o *Output, label string, defaultValue []string) *ArrayPrompt {
 	p := &ArrayPrompt{
 		TextPrompt: &TextPrompt{
-			Prompt:      NewPrompt("array", i, o),
+			Prompt:      NewPrompt(i, o),
 			Placeholder: "Add new value",
 		},
 		Label:  label,
 		Values: make([]string, 0),
 	}
 
-	p.Value = func() string {
-		return p.typedValue
+	p.GetValue = func() string {
+		return p.TypedValue()
 	}
 
 	// TODO: fix required handling
@@ -55,12 +55,11 @@ func NewArrayPrompt(i *Input, o *Output, label string, defaultValue []string) *A
 		}
 
 		if keys.Is(key, keys.Enter) {
-			if p.typedValue == "" {
+			if p.TypedValue() == "" {
 				p.submit()
 			} else {
-				p.Values = append(p.Values, p.typedValue)
-				p.typedValue = ""
-				p.cursorPosition = 0
+				p.Values = append(p.Values, p.TypedValue())
+				p.SetValue("")
 			}
 
 			return
@@ -68,10 +67,10 @@ func NewArrayPrompt(i *Input, o *Output, label string, defaultValue []string) *A
 
 		if keys.Is(key, keys.ShiftTab) && len(p.Values) > 0 {
 			p.State = PromptStateDeleting
-			p.Prompt.render(p.String())
+			p.Prompt.render(p.String)
 
 			if p.deletePrompt == nil {
-				p.deletePrompt = NewSelectPrompt(p.Input, p.Output, "Delete values?", p.Values, nil, "")
+				p.deletePrompt = NewSelectPrompt(p.input, p.output, "Delete values?", p.Values, nil, "")
 				p.deletePrompt.isChild = true
 
 				toDelete, err := p.deletePrompt.Render()
@@ -85,7 +84,7 @@ func NewArrayPrompt(i *Input, o *Output, label string, defaultValue []string) *A
 
 				p.State = PromptStateActive
 				p.deletePrompt = nil
-				lines := strings.Split(p.prevFrame, "\n")
+				lines := strings.Split(p.prevFrame, Eol)
 				p.cursor.Move(-999, (-1*len(lines))+2)
 				p.eraseDown()
 			}

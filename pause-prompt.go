@@ -18,7 +18,7 @@ func NewPausePrompt(i *Input, o *Output, message string) *PausePrompt {
 	}
 
 	p := &PausePrompt{
-		Prompt:  NewPrompt("pause", i, o),
+		Prompt:  NewPrompt(i, o),
 		Message: message,
 	}
 
@@ -45,7 +45,7 @@ func (p *PausePrompt) String() string {
 			eolOnLastLine = false
 		}
 
-		lines := strings.Split(p.Message, "\n")
+		lines := strings.Split(p.Message, Eol)
 		for i, line := range lines {
 			eol := true
 			if i == len(lines)-1 && !eolOnLastLine {

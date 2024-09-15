@@ -104,14 +104,14 @@ func (f form) Submit() error {
 		case FormMultiselect:
 			panic("form type not yet implemented")
 		case FormConfirm:
-			prompt := NewConfirmPrompt(f.i, f.o, cur.Label)
+			if cur.Bool == nil {
+				panic("form type FormText expects a bool pointer")
+			}
+			prompt := NewConfirmPrompt(f.i, f.o, cur.Label, *cur.Bool)
 			prompt.Required = cur.Required
 			answer, err := prompt.Render()
 			if err != nil {
 				return err
-			}
-			if cur.Bool == nil {
-				panic("form type FormText expects a bool pointer")
 			}
 			*cur.Bool = answer
 		case FormWait:

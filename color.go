@@ -144,9 +144,7 @@ func parseColor(color string, background bool) (string, error) {
 			return "", err
 		}
 
-		out += converted
-
-		return out, nil
+		return out + converted, nil
 	}
 
 	if code, contains := colors[color]; contains {

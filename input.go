@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"regexp"
 	"strings"
 
@@ -13,13 +14,32 @@ import (
 type InputParser func(self any) error
 
 type Input struct {
-	definition  *InputDefinition
-	Stream      *os.File
-	flags       map[string]Flag
-	arguments   map[string]Arg
-	interactive bool
-	Args        []string
-	parsed      []string
+	definition      *InputDefinition
+	Stream          *os.File
+	flags           map[string]Flag
+	arguments       map[string]Arg
+	interactive     bool
+	Args            []string
+	parsed          []string
+	initialSttyMode string
+}
+
+type ErrMissingArguments interface {
+	error
+	MissingArguments() []string
+}
+
+type errMissingArguments struct {
+	err     string
+	missing []string
+}
+
+func (e *errMissingArguments) Error() string {
+	return e.err
+}
+
+func (e *errMissingArguments) MissingArguments() []string {
+	return e.missing
 }
 
 func NewInput(args ...string) *Input {
@@ -106,7 +126,10 @@ func (i *Input) Validate() error {
 		}
 
 		if len(missingArguments) > 0 {
-			return fmt.Errorf("not enough arguments (missing: \"%s\")", strings.Join(missingArguments, ", "))
+			return &errMissingArguments{
+				err:     fmt.Sprintf("not enough arguments (missing: \"%s\")", strings.Join(missingArguments, ", ")),
+				missing: missingArguments,
+			}
 		}
 	}
 
@@ -632,4 +655,43 @@ func StringToInputArgs(cmd string) []string {
 	}
 
 	return out
+}
+
+func (i *Input) SetTty(mode string) (string, error) {
+	if i.initialSttyMode == "" {
+		c := exec.Command("stty", "-g")
+		c.Stdin = i.Stream
+
+		out, err := c.Output()
+		if err != nil {
+			return "", err
+		}
+
+		i.initialSttyMode = string(out)
+	}
+
+	c := exec.Command("stty", StringToInputArgs(mode)...) // #nosec G204
+	c.Stdin = i.Stream
+
+	out, err := c.Output()
+	if err != nil {
+		return "", err
+	}
+
+	return string(out), nil
+}
+
+func (i *Input) RestoreTty() error {
+	if i.initialSttyMode != "" {
+		c := exec.Command("stty", StringToInputArgs(i.initialSttyMode)...) // #nosec G204
+
+		err := c.Run()
+		if err != nil {
+			return err
+		}
+
+		i.initialSttyMode = ""
+	}
+
+	return nil
 }

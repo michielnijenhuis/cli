@@ -12,12 +12,12 @@ type TextPrompt struct {
 
 func NewTextPrompt(i *Input, o *Output, label string, defaultValue string) *TextPrompt {
 	tp := &TextPrompt{
-		Prompt: NewPrompt("text-prompt", i, o),
+		Prompt: NewPrompt(i, o),
 		Label:  label,
 	}
 
-	tp.Value = func() string {
-		return tp.typedValue
+	tp.GetValue = func() string {
+		return tp.TypedValue()
 	}
 	tp.trackTypedValue(defaultValue, true, nil, false)
 	tp.allowValueClearance = true
@@ -28,13 +28,13 @@ func NewTextPrompt(i *Input, o *Output, label string, defaultValue string) *Text
 
 func (tp *TextPrompt) ValueWithCursor(maxWidth int) string {
 	if tp.value() == "" {
-		return Dim(tp.addCursor(tp.Placeholder, 0, maxWidth))
+		return Dim(tp.AddCursor(tp.Placeholder, 0, maxWidth))
 	}
 
-	return tp.addCursor(tp.value(), tp.cursorPosition, maxWidth)
+	return tp.AddCursor(tp.value(), tp.cursorPosition, maxWidth)
 }
 
-func (tp *TextPrompt) String() string {
+func (tp *TextPrompt) View() string {
 	renderer := NewRenderer()
 	terminalWidth, _ := TerminalWidth()
 	maxWidth := terminalWidth - 6
@@ -55,6 +55,6 @@ func (tp *TextPrompt) String() string {
 	return renderer.ToString(tp.State)
 }
 
-func (tp *TextPrompt) Render() (string, error) {
-	return tp.Prompt.doPrompt(tp.String)
+func (p *TextPrompt) Render() (string, error) {
+	return p.Prompt.doPrompt(p.View)
 }

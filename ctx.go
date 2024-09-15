@@ -15,6 +15,7 @@ type Ctx struct {
 	Code       int
 	Debug      bool
 	definition *InputDefinition
+	Logger
 }
 
 func (c *Ctx) ChildProcess(cmd string) *ChildProcess {
@@ -43,6 +44,22 @@ func (c *Ctx) Spawn(cmd string, shell string, inherit bool) *ChildProcess {
 
 func (c *Ctx) Exec(cmd string, shell string, inherit bool) (string, error) {
 	return c.Spawn(cmd, shell, inherit).Run()
+}
+
+func (c *Ctx) Zsh(cmd string) (string, error) {
+	return c.Exec(cmd, "zsh", true)
+}
+
+func (c *Ctx) ZshPipe(cmd string) (string, error) {
+	return c.Exec(cmd, "zsh", false)
+}
+
+func (c *Ctx) Sh(cmd string) (string, error) {
+	return c.Exec(cmd, "", true)
+}
+
+func (c *Ctx) ShPipe(cmd string) (string, error) {
+	return c.Exec(cmd, "", false)
 }
 
 func (c *Ctx) NewLine(count uint) {
@@ -212,7 +229,7 @@ func (c *Ctx) Array(name string) []string {
 }
 
 func (c *Ctx) Ask(question string, defaultValue string) (string, error) {
-	return c.Output.Ask(question, defaultValue, nil)
+	return c.Output.Ask(question, defaultValue)
 }
 
 func (c *Ctx) Confirm(question string, defaultValue bool) (bool, error) {

@@ -34,12 +34,15 @@ func (app *Application) Run(args ...string) error {
 	return app.RunWith(NewInput(args...), nil)
 }
 
+func (app *Application) RunExit(args ...string) {
+	app.AutoExit = true
+	_ = app.RunWith(NewInput(args...), nil)
+}
+
 func (app *Application) RunWith(i *Input, o *Output) (err error) {
-	width, height, err := TerminalSize()
-	if err == nil {
-		os.Setenv("LINES", fmt.Sprint(height))
-		os.Setenv("COLUMNS", fmt.Sprint(width))
-	}
+	width, height := TerminalSize()
+	os.Setenv("LINES", fmt.Sprint(height))
+	os.Setenv("COLUMNS", fmt.Sprint(width))
 
 	if !app.Debug {
 		if _, ok := os.LookupEnv("CLI_DEBUG"); ok {
@@ -141,7 +144,7 @@ func (app *Application) doRun(i *Input, o *Output) (int, error) {
 	}
 
 	// Ignore errors, full binding/validation happens later when running the command.
-	i.Bind(app.Definition())
+	_ = i.Bind(app.Definition())
 
 	if name == "" {
 		name = app.DefaultCommand
@@ -162,17 +165,18 @@ func (app *Application) doRun(i *Input, o *Output) (int, error) {
 
 		if ok && len(alternatives) == 1 && interactive {
 			theme, _ := GetTheme("error")
-			if !theme.Padding {
-				o.NewLine(1)
+
+			promptText := make([]string, 0, 3)
+			if theme.Padding {
+				promptText = append(promptText, "")
 			}
-			o.Block([]string{fmt.Sprintf("command \"%s\" is not defined", name)}, "error", true)
-			if !theme.Padding {
-				o.NewLine(1)
-			}
+			promptText = append(promptText, o.CreateBlock([]string{fmt.Sprintf("command \"%s\" is not defined", name)}, "error", theme, true)...)
+			promptText = append(promptText, Eol)
 
 			alternative := alternatives[0]
-
-			runAlternative, err := o.Confirm(fmt.Sprintf("Do you want to run \"%s\" instead?", alternative), false)
+			prompt := NewConfirmPrompt(i, o, fmt.Sprintf("Do you want to run \"%s\" instead?", alternative), false)
+			prompt.Prefix = strings.Join(promptText, Eol)
+			runAlternative, err := prompt.Render()
 			if err != nil {
 				return 1, err
 			}
@@ -181,9 +185,7 @@ func (app *Application) doRun(i *Input, o *Output) (int, error) {
 				return 1, nil
 			}
 
-			o.NewLine(1)
-
-			// TODO: cleanup rendered lines
+			prompt.Clear()
 
 			c, findCommandErr = app.Find(alternative)
 			if findCommandErr != nil {
@@ -686,7 +688,7 @@ func (app *Application) configureIO(i *Input, o *Output) {
 		} else if i.HasParameterFlag("-vv", true) ||
 			i.HasParameterFlag("--verbose=2", true) ||
 			i.ParameterFlag("--verbose", false, true) == "2" {
-			o.SetVerbosity(VerbosityVerbose)
+			o.SetVerbosity(VerbosityVeryVerbose)
 			shellVerbosity = 2
 		} else if i.HasParameterFlag("-v", true) ||
 			i.HasParameterFlag("--verbose=1", true) ||

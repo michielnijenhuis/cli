@@ -8,10 +8,7 @@ import (
 )
 
 func TerminalWidth() (int, error) {
-	var width int
-	var err error
-	width, _, err = term.GetSize(0)
-
+	width, _, err := term.GetSize(0)
 	if err != nil {
 		return 80, err
 	}
@@ -19,20 +16,22 @@ func TerminalWidth() (int, error) {
 	return width, nil
 }
 
-func TerminalHeight() (int, error) {
-	var height int
-	var err error
-	_, height, err = term.GetSize(0)
-
+func TerminalHeight() int {
+	_, height, err := term.GetSize(0)
 	if err != nil {
-		return 80, err
+		return 80
 	}
 
-	return height, nil
+	return height
 }
 
-func TerminalSize() (int, int, error) {
-	return term.GetSize(0)
+func TerminalSize() (int, int) {
+	w, h, err := term.GetSize(0)
+	if err != nil {
+		return 80, 80
+	}
+
+	return w, h
 }
 
 func TerminalIsInteractive() bool {
@@ -42,4 +41,40 @@ func TerminalIsInteractive() bool {
 	}
 
 	return term.IsTerminal(int(os.Stdout.Fd()))
+}
+
+var originalState *term.State
+var terminalState int
+
+func TerminalMakeRaw() error {
+	if terminalState > 0 {
+		terminalState++
+		return nil
+	}
+
+	state, err := term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		return err
+	}
+
+	terminalState++
+	originalState = state
+
+	return nil
+}
+
+func TerminalRestore() error {
+	if terminalState <= 0 || terminalState > 1 {
+		if terminalState > 1 {
+			terminalState--
+		}
+
+		return nil
+	}
+
+	terminalState = 0
+	err := term.Restore(int(os.Stdin.Fd()), originalState)
+	originalState = nil
+
+	return err
 }

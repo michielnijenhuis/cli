@@ -1,10 +1,16 @@
 package cli
 
+import (
+	"fmt"
+	"strings"
+)
+
 type StringArg struct {
 	Name        string
 	Description string
 	Value       string
 	Required    bool
+	Options     []string
 	Validator   func(string) error
 }
 
@@ -13,6 +19,7 @@ type ArrayArg struct {
 	Description string
 	Value       []string
 	Min         uint
+	Options     []string
 	Validator   func([]string) error
 }
 
@@ -74,14 +81,44 @@ func GetArgArrayValue(arg Arg) []string {
 func ValidateArg(arg Arg) error {
 	switch a := arg.(type) {
 	case *StringArg:
+		if a.Options != nil {
+			isValid := false
+			for _, option := range a.Options {
+				if option == a.Value {
+					isValid = true
+					break
+				}
+			}
+
+			if !isValid {
+				return fmt.Errorf("invalid option \"%s\". Expected one of: %s", a.Value, strings.Join(a.Options, ", "))
+			}
+		}
+
 		if a.Validator != nil {
 			return a.Validator(a.Value)
 		}
+
 		return nil
 	case *ArrayArg:
+		for _, value := range a.Value {
+			isValid := false
+			for _, option := range a.Options {
+				if option == value {
+					isValid = true
+					break
+				}
+			}
+
+			if !isValid {
+				return fmt.Errorf("invalid option \"%s\". Possible values: %s", value, strings.Join(a.Options, ", "))
+			}
+		}
+
 		if a.Validator != nil {
 			return a.Validator(a.Value)
 		}
+
 		return nil
 	default:
 		panic("invalid argument type")

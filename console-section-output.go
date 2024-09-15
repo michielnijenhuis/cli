@@ -95,20 +95,20 @@ func (c *ConsoleSectionOutput) VisibleContent() string {
 
 func (c *ConsoleSectionOutput) AddContent(input string, newLine bool) int {
 	width, _ := TerminalWidth()
-	lines := strings.Split(input, "\n")
+	lines := strings.Split(input, Eol)
 	linesAdded := 0
 	count := len(lines) - 1
 
 	for i, lineContent := range lines {
 		if i < count || newLine {
-			lineContent += "\n"
+			lineContent += Eol
 		}
 
 		if lineContent == "" {
 			continue
 		}
 
-		if i == 0 && len(c.content) > 0 && !strings.HasSuffix(c.content[len(c.content)-1], "\n") {
+		if i == 0 && len(c.content) > 0 && !strings.HasSuffix(c.content[len(c.content)-1], Eol) {
 			lastLine := c.content[len(c.content)-1]
 			c.lines -= max(1, c.displayLength(lastLine)/width)
 			lineContent = lastLine + lineContent
@@ -126,13 +126,13 @@ func (c *ConsoleSectionOutput) AddContent(input string, newLine bool) int {
 }
 
 func (c *ConsoleSectionOutput) AddNewLineOfInputSubmit() {
-	c.content = append(c.content, "\n")
+	c.content = append(c.content, Eol)
 	c.lines++
 }
 
 func (c *ConsoleSectionOutput) DoWrite(message string, newLine bool) {
-	if !newLine && strings.HasSuffix(message, "\n") {
-		message = message[:len(message)-len("\n")]
+	if !newLine && strings.HasSuffix(message, Eol) {
+		message = message[:len(message)-len(Eol)]
 		newLine = true
 	}
 
@@ -149,7 +149,7 @@ func (c *ConsoleSectionOutput) DoWrite(message string, newLine bool) {
 		lastLine = c.content[len(c.content)-1]
 	}
 
-	deleteLastLine = lastLine != "" && !strings.HasSuffix(lastLine, "\n")
+	deleteLastLine = lastLine != "" && !strings.HasSuffix(lastLine, Eol)
 	if deleteLastLine {
 		linesToClear = 1
 	}
@@ -193,8 +193,8 @@ func (c *ConsoleSectionOutput) popStreamContentUntilCurrentSection(numberOfLines
 		}
 
 		if sectionContent := section.VisibleContent(); sectionContent != "" {
-			if !strings.HasSuffix(sectionContent, "\n") {
-				sectionContent += "\n"
+			if !strings.HasSuffix(sectionContent, Eol) {
+				sectionContent += Eol
 			}
 
 			erasedContent = append(erasedContent, sectionContent)
