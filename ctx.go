@@ -24,10 +24,9 @@ func (c *Ctx) ChildProcess(cmd string) *ChildProcess {
 
 func (c *Ctx) Spawn(cmd string, shell string, inherit bool) *ChildProcess {
 	cp := &ChildProcess{
-		Cmd:     cmd,
-		Shell:   shell,
-		Inherit: inherit,
-		Pipe:    !inherit,
+		Cmd:   cmd,
+		Shell: shell,
+		Pipe:  !inherit,
 	}
 
 	if inherit {
@@ -46,16 +45,18 @@ func (c *Ctx) Exec(cmd string, shell string, inherit bool) (string, error) {
 	return c.Spawn(cmd, shell, inherit).Run()
 }
 
-func (c *Ctx) Zsh(cmd string) (string, error) {
-	return c.Exec(cmd, "zsh", true)
+func (c *Ctx) Zsh(cmd string) error {
+	_, err := c.Exec(cmd, "zsh", true)
+	return err
 }
 
 func (c *Ctx) ZshPipe(cmd string) (string, error) {
 	return c.Exec(cmd, "zsh", false)
 }
 
-func (c *Ctx) Sh(cmd string) (string, error) {
-	return c.Exec(cmd, "", true)
+func (c *Ctx) Sh(cmd string) error {
+	_, err := c.Exec(cmd, "", true)
+	return err
 }
 
 func (c *Ctx) ShPipe(cmd string) (string, error) {

@@ -5,21 +5,19 @@ import (
 	"os"
 	os_exec "os/exec"
 	"strings"
-	"syscall"
 )
 
 type ChildProcess struct {
-	Cmd     string
-	Args    []string
-	Shell   string
-	Pipe    bool
-	Inherit bool
-	Stdin   *os.File
-	Stdout  *os.File
-	Stderr  *os.File
-	err     error
-	Env     []string
-	c       *os_exec.Cmd
+	Cmd    string
+	Args   []string
+	Shell  string
+	Pipe   bool
+	Stdin  *os.File
+	Stdout *os.File
+	Stderr *os.File
+	err    error
+	Env    []string
+	c      *os_exec.Cmd
 }
 
 func (cp *ChildProcess) Run() (string, error) {
@@ -64,16 +62,8 @@ func (cp *ChildProcess) Wait() error {
 	return err
 }
 
-func (cp *ChildProcess) Kill() error {
-	if cp.c == nil {
-		return nil
-	}
-
-	return syscall.Kill(-cp.c.Process.Pid, syscall.SIGKILL)
-}
-
 func (cp *ChildProcess) createCommand() *os_exec.Cmd {
-	cmd := prepareCommand(cp.Cmd, cp.Shell)
+	cmd := cp.prepareCommand(cp.Cmd, cp.Shell)
 
 	args := cp.Args
 	if cmd != "" && args == nil {
@@ -90,10 +80,6 @@ func (cp *ChildProcess) createCommand() *os_exec.Cmd {
 	}
 
 	c := os_exec.Command(name, args...)
-
-	c.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-	}
 
 	if !cp.Pipe {
 		cp.inherit(c)
@@ -138,13 +124,13 @@ func (cp *ChildProcess) String() string {
 	return cp.c.String()
 }
 
-func prepareCommand(cmd string, shell string) string {
+func (cp *ChildProcess) prepareCommand(cmd string, shell string) string {
 	if shell == "" {
 		return cmd
 	}
 
 	flags := make([]string, 0, 2)
-	if TerminalIsInteractive() {
+	if !cp.Pipe && TerminalIsInteractive() {
 		flags = append(flags, "-i")
 	}
 	flags = append(flags, "-c")
@@ -153,7 +139,7 @@ func prepareCommand(cmd string, shell string) string {
 
 	switch shell {
 	case "zsh":
-		parts = append(parts, fmt.Sprintf("'source ~/.zshrc; %s'", cmd))
+		parts = append(parts, fmt.Sprintf("'source $HOME/dotfiles/.zshrc.base; %s'", cmd))
 	default:
 		parts = append(parts, fmt.Sprintf("'%s'", cmd))
 	}

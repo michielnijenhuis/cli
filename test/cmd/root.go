@@ -23,16 +23,13 @@ func Execute() {
 }
 
 func test(c *cli.Ctx) {
-	answer, err := c.Ask("Wadup?", "")
-	if err != nil {
-		c.Err(err)
-		return
-	}
-
+	// cp := exec.Command("zsh", "-i", "-c", "wd c && pwd")
+	// cp := exec.Command("zsh", "-i", "-c", "wd c && echo \"Dir: $(pwd)\"")
+	// cp.Stdin = os.Stdin
+	// cp.Stdout = os.Stdout
+	// cp.Stderr = os.Stderr
+	// cp.Run()
 	c.Spinner(func() {
-		c.Sh("sleep 2")
+		c.Zsh("wd c && pwd")
 	}, "Processing...")
-
-	c.NewLine(1)
-	c.Info(answer)
 }

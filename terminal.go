@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"flag"
 	"os"
 
 	"golang.org/x/term"
@@ -35,12 +34,7 @@ func TerminalSize() (int, int) {
 }
 
 func TerminalIsInteractive() bool {
-	if flag.Lookup("test.v") != nil {
-		// running `go test`
-		return false
-	}
-
-	return term.IsTerminal(int(os.Stdout.Fd()))
+	return term.IsTerminal(int(os.Stdin.Fd()))
 }
 
 var originalState *term.State
