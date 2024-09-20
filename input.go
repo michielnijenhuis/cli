@@ -19,9 +19,11 @@ type Input struct {
 	flags           map[string]Flag
 	arguments       map[string]Arg
 	interactive     bool
+	givenArguments  []string
 	Args            []string
 	parsed          []string
 	initialSttyMode string
+	Strict          bool
 }
 
 type ErrMissingArguments interface {
@@ -51,13 +53,14 @@ func NewInput(args ...string) *Input {
 	}
 
 	i := &Input{
-		Args:        args,
-		parsed:      make([]string, 0),
-		definition:  &InputDefinition{},
-		Stream:      os.Stdin,
-		flags:       make(map[string]Flag),
-		arguments:   make(map[string]Arg),
-		interactive: TerminalIsInteractive(),
+		Args:           args,
+		parsed:         make([]string, 0),
+		definition:     &InputDefinition{},
+		Stream:         os.Stdin,
+		flags:          make(map[string]Flag),
+		givenArguments: make([]string, 0),
+		arguments:      make(map[string]Arg),
+		interactive:    TerminalIsInteractive(),
 	}
 
 	return i
@@ -79,6 +82,7 @@ func (i *Input) SetDefinition(definition *InputDefinition) error {
 
 func (i *Input) Bind(definition *InputDefinition) error {
 	i.arguments = make(map[string]Arg)
+	i.givenArguments = make([]string, 0)
 	i.flags = make(map[string]Flag)
 	i.definition = definition
 	return i.parse()
@@ -88,8 +92,11 @@ func (i *Input) parse() error {
 	parseFlags := true
 	i.parsed = make([]string, 0, len(i.Args))
 	i.parsed = append(i.parsed, i.Args...)
-	var token string
-	var err error
+	var (
+		token       string
+		err         error
+		keepParsing bool
+	)
 
 	for {
 		if len(i.parsed) == 0 {
@@ -97,9 +104,11 @@ func (i *Input) parse() error {
 		}
 
 		token = helper.Shift(&i.parsed)
-		parseFlags, err = i.parseToken(token, parseFlags)
+		parseFlags, err, keepParsing = i.parseToken(token, parseFlags)
 		if err != nil {
 			return err
+		} else if !keepParsing {
+			break
 		}
 	}
 
@@ -278,63 +287,72 @@ func (i *Input) EscapeToken(token string) string {
 	return re2.ReplaceAllString(token, "'\\''")
 }
 
-func (i *Input) parseToken(token string, parseFlags bool) (bool, error) {
+func (i *Input) parseToken(token string, parseFlags bool) (bool, error, bool) {
 	if parseFlags && token == "" {
-		err := i.parseArgument(token)
+		err, keepParsing := i.parseArgument(token)
 
 		if err != nil {
-			return false, err
+			return false, err, true
+		} else if !keepParsing {
+			return false, nil, false
 		}
 	} else if parseFlags && token == "" {
-		return false, nil
+		return false, nil, true
 	} else if parseFlags && strings.HasPrefix(token, "--") {
 		err := i.parseLongFlag(token)
 		if err != nil {
-			return false, err
+			return false, err, true
 		}
 	} else if parseFlags && strings.HasPrefix(token, "-") && token != "-" {
 		err := i.parseShortFlag(token)
 		if err != nil {
-			return false, err
+			return false, err, true
 		}
 	} else {
-		err := i.parseArgument(token)
+		err, keepParsing := i.parseArgument(token)
 		if err != nil {
-			return false, err
+			return false, err, keepParsing
+		} else if !keepParsing {
+			return false, nil, false
 		}
 	}
 
-	return parseFlags, nil
+	return parseFlags, nil, true
 }
 
-func (i *Input) parseArgument(token string) error {
+func (i *Input) parseArgument(token string) (error, bool) {
 	definition := i.definition
 	currentCount := uint(len(i.arguments))
 	argsCount := uint(len(definition.arguments))
+	i.givenArguments = append(i.givenArguments, token)
 
 	if currentCount < argsCount {
 		// if input is expecting another argument, add it
 		arg, err := definition.ArgumentByIndex(currentCount)
 		if err != nil {
-			return err
+			return err, true
 		}
 		i.arguments[arg.GetName()] = arg
 
 		ArgSetValue(arg, token)
-		return nil
+		return nil, true
 	} else {
 		if currentCount == argsCount {
 			arg, err := definition.ArgumentByIndex(currentCount - 1)
 			if err != nil {
-				return err
+				return err, true
 			}
 			i.arguments[arg.GetName()] = arg
 
 			// if last argument isArray(), append token to last argument
 			if a, ok := arg.(*ArrayArg); ok {
 				ArgSetValue(a, token)
-				return nil
+				return nil, true
 			}
+		}
+
+		if !i.Strict {
+			return nil, false
 		}
 
 		all := definition.arguments
@@ -371,7 +389,7 @@ func (i *Input) parseArgument(token string) error {
 			message = fmt.Sprintf("no arguments expected, got \"%s\"", token)
 		}
 
-		return errors.New(message)
+		return errors.New(message), false
 	}
 }
 
@@ -519,51 +537,10 @@ func (i *Input) addLongFlag(name string, token string) error {
 }
 
 func (i *Input) FirstArgument() string {
-	isOption := false
-	tokenCount := len(i.Args)
-
-	for idx, token := range i.Args {
-		// Is option
-		if strings.HasPrefix(token, "-") {
-			// Has value, or is last token
-			if strings.Contains(token, "=") || idx+1 >= tokenCount {
-				continue
-			}
-
-			// If it's a long option, consider that everything after "--" is the option name.
-			// Otherwise, use the last char (if it's a short option set, only the last one can take a value with space separator)
-			var name string
-			if strings.HasPrefix(token, "--") {
-				name = token[2:]
-			} else {
-				name = token[len(token)-1:]
-			}
-
-			flag, _ := i.definition.Flag(name)
-			if flag == nil {
-				// Try again with the shortcut
-				flag, _ = i.definition.FlagForShortcut(name)
-
-				if flag == nil {
-					continue
-				}
-			}
-
-			// If flag accepts a value, check if the next token is not an option value
-			if FlagAcceptsValue(flag) && !strings.HasPrefix(i.Args[idx+1], "-") {
-				isOption = true
-			}
-		}
-
-		// Is value for option
-		if isOption {
-			isOption = false
-			continue
-		}
-
-		return token
+	args := i.GivenArguments()
+	if len(args) > 0 {
+		return args[0]
 	}
-
 	return ""
 }
 
@@ -694,4 +671,56 @@ func (i *Input) RestoreTty() error {
 	}
 
 	return nil
+}
+
+func (i *Input) GivenArguments() []string {
+	isOption := false
+	tokenCount := len(i.Args)
+	arguments := make([]string, 0)
+
+	for idx, token := range i.Args {
+		// Is option
+		if strings.HasPrefix(token, "-") {
+			// Has value, or is last token
+			if strings.Contains(token, "=") || idx+1 >= tokenCount {
+				continue
+			}
+
+			// If it's a long option, consider that everything after "--" is the option name.
+			// Otherwise, use the last char (if it's a short option set, only the last one can take a value with space separator)
+			var name string
+			if strings.HasPrefix(token, "--") {
+				name = token[2:]
+			} else {
+				name = token[len(token)-1:]
+			}
+
+			flag, _ := i.definition.Flag(name)
+			if flag == nil {
+				// Try again with the shortcut
+				flag, _ = i.definition.FlagForShortcut(name)
+
+				if flag == nil {
+					continue
+				}
+			}
+
+			// If flag accepts a value, check if the next token is not an option value
+			if FlagAcceptsValue(flag) && !strings.HasPrefix(i.Args[idx+1], "-") {
+				isOption = true
+			}
+
+			continue
+		}
+
+		// Is value for option
+		if isOption {
+			isOption = false
+			continue
+		}
+
+		arguments = append(arguments, token)
+	}
+
+	return arguments
 }

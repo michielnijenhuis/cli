@@ -22,6 +22,15 @@ func IndexOf[T comparable](s []T, v T) int {
 	return -1
 }
 
+func Remove[T comparable](s []T, v T) []T {
+	i := IndexOf(s, v)
+	if i == -1 {
+		return s
+	}
+
+	return append(s[:i], s[i+1:]...)
+}
+
 func IndexOfFunc[T any](s []T, v T, cmp func(T, T) bool) int {
 	for i, x := range s {
 		if cmp(x, v) {

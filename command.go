@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-type CommandHandle func(ctx *Ctx)
-type CommandHandleE func(ctx *Ctx) error
+type CommandHandle func(io *IO)
+type CommandHandleE func(io *IO) error
 type CommandInitializer func(i *Input, o *Output)
 type CommandInteracter func(i *Input, o *Output)
 type PromptFunc func(i *Input, o *Output, arg Arg) error
@@ -73,7 +73,7 @@ func (c *Command) IsEnabled() bool {
 }
 
 func (c *Command) execute(input *Input, output *Output) (int, error) {
-	ctx := &Ctx{
+	io := &IO{
 		Input:      input,
 		Output:     output,
 		definition: c.fullDefinition,
@@ -83,20 +83,20 @@ func (c *Command) execute(input *Input, output *Output) (int, error) {
 	}
 
 	if c.RunE != nil {
-		err := c.RunE(ctx)
-		if err != nil && ctx.Code == 0 {
-			ctx.Code = 1
+		err := c.RunE(io)
+		if err != nil && io.Code == 0 {
+			io.Code = 1
 		}
 
-		return ctx.Code, err
+		return io.Code, err
 	}
 
 	if c.Run == nil {
 		panic("command must have a handle")
 	}
 
-	c.Run(ctx)
-	return ctx.Code, nil
+	c.Run(io)
+	return io.Code, nil
 }
 
 func (c *Command) Execute(args ...string) (int, error) {

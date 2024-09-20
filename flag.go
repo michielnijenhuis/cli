@@ -11,6 +11,7 @@ type Flag interface {
 	GetShortcutString() string
 	GetDescription() string
 	HasValue() bool
+	WasGiven() bool
 }
 
 type StringFlag struct {
@@ -19,6 +20,7 @@ type StringFlag struct {
 	Description string
 	Value       string
 	Validator   func(string) error
+	given       bool
 }
 
 type BoolFlag struct {
@@ -28,6 +30,7 @@ type BoolFlag struct {
 	Value       bool
 	Negatable   bool
 	Validator   func(bool) error
+	given       bool
 }
 
 type ArrayFlag struct {
@@ -36,6 +39,7 @@ type ArrayFlag struct {
 	Description string
 	Value       []string
 	Validator   func([]string) error
+	given       bool
 }
 
 type OptionalStringFlag struct {
@@ -45,6 +49,7 @@ type OptionalStringFlag struct {
 	Boolean     bool
 	Value       string
 	Validator   func(bool, string) error
+	given       bool
 }
 
 type OptionalArrayFlag struct {
@@ -54,23 +59,29 @@ type OptionalArrayFlag struct {
 	Boolean     bool
 	Value       []string
 	Validator   func(bool, []string) error
+	given       bool
 }
 
 func SetFlagValue(f Flag, str string, boolean bool) {
 	switch flag := f.(type) {
 	case *StringFlag:
+		flag.given = true
 		flag.Value = str
 	case *BoolFlag:
+		flag.given = true
 		flag.Value = boolean
 	case *ArrayFlag:
+		flag.given = true
 		if flag.Value == nil {
 			flag.Value = make([]string, 0)
 		}
 		flag.Value = append(flag.Value, str)
 	case *OptionalStringFlag:
+		flag.given = true
 		flag.Value = str
 		flag.Boolean = boolean
 	case *OptionalArrayFlag:
+		flag.given = true
 		if flag.Value == nil {
 			flag.Value = make([]string, 0)
 		}
@@ -148,6 +159,10 @@ func (f *StringFlag) HasValue() bool {
 	return f.Value != ""
 }
 
+func (f *StringFlag) WasGiven() bool {
+	return f.given
+}
+
 func (f *BoolFlag) GetName() string {
 	return f.Name
 }
@@ -162,6 +177,10 @@ func (f *BoolFlag) GetShortcutString() string {
 
 func (f *BoolFlag) GetDescription() string {
 	return f.Description
+}
+
+func (f *BoolFlag) WasGiven() bool {
+	return f.given
 }
 
 func (f *BoolFlag) HasValue() bool {
@@ -182,6 +201,10 @@ func (f *ArrayFlag) GetShortcutString() string {
 
 func (f *ArrayFlag) GetDescription() string {
 	return f.Description
+}
+
+func (f *ArrayFlag) WasGiven() bool {
+	return f.given
 }
 
 func (f *ArrayFlag) HasValue() bool {
@@ -208,6 +231,10 @@ func (f *OptionalStringFlag) GetDescription() string {
 	return f.Description
 }
 
+func (f *OptionalStringFlag) WasGiven() bool {
+	return f.given
+}
+
 func (f *OptionalArrayFlag) GetName() string {
 	return f.Name
 }
@@ -222,6 +249,10 @@ func (f *OptionalArrayFlag) GetShortcutString() string {
 
 func (f *OptionalArrayFlag) GetDescription() string {
 	return f.Description
+}
+
+func (f *OptionalArrayFlag) WasGiven() bool {
+	return f.given
 }
 
 func (f *OptionalArrayFlag) HasValue() bool {
@@ -320,15 +351,15 @@ func FlagValueIsOptional(f Flag) bool {
 func FlagHasDefaultValue(f Flag) bool {
 	switch t := f.(type) {
 	case *StringFlag:
-		return t.Value != ""
+		return !t.WasGiven() && t.Value != ""
 	case *BoolFlag:
-		return t.Value
+		return !t.WasGiven() && t.Value
 	case *ArrayFlag:
-		return len(t.Value) > 0
+		return !t.WasGiven() && len(t.Value) > 0
 	case *OptionalStringFlag:
-		return t.Boolean || t.Value != ""
+		return !t.WasGiven() && (t.Boolean || t.Value != "")
 	case *OptionalArrayFlag:
-		return t.Boolean || len(t.Value) > 0
+		return !t.WasGiven() && (t.Boolean || len(t.Value) > 0)
 	default:
 		return false
 	}

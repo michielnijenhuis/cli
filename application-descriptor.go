@@ -19,17 +19,17 @@ type ApplicationDescription struct {
 	aliases     map[string]*Command
 }
 
-func (d *ApplicationDescription) Namespaces() map[string]*NamespaceCommands {
+func (d *ApplicationDescription) Namespaces(namespaceLimit int) map[string]*NamespaceCommands {
 	if d.namespaces == nil {
-		d.inspectApplication()
+		d.inspectApplication(namespaceLimit)
 	}
 
 	return d.namespaces
 }
 
-func (d *ApplicationDescription) Commands() map[string]*Command {
+func (d *ApplicationDescription) Commands(namespaceLimit int) map[string]*Command {
 	if d.commands == nil {
-		d.inspectApplication()
+		d.inspectApplication(namespaceLimit)
 	}
 
 	if d.commands == nil {
@@ -54,7 +54,7 @@ func (d *ApplicationDescription) Command(name string) (*Command, error) {
 	return d.aliases[name], nil
 }
 
-func (d *ApplicationDescription) inspectApplication() {
+func (d *ApplicationDescription) inspectApplication(namespaceLimit int) {
 	d.commands = make(map[string]*Command)
 	d.namespaces = make(map[string]*NamespaceCommands)
 
@@ -66,7 +66,7 @@ func (d *ApplicationDescription) inspectApplication() {
 		all = d.Application.All("")
 	}
 
-	for namespace, commands := range d.sortCommands(all) {
+	for namespace, commands := range d.sortCommands(all, namespaceLimit) {
 		names := make([]string, 0)
 
 		for name, cmd := range commands {
@@ -94,14 +94,18 @@ func (d *ApplicationDescription) inspectApplication() {
 	}
 }
 
-func (d *ApplicationDescription) sortCommands(commands map[string]*Command) map[string](map[string]*Command) {
+func (d *ApplicationDescription) sortCommands(commands map[string]*Command, limit int) map[string](map[string]*Command) {
+	if limit == 0 {
+		limit = 2
+	}
+
 	namespacedCommands := make(map[string]map[string]*Command)
 	globalCommands := make(map[string]*Command)
 	sortedCommands := make(map[string]map[string]*Command)
 	globalNamespace := "_global"
 
 	for name, cmd := range commands {
-		key := d.Application.ExtractNamespace(name, -1)
+		key := d.Application.ExtractNamespace(name, limit)
 		if key == "" || key == globalNamespace {
 			globalCommands[name] = cmd
 		} else {

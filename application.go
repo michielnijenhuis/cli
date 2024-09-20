@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/michielnijenhuis/cli/helper"
+	"github.com/michielnijenhuis/cli/helper/array"
 	"github.com/michielnijenhuis/cli/helper/maps"
 )
 
@@ -23,6 +24,7 @@ type Application struct {
 	CatchErrors    bool
 	AutoExit       bool
 	SingleCommand  bool
+	Strict         bool
 	initialized    bool
 	runningCommand *Command
 	code           int
@@ -54,15 +56,13 @@ func (app *Application) RunWith(i *Input, o *Output) (err error) {
 		i = NewInput()
 	}
 
+	i.Strict = app.Strict
+
 	if o == nil {
 		o = NewOutput(i)
 	}
 
 	var shouldReturn bool
-
-	if app.AutoExit {
-		defer os.Exit(app.code)
-	}
 
 	if app.CatchErrors {
 		defer func() {
@@ -81,7 +81,12 @@ func (app *Application) RunWith(i *Input, o *Output) (err error) {
 
 				err = recoveredErr
 				app.RenderError(o, err)
-				shouldReturn = true
+
+				if app.AutoExit {
+					os.Exit(app.code)
+				} else {
+					shouldReturn = true
+				}
 			}
 		}()
 	}
@@ -100,10 +105,6 @@ func (app *Application) RunWith(i *Input, o *Output) (err error) {
 			app.code = 1
 		}
 
-		if !app.CatchErrors {
-			return err
-		}
-
 		app.RenderError(o, err)
 	}
 
@@ -111,6 +112,8 @@ func (app *Application) RunWith(i *Input, o *Output) (err error) {
 		if app.code > 255 {
 			app.code = 255
 		}
+
+		os.Exit(app.code)
 	}
 
 	return
@@ -128,35 +131,49 @@ func (app *Application) doRun(i *Input, o *Output) (int, error) {
 		app.Commands = nil
 	}
 
+	namespace := ""
 	name := app.commandName(i)
-	if i.HasParameterFlag("--help", true) || i.HasParameterFlag("-h", true) || name == "" {
-		if name != "" {
-			c, err := app.Find(name)
-			if err != nil {
-				return 1, err
-			}
-			app.printHelp(o, c)
-			return 0, nil
-		}
 
-		app.printHelp(o, nil)
-		return 0, nil
-	}
+	wantsHelp := i.HasParameterFlag("--help", true) || i.HasParameterFlag("-h", true)
 
 	// Ignore errors, full binding/validation happens later when running the command.
 	_ = i.Bind(app.Definition())
 
-	if name == "" {
+	if name == "" && !wantsHelp {
 		name = app.DefaultCommand
 		definition := app.Definition()
 		definition.SetArguments(nil)
 	}
 
 	app.runningCommand = nil
-	c, findCommandErr := app.Find(name)
 
-	if findCommandErr != nil {
-		notFound, ok := findCommandErr.(*CommandNotFoundError)
+	c, err := app.Find(name)
+
+	if !app.Strict && name != "" && len(strings.Split(name, ":")) == 1 {
+		c, err = app.Find(name)
+
+		if err != nil {
+			subCmd, ns := app.tryFindSubcommand(i)
+			if subCmd != nil {
+				c = subCmd
+				err = nil
+			} else if ns != "" {
+				namespace = ns
+			}
+		}
+	}
+
+	if wantsHelp || name == "" {
+		if c != nil {
+			app.printHelp(o, c, "")
+			return 0, nil
+		}
+		app.printHelp(o, nil, namespace)
+		return 0, nil
+	}
+
+	if err != nil {
+		notFound, ok := err.(*CommandNotFoundError)
 		var alternatives []string
 		if ok {
 			alternatives = notFound.Alternatives()
@@ -187,24 +204,12 @@ func (app *Application) doRun(i *Input, o *Output) (int, error) {
 
 			prompt.Clear()
 
-			c, findCommandErr = app.Find(alternative)
-			if findCommandErr != nil {
-				return 1, findCommandErr
+			c, err = app.Find(alternative)
+			if err != nil {
+				return 1, err
 			}
 		} else {
-			namespace, err := app.FindNamespace(name)
-
-			if _, ok := findCommandErr.(ErrorWithAlternatives); ok && err == nil {
-				d := TextDescriptor{o}
-				d.DescribeApplication(app, &DescriptorOptions{
-					namespace:  namespace,
-					rawText:    false,
-					short:      false,
-					totalWidth: 0,
-				})
-			}
-
-			return 1, findCommandErr
+			return 1, err
 		}
 	}
 
@@ -626,24 +631,17 @@ func (app *Application) Abbreviations(names []string) map[string][]string {
 }
 
 func (app *Application) RenderError(o *Output, err error) {
-	theme, _ := GetTheme("error")
-
-	o.Writeln("", VerbosityQuiet)
 	o.Err(err)
-
-	if !theme.Padding {
-		o.Writeln("", VerbosityQuiet)
-	}
 
 	if app.runningCommand != nil {
 		o.Writeln(
 			fmt.Sprintf("<accent>%s %s</accent>", app.Name, app.runningCommand.Synopsis(false)),
 			VerbosityQuiet,
 		)
+	}
 
-		if theme.Padding {
-			o.Writeln("", VerbosityQuiet)
-		}
+	if app.AutoExit {
+		o.NewLine(1)
 	}
 }
 
@@ -744,7 +742,7 @@ func (app *Application) defaultInputDefinition() *InputDefinition {
 		Shortcuts:   []string{"q"},
 		Description: "Do not output any message",
 	}
-	verboseflag := &OptionalStringFlag{
+	verboseflag := &BoolFlag{
 		Name:        "verbose",
 		Shortcuts:   []string{"v", "vv", "vvv"},
 		Description: "Increase the verbosity of messages: normal (1), verbose (2) or debug (3)",
@@ -776,10 +774,12 @@ func (app *Application) defaultInputDefinition() *InputDefinition {
 	return definition
 }
 
-func (app *Application) printHelp(output *Output, command *Command) {
+func (app *Application) printHelp(output *Output, command *Command, namespace string) {
 	if command == nil {
 		d := TextDescriptor{output}
-		d.DescribeApplication(app, &DescriptorOptions{})
+		d.DescribeApplication(app, &DescriptorOptions{
+			namespace: namespace,
+		})
 		return
 	}
 
@@ -792,16 +792,17 @@ func (app *Application) abbreviationSuggestions(abbrevs []string) string {
 }
 
 func (app *Application) ExtractNamespace(name string, limit int) string {
-	parts := strings.Split(name, ":")
-	parts = parts[0 : len(parts)-1]
+	parts := strings.SplitN(name, ":", limit)
 
-	if limit < 0 {
-		return strings.Join(parts, ":")
+	if len(parts) == 1 {
+		return parts[0]
 	}
 
-	limit = max(len(parts), limit)
+	if limit > len(parts) {
+		limit = len(parts)
+	}
 
-	return strings.Join(parts[0:limit], ":")
+	return strings.Join(parts[0:limit-1], ":")
 }
 
 func (app *Application) findAlternatives(name string, collection []string) []string {
@@ -818,6 +819,10 @@ func (app *Application) findAlternatives(name string, collection []string) []str
 		subname := slice[i]
 		for collectionName, parts := range collectionParts {
 			_, exists := alternatives[collectionName]
+
+			if i >= len(parts) {
+				continue
+			}
 
 			if parts[i] == "" && exists {
 				alternatives[collectionName] += treshold
@@ -964,4 +969,45 @@ func levenshtein(a string, b string) int {
 
 func (app *Application) ExitCode() int {
 	return app.code
+}
+
+func (app *Application) tryFindSubcommand(i *Input) (*Command, string) {
+	args := i.GivenArguments()
+	if len(args) < 1 {
+		return nil, ""
+	}
+
+	for idx := len(args) - 1; idx >= 0; idx-- {
+		name := strings.Join(args[:idx+1], ":")
+		cmd, _ := app.Find(name)
+
+		if cmd != nil {
+			parts := strings.Split(name, ":")
+			for idx, part := range parts {
+				if idx == 0 {
+					nameIdx := array.IndexOf(i.Args, part)
+					i.Args[nameIdx] = name
+				} else {
+					i.Args = array.Remove(i.Args, part)
+				}
+			}
+
+			return cmd, ""
+		}
+	}
+
+	namespaces := app.Namespaces()
+
+	for idx := len(args) - 1; idx >= 0; idx-- {
+		tokens := args[:idx+1]
+		ns := strings.Join(tokens, ":")
+
+		for _, namespace := range namespaces {
+			if strings.HasPrefix(namespace, ns+":") {
+				return nil, ns
+			}
+		}
+	}
+
+	return nil, ""
 }

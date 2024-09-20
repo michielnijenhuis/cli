@@ -33,7 +33,7 @@ func (d *TextDescriptor) DescribeApplication(app *Application, options *Descript
 	}
 
 	if options != nil && options.rawText {
-		commands := description.Commands()
+		commands := description.Commands(0)
 		width := columnWidth(commands)
 
 		for _, command := range commands {
@@ -57,8 +57,13 @@ func (d *TextDescriptor) DescribeApplication(app *Application, options *Descript
 		d.writeText(Eol, nil)
 		d.writeText(Eol, nil)
 
-		commands := description.Commands()
-		namespaces := description.Namespaces()
+		limit := 0
+		if describedNamespace != "" {
+			limit = len(strings.Split(describedNamespace, ":")) + 1
+		}
+
+		commands := description.Commands(limit)
+		namespaces := description.Namespaces(limit)
 
 		var firstNamespace *NamespaceCommands
 		for _, ns := range namespaces {
@@ -95,6 +100,10 @@ func (d *TextDescriptor) DescribeApplication(app *Application, options *Descript
 		}
 
 		for _, namespace := range array.SortedKeys(namespaces) {
+			if describedNamespace != "" && namespace != describedNamespace {
+				continue
+			}
+
 			ns := namespaces[namespace]
 			list := make([]string, 0)
 			sort.Strings(ns.commands)
@@ -145,6 +154,10 @@ func (d *TextDescriptor) DescribeCommand(command *Command, options *DescriptorOp
 	d.writeText("<primary>Usage:</primary>", options)
 	usages := make([]string, 0)
 	usages = append(usages, command.Synopsis(true))
+	parts := strings.Split(command.Name, ":")
+	if len(parts) > 1 {
+		usages = append(usages, strings.Join(parts, " "))
+	}
 	if command.Aliases != nil {
 		usages = append(usages, command.Aliases...)
 	}
