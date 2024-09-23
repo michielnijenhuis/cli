@@ -1,68 +1,71 @@
 package cmd
 
 import (
+	"log"
+	"strings"
+
 	"github.com/michielnijenhuis/cli"
 )
 
 func Execute() {
-	app := &cli.Application{
-		Name:    "app",
-		Version: "v1.0.0",
-		// CatchErrors: true,
-		Commands: []*cli.Command{
-			{
-				Name:        "test:ing",
-				Description: "Test command",
-				Run:         test,
-				Arguments: []cli.Arg{
-					&cli.StringArg{
-						Name:        "arg",
-						Description: "Argument",
-						Required:    true,
-					},
-				},
+	app := &cli.Command{
+		Name:           "app",
+		Description:    "Beautiful CLI application",
+		Version:        "v1.0.0",
+		PromptForInput: true,
+		AutoExit:       true,
+		CatchErrors:    true,
+		Arguments: []cli.Arg{
+			&cli.StringArg{
+				Name:        "id",
+				Description: "User ID",
+				Required:    true,
 			},
-			{
-				Name:        "test:bro",
-				Aliases:     []string{"t"},
-				Description: "Test command 2",
-				Run:         test2,
-			},
-			{
-				Name:        "test:sup:dude",
-				Description: "Test command 4",
-				Run:         test4,
-				Arguments: []cli.Arg{
-					&cli.StringArg{
-						Name:        "foo",
-						Description: "Foo?",
-						Required:    true,
-					},
-				},
-			},
-			{
-				Name:        "hell:naaaah",
-				Description: "Test command 3",
-				Run:         test3,
-			},
+		},
+		Run: func(io *cli.IO) {
+			io.Writeln(strings.Join(io.Args, ","))
 		},
 	}
 
-	app.RunExit()
-}
+	cmd := &cli.Command{
+		Name:        "cmd",
+		Description: "Beautiful command",
+		Aliases:     []string{"c"},
+		Run: func(io *cli.IO) {
+			io.Writeln(strings.Join(io.Args, ","))
+		},
+	}
 
-func test(io *cli.IO) {
-	io.Warn(io.String("arg"))
-}
+	cmd2 := &cli.Command{
+		Name:        "cmd2",
+		Description: "Beautiful command 2",
+		Run: func(io *cli.IO) {
+			io.Writeln(strings.Join(io.Args, ","))
+		},
+	}
 
-func test2(io *cli.IO) {
-	io.Warn("BRO! Wait, what?")
-}
+	app.AddCommand(cmd)
+	app.AddCommand(cmd2)
 
-func test3(io *cli.IO) {
-	io.Info("Praise Jesus")
-}
+	sub := &cli.Command{
+		Name:        "sub",
+		Description: "Beautiful sub-subcommand",
+		Aliases:     []string{"s"},
+		Arguments: []cli.Arg{
+			&cli.StringArg{
+				Name:        "arg",
+				Description: "Argument",
+				Required:    true,
+			},
+		},
+		Run: func(io *cli.IO) {
+			io.Writeln(strings.Join(io.Args, ","))
+		},
+	}
 
-func test4(io *cli.IO) {
-	io.Info("Hail Satan: " + io.String("foo"))
+	cmd.AddCommand(sub)
+
+	if err := app.Execute(); err != nil {
+		log.Fatalln(err)
+	}
 }

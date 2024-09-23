@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/michielnijenhuis/cli/helper"
@@ -21,162 +21,79 @@ type TextDescriptor struct {
 	Output *Output
 }
 
-func (d *TextDescriptor) DescribeApplication(app *Application, options *DescriptorOptions) {
-	var describedNamespace string
-	if options != nil {
-		describedNamespace = options.namespace
-	}
-
-	description := ApplicationDescription{
-		Application: app,
-		Namespace:   describedNamespace,
-	}
-
-	if options != nil && options.rawText {
-		commands := description.Commands(0)
-		width := columnWidth(commands)
-
-		for _, command := range commands {
-			name := command.Name
-			d.writeText(fmt.Sprintf("%s %s", name[0:width], command.Description), options)
-			d.writeText(Eol, nil)
-		}
-	} else {
-		help := app.Help()
-		if help != "" {
-			d.writeText(help+"\n\n", options)
-		}
-
-		d.writeText("<primary>Usage:</primary>\n", options)
-		d.writeText("  command [flags] [--] [arguments]\n\n", options)
-
-		d.DescribeInputDefinition(&InputDefinition{
-			flags: app.Definition().flags,
-		}, options)
-
-		d.writeText(Eol, nil)
-		d.writeText(Eol, nil)
-
-		limit := 0
-		if describedNamespace != "" {
-			limit = len(strings.Split(describedNamespace, ":")) + 1
-		}
-
-		commands := description.Commands(limit)
-		namespaces := description.Namespaces(limit)
-
-		var firstNamespace *NamespaceCommands
-		for _, ns := range namespaces {
-			firstNamespace = ns
-			break
-		}
-
-		if describedNamespace != "" && len(namespaces) > 0 {
-			// make sure all alias commands are included when describing a specific namespace
-			describedNamespaceInfo := firstNamespace
-			for _, name := range describedNamespaceInfo.commands {
-				c, err := description.Command(name)
-				if err != nil {
-					commands[name] = c
-				}
-			}
-		}
-
-		// calculate max. width based on available commands per namespace
-		availableCommands := make(map[string]*Command)
-		for _, namespace := range namespaces {
-			for _, command := range namespace.commands {
-				if c, exists := commands[command]; exists {
-					availableCommands[command] = c
-				}
-			}
-		}
-		width := columnWidth(availableCommands)
-
-		if describedNamespace != "" {
-			d.writeText(fmt.Sprintf("<primary>Commands for the \"%s\" namespace:</primary>", describedNamespace), options)
-		} else {
-			d.writeText("<primary>Commands:</primary>", options)
-		}
-
-		for _, namespace := range array.SortedKeys(namespaces) {
-			if describedNamespace != "" && namespace != describedNamespace {
-				continue
-			}
-
-			ns := namespaces[namespace]
-			list := make([]string, 0)
-			sort.Strings(ns.commands)
-			for _, command := range ns.commands {
-				if _, exists := commands[command]; exists {
-					list = append(list, command)
-				}
-			}
-
-			if len(list) == 0 {
-				continue
-			}
-
-			if describedNamespace == "" && ns.id != "_global" {
-				d.writeText(Eol, nil)
-				d.writeText(fmt.Sprintf(" <primary>%s</primary>", ns.id), options)
-			}
-
-			for _, name := range list {
-				d.writeText(Eol, nil)
-				spacingWidth := width - helper.Width(name)
-				command := commands[name]
-
-				var commandAliases string
-				if name == command.Name {
-					commandAliases = d.commandAliasesText(command)
-				}
-
-				d.writeText(fmt.Sprintf("  <accent>%s</accent>%s%s%s", name, strings.Repeat(" ", max(spacingWidth, 0)+2), commandAliases, command.Description), options)
-			}
-		}
-
-		d.writeText(Eol, nil)
-	}
-}
-
 func (d *TextDescriptor) DescribeCommand(command *Command, options *DescriptorOptions) {
-	command.MergeApplication(false)
-
-	description := command.Description
-	if description != "" {
-		d.writeText("<primary>Description:</primary>", options)
-		d.writeText(Eol, nil)
-		d.writeText("  "+description, nil)
-		d.writeText("\n\n", nil)
+	intro := command.GetHelp()
+	if intro != "" {
+		d.writeText(intro+Eol+Eol, options)
 	}
-
-	d.writeText("<primary>Usage:</primary>", options)
-	usages := make([]string, 0)
-	usages = append(usages, command.Synopsis(true))
-	parts := strings.Split(command.Name, ":")
-	if len(parts) > 1 {
-		usages = append(usages, strings.Join(parts, " "))
-	}
-	if command.Aliases != nil {
-		usages = append(usages, command.Aliases...)
-	}
-	usages = append(usages, command.Usages()...)
-	for _, usage := range usages {
-		d.writeText(Eol, nil)
-		d.writeText("  "+Escape(usage), options)
-	}
-	d.writeText(Eol, nil)
 
 	definition := command.Definition()
-	if len(definition.flags) > 0 || len(definition.arguments) > 0 {
-		d.writeText(Eol, nil)
-		d.DescribeInputDefinition(definition, options)
-		d.writeText(Eol, nil)
+
+	d.writeText("<primary>Usage:</primary>", options)
+	d.writeText(Eol, options)
+
+	if command.Run != nil || command.RunE != nil {
+		d.writeText("  "+command.Synopsis(true), options)
+
+		if command.HasSubcommands() {
+			d.writeText(Eol, options)
+		}
 	}
 
+	if command.HasSubcommands() {
+		if command.parent == nil {
+			d.writeText(fmt.Sprintf("  %s [command] [flags] [--] [arguments]", command.FullName()), options)
+		} else {
+			d.writeText(fmt.Sprintf("  %s [command]", command.FullName()), options)
+		}
+	}
+
+	ns := command.Namespace()
+	if ns != "" {
+		ns += " "
+	}
+
+	for _, alias := range command.Aliases {
+		d.writeText(Eol, options)
+		d.writeText(fmt.Sprintf("  %s%s", ns, alias), options)
+	}
+
+	d.writeText(Eol+Eol, options)
+
+	d.DescribeInputDefinition(definition, options)
+
+	commands := command.All()
+
+	if len(commands) > 0 {
+		d.writeText(Eol, nil)
+		d.writeText(Eol, nil)
+		d.writeText("<primary>Available commands:</primary>", options)
+
+		commandNames := array.SortedKeys(commands)
+		width := len(slices.Max(commandNames))
+
+		for _, name := range commandNames {
+			cmd := commands[name]
+			d.writeText(Eol, nil)
+			spacingWidth := width - helper.Width(name)
+			command := commands[name]
+
+			var commandAliases string
+			if name == command.Name {
+				commandAliases = d.commandAliasesText(cmd)
+			}
+
+			nameParts := strings.Split(name, ":")
+			name = strings.Join(nameParts, " ")
+
+			d.writeText(fmt.Sprintf("  <accent>%s</accent>%s%s%s", name, strings.Repeat(" ", max(spacingWidth, 0)+2), commandAliases, command.Description), options)
+		}
+	}
+
+	d.writeText(Eol, nil)
+
 	help := command.ProcessedHelp()
-	if help != "" && help != description {
+	if help != "" && help != intro && help != command.Description {
 		d.writeText(Eol, nil)
 		d.writeText("<primary>Help:</primary>", options)
 		d.writeText(Eol, nil)
@@ -364,20 +281,6 @@ func (d *TextDescriptor) DescribeFlag(flag Flag, options *DescriptorOptions) {
 	}
 
 	d.writeText(fmt.Sprintf("  <accent>%s</accent>  %s%s%s%s", synopsisString, width, desc, defaultValue, arr), options)
-}
-
-func columnWidth(commands map[string]*Command) int {
-	width := 0
-
-	for _, command := range commands {
-		width = max(width, helper.Width(command.Name))
-
-		for _, alias := range command.Aliases {
-			width = max(width, helper.Width(alias))
-		}
-	}
-
-	return width
 }
 
 func calculateTotalWidthForFlags(flags []Flag) int {

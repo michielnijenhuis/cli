@@ -10,5 +10,4 @@
     - suggest
     - textarea
 - prompt themes (default, box)
-- subcommands
 - zsh completion

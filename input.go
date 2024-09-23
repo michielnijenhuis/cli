@@ -21,6 +21,7 @@ type Input struct {
 	interactive     bool
 	givenArguments  []string
 	Args            []string
+	tokens          []string
 	parsed          []string
 	initialSttyMode string
 	Strict          bool
@@ -52,8 +53,12 @@ func NewInput(args ...string) *Input {
 		args = os.Args[1:]
 	}
 
+	tokens := make([]string, len(args))
+	copy(tokens, args)
+
 	i := &Input{
 		Args:           args,
+		tokens:         tokens,
 		parsed:         make([]string, 0),
 		definition:     &InputDefinition{},
 		Stream:         os.Stdin,
@@ -90,8 +95,8 @@ func (i *Input) Bind(definition *InputDefinition) error {
 
 func (i *Input) parse() error {
 	parseFlags := true
-	i.parsed = make([]string, 0, len(i.Args))
-	i.parsed = append(i.parsed, i.Args...)
+	i.parsed = make([]string, 0, len(i.tokens))
+	i.parsed = append(i.parsed, i.tokens...)
 	var (
 		token       string
 		err         error
@@ -337,6 +342,14 @@ func (i *Input) parseArgument(token string) (error, bool) {
 		ArgSetValue(arg, token)
 		return nil, true
 	} else {
+		if currentCount == 0 {
+			if !i.Strict {
+				return nil, false
+			} else {
+				return fmt.Errorf("no arguments expected"), false
+			}
+		}
+
 		if currentCount == argsCount {
 			arg, err := definition.ArgumentByIndex(currentCount - 1)
 			if err != nil {

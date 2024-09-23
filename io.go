@@ -12,10 +12,7 @@ type IO struct {
 	Input      *Input
 	Output     *Output
 	Args       []string
-	Code       int
-	Debug      bool
 	definition *InputDefinition
-	Logger
 }
 
 func (io *IO) ChildProcess(cmd string) *ChildProcess {
@@ -189,7 +186,7 @@ func (io *IO) IsVeryVerbose() bool {
 }
 
 func (io *IO) IsDebug() bool {
-	return io.Output.IsDebug() || io.Debug
+	return io.Output.IsDebug()
 }
 
 func (io *IO) IsDecorated() bool {
@@ -199,7 +196,7 @@ func (io *IO) IsDecorated() bool {
 func (io *IO) Bool(name string) bool {
 	val, err := io.Input.Bool(name)
 	if err != nil {
-		if io.Debug {
+		if io.Output.IsDebug() {
 			panic(err)
 		}
 		return false
@@ -210,7 +207,7 @@ func (io *IO) Bool(name string) bool {
 func (io *IO) String(name string) string {
 	str, err := io.Input.String(name)
 	if err != nil {
-		if io.Debug {
+		if io.Output.IsDebug() {
 			panic(err)
 		}
 		return ""
@@ -221,7 +218,7 @@ func (io *IO) String(name string) string {
 func (io *IO) Array(name string) []string {
 	arr, err := io.Input.Array(name)
 	if err != nil {
-		if io.Debug {
+		if io.Output.IsDebug() {
 			panic(err)
 		}
 		return []string{}
