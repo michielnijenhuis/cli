@@ -36,39 +36,3 @@ func TerminalSize() (int, int) {
 func TerminalIsInteractive() bool {
 	return term.IsTerminal(int(os.Stdin.Fd()))
 }
-
-var originalState *term.State
-var terminalState int
-
-func TerminalMakeRaw() error {
-	if terminalState > 0 {
-		terminalState++
-		return nil
-	}
-
-	state, err := term.MakeRaw(int(os.Stdin.Fd()))
-	if err != nil {
-		return err
-	}
-
-	terminalState++
-	originalState = state
-
-	return nil
-}
-
-func TerminalRestore() error {
-	if terminalState <= 0 || terminalState > 1 {
-		if terminalState > 1 {
-			terminalState--
-		}
-
-		return nil
-	}
-
-	terminalState = 0
-	err := term.Restore(int(os.Stdin.Fd()), originalState)
-	originalState = nil
-
-	return err
-}

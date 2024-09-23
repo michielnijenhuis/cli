@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"log"
-	"strings"
 
 	"github.com/michielnijenhuis/cli"
 )
@@ -23,7 +22,7 @@ func Execute() {
 			},
 		},
 		Run: func(io *cli.IO) {
-			io.Writeln(strings.Join(io.Args, ","))
+			io.Writeln("Hello from app")
 		},
 	}
 
@@ -32,7 +31,7 @@ func Execute() {
 		Description: "Beautiful command",
 		Aliases:     []string{"c"},
 		Run: func(io *cli.IO) {
-			io.Writeln(strings.Join(io.Args, ","))
+			io.Writeln("Hello from app->cmd")
 		},
 	}
 
@@ -40,7 +39,7 @@ func Execute() {
 		Name:        "cmd2",
 		Description: "Beautiful command 2",
 		Run: func(io *cli.IO) {
-			io.Writeln(strings.Join(io.Args, ","))
+			io.Writeln("Hello from app->cmd2")
 		},
 	}
 
@@ -55,11 +54,10 @@ func Execute() {
 			&cli.StringArg{
 				Name:        "arg",
 				Description: "Argument",
-				Required:    true,
 			},
 		},
 		Run: func(io *cli.IO) {
-			io.Writeln(strings.Join(io.Args, ","))
+			io.Writeln("Hello from app->cmd->sub")
 		},
 	}
 
