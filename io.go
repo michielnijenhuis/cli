@@ -252,7 +252,7 @@ func (io *IO) WithGracefulExit(fn func(done <-chan bool)) bool {
 		d <- true
 	}(done)
 
-	go func(s chan os.Signal, d chan bool) {
+	go func(s <-chan os.Signal, d chan<- bool) {
 		<-s
 		d <- false
 	}(sigs, done)

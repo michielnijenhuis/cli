@@ -14,13 +14,6 @@ func Execute() {
 		PromptForInput: true,
 		AutoExit:       true,
 		CatchErrors:    true,
-		Arguments: []cli.Arg{
-			&cli.StringArg{
-				Name:        "id",
-				Description: "User ID",
-				Required:    true,
-			},
-		},
 		Run: func(io *cli.IO) {
 			io.Writeln("Hello from app")
 		},
@@ -36,7 +29,7 @@ func Execute() {
 	}
 
 	cmd2 := &cli.Command{
-		Name:        "cmd2",
+		Name:        "a-very-long-name",
 		Description: "Beautiful command 2",
 		Run: func(io *cli.IO) {
 			io.Writeln("Hello from app->cmd2")

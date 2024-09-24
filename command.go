@@ -187,10 +187,10 @@ func (c *Command) execute(i *Input, o *Output) error {
 		err = command.RunE(io)
 	} else if command.Run != nil {
 		command.Run(io)
-	} else if command == c {
+	} else if command == c || command.HasSubcommands() {
 		c.printHelp(o, command)
 	} else {
-		panic("command must have a handle")
+		panic("command must have a handle or subcommands")
 	}
 
 	c.runningCommand = nil

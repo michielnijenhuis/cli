@@ -3,7 +3,6 @@ package cli
 import (
 	"fmt"
 	"regexp"
-	"slices"
 	"strings"
 
 	"github.com/michielnijenhuis/cli/helper"
@@ -70,7 +69,10 @@ func (d *TextDescriptor) DescribeCommand(command *Command, options *DescriptorOp
 		d.writeText("<primary>Available commands:</primary>", options)
 
 		commandNames := array.SortedKeys(commands)
-		width := len(slices.Max(commandNames))
+		width := 0
+		for _, name := range commandNames {
+			width = max(width, len(name))
+		}
 
 		for _, name := range commandNames {
 			cmd := commands[name]

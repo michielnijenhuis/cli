@@ -13,11 +13,12 @@ import (
 
 type Spinner struct {
 	*Prompt
-	Interval int
-	Count    int
-	Message  string
-	Frames   []string
-	Color    string
+	Interval          int
+	Count             int
+	Message           string
+	Frames            []string
+	Color             string
+	KeepRenderedLines bool
 }
 
 type SpinnerFrame struct {
@@ -136,7 +137,10 @@ func (s *Spinner) Spin(fn func()) {
 
 	<-done
 
-	s.eraseRenderedLines()
+	if !s.KeepRenderedLines {
+		s.eraseRenderedLines()
+	}
+
 	s.cursor.Show()
 	cancel()
 
