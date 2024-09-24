@@ -352,14 +352,6 @@ func (c *Command) validate() {
 			panic(fmt.Sprintf("command alias \"%s\" is invalid", alias))
 		}
 	}
-
-	if c.HasSubcommands() {
-		return
-	}
-
-	if c.Run == nil && c.RunE == nil {
-		panic(fmt.Sprintf("command \"%s\" must have a handle", c.Name))
-	}
 }
 
 func (c *Command) RenderError(o *Output, err error) {
