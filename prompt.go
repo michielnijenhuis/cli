@@ -455,28 +455,34 @@ func (p *Prompt) AddCursor(value string, cursorPosition int, maxWidth int) strin
 	return out.String()
 }
 
-func (p *Prompt) InitializeScrolling(highlighted int) {
+func (p *Prompt) InitializeScrolling(highlighted int, reservedLines int) {
 	p.Highlighted = highlighted
 
-	p.ReduceScrollingToFitTerminal()
+	p.ReduceScrollingToFitTerminal(reservedLines)
 }
 
-func (p *Prompt) ReduceScrollingToFitTerminal() {
+func (p *Prompt) ReduceScrollingToFitTerminal(reservedLines int) {
 	terminalHeight := TerminalHeight()
-	p.Scroll = max(1, min(p.Scroll, terminalHeight))
+	p.Scroll = max(1, min(p.Scroll, terminalHeight-reservedLines))
 }
 
 func (p *Prompt) Highlight(index int) {
 	p.Highlighted = index
 
-	if index < 0 {
+	if p.Highlighted < 0 {
 		return
 	}
 
-	if index < p.FirstVisible {
-		p.FirstVisible = index
-	} else if index < p.FirstVisible+p.Scroll-1 {
-		p.FirstVisible = index - p.Scroll + 1
+	if p.Highlighted < p.FirstVisible {
+		p.FirstVisible = p.Highlighted
+		panic(fmt.Sprintf("First visible: %d. Index: %d. Highlighted: %d", p.FirstVisible, index, p.Highlighted))
+		if index > 0 {
+		}
+	} else if p.Highlighted < p.FirstVisible+p.Scroll-1 {
+		p.FirstVisible = p.Highlighted - p.Scroll + 1
+		panic(fmt.Sprintf("First visible: %d. Index: %d. Highlighted: %d", p.FirstVisible, index, p.Highlighted))
+		if index > 0 {
+		}
 	}
 }
 
@@ -518,9 +524,8 @@ func (p *Prompt) HighlightNext(total int) {
 	}
 }
 
-// TODO: fix
 func (p *Prompt) ScrollToHighlighted(total int) {
-	if p.Highlighted < 0 || p.Highlighted < p.Scroll {
+	if p.Highlighted < p.Scroll {
 		return
 	}
 

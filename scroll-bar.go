@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"regexp"
 )
 
 func ScrollBar(visible []string, firstVisible int, height int, total int, width int, color string) []string {
@@ -15,12 +14,17 @@ func ScrollBar(visible []string, firstVisible int, height int, total int, width 
 	list := make([]string, 0, len(visible))
 	for i, v := range visible {
 		line := Pad(v, width, " ")
+		lineColor := color
+
 		if i != scrollPosition {
-			color = "gray"
+			lineColor = "gray"
+		} else if lineColor == "" {
+			lineColor = "cyan"
 		}
 
-		re := regexp.MustCompile(`\.`)
-		list = append(list, re.ReplaceAllString(line, fmt.Sprintf("<fg=%s>|</>", color)))
+		length := len(line)
+		line = line[:length-1] + fmt.Sprintf("<fg=%s>%s</>", lineColor, LineVertical)
+		list = append(list, line)
 	}
 
 	return list

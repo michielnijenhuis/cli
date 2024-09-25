@@ -50,10 +50,10 @@ func NewSelectPrompt(i *Input, o *Output, label string, values []string, labels 
 		if i < 0 {
 			i = 0
 		}
-		p.InitializeScrolling(i)
+		p.InitializeScrolling(i, 0)
 		// p.scrollToHighlighted(len(values)) // TODO: fix
 	} else {
-		p.InitializeScrolling(0)
+		p.InitializeScrolling(0, 0)
 	}
 
 	p.on("key", func(key string) {

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
@@ -53,20 +54,48 @@ func (c *Command) Execute(args ...string) (err error) {
 	i.Strict = c.Strict
 	o := NewOutput(i)
 
+	var caughtError = false
+
 	if c.CatchErrors {
 		defer func() {
 			if r := recover(); r != nil {
-				err = r.(error)
+				recovered, ok := r.(error)
+				if ok {
+					err = recovered
+				} else {
+					str, ok := r.(string)
+					if ok {
+						err = errors.New(str)
+					} else {
+						err = fmt.Errorf("%v", r)
+					}
+				}
+
+				caughtError = true
+				c.handleError(o, err)
 			}
 		}()
 	}
 
 	c.configureIO(i, o)
+	err = c.execute(i, o)
 
-	if err = c.execute(i, o); err != nil {
+	if !caughtError {
+		c.handleError(o, err)
+	}
+
+	return
+}
+
+func (c *Command) handleError(o *Output, err error) {
+	if err != nil {
 		c.RenderError(o, err)
 	}
 
+	c.Exit(err)
+}
+
+func (c *Command) Exit(err error) {
 	if c.AutoExit {
 		if err != nil {
 			os.Exit(1)
@@ -74,8 +103,6 @@ func (c *Command) Execute(args ...string) (err error) {
 			os.Exit(0)
 		}
 	}
-
-	return
 }
 
 func (c *Command) Subcommand(name string) *Command {
@@ -359,7 +386,7 @@ func (c *Command) RenderError(o *Output, err error) {
 
 	if c.runningCommand != nil {
 		o.Writeln(
-			fmt.Sprintf("<accent>%s %s</accent>", c.Name, c.runningCommand.Synopsis(false)),
+			fmt.Sprintf("<accent>%s</accent>", c.runningCommand.Synopsis(false)),
 			VerbosityQuiet,
 		)
 	}

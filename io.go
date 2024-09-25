@@ -39,24 +39,35 @@ func (io *IO) Spawn(cmd string, shell string, inherit bool) *ChildProcess {
 }
 
 func (io *IO) Exec(cmd string, shell string, inherit bool) (string, error) {
+	io.printChildProcessCommand(cmd)
 	return io.Spawn(cmd, shell, inherit).Run()
 }
 
+func (io *IO) printChildProcessCommand(cmd string) {
+	if io.IsVerbose() {
+		io.Writelnf("+ %s", cmd)
+	}
+}
+
 func (io *IO) Zsh(cmd string) error {
+	io.printChildProcessCommand(cmd)
 	_, err := io.Exec(cmd, "zsh", true)
 	return err
 }
 
 func (io *IO) ZshPipe(cmd string) (string, error) {
+	io.printChildProcessCommand(cmd)
 	return io.Exec(cmd, "zsh", false)
 }
 
 func (io *IO) Sh(cmd string) error {
+	io.printChildProcessCommand(cmd)
 	_, err := io.Exec(cmd, "", true)
 	return err
 }
 
 func (io *IO) ShPipe(cmd string) (string, error) {
+	io.printChildProcessCommand(cmd)
 	return io.Exec(cmd, "", false)
 }
 
@@ -259,4 +270,8 @@ func (io *IO) WithGracefulExit(fn func(done <-chan bool)) bool {
 
 	success := <-done
 	return success
+}
+
+func (io *IO) Search(label string, options func(string) SearchResult, placeholder string) (string, error) {
+	return io.Output.Search(label, options, placeholder)
 }

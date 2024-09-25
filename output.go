@@ -553,3 +553,8 @@ func (o *Output) autoPrependBlock() {
 
 	o.NewLine(2 - lineBreakCount)
 }
+
+func (o *Output) Search(label string, options func(string) SearchResult, placeholder string) (string, error) {
+	p := NewSearchPrompt(o.input, o, label, options, placeholder)
+	return p.Render()
+}

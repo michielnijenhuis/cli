@@ -47,6 +47,7 @@ var brightColors = map[string]int{
 
 var availableOptions = map[string]AvailableOption{
 	"bold":       {set: 1, unset: 22},
+	"italic":     {set: 3, unset: 23},
 	"underscore": {set: 4, unset: 24},
 	"blink":      {set: 5, unset: 25},
 	"reverse":    {set: 7, unset: 27},
