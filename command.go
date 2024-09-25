@@ -576,10 +576,10 @@ func (c *Command) Definition() *InputDefinition {
 		nativeDefinition := c.defaultInputDefinition()
 
 		c.definition = &InputDefinition{}
-		c.definition.SetArguments(nativeDefinition.GetArguments())
-		c.definition.SetFlags(nativeDefinition.GetFlags())
 		c.definition.AddArguments(c.Arguments)
 		c.definition.AddFlags(c.Flags)
+		c.definition.SetArguments(nativeDefinition.GetArguments())
+		c.definition.SetFlags(nativeDefinition.GetFlags())
 	}
 
 	return c.definition

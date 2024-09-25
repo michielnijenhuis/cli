@@ -81,7 +81,7 @@ func GetArgArrayValue(arg Arg) []string {
 func ValidateArg(arg Arg) error {
 	switch a := arg.(type) {
 	case *StringArg:
-		if a.Options != nil {
+		if len(a.Options) > 0 {
 			isValid := false
 			for _, option := range a.Options {
 				if option == a.Value {
@@ -101,17 +101,19 @@ func ValidateArg(arg Arg) error {
 
 		return nil
 	case *ArrayArg:
-		for _, value := range a.Value {
-			isValid := false
-			for _, option := range a.Options {
-				if option == value {
-					isValid = true
-					break
+		if len(a.Options) > 0 {
+			for _, value := range a.Value {
+				isValid := false
+				for _, option := range a.Options {
+					if option == value {
+						isValid = true
+						break
+					}
 				}
-			}
 
-			if !isValid {
-				return fmt.Errorf("invalid option \"%s\". Possible values: %s", value, strings.Join(a.Options, ", "))
+				if !isValid {
+					return fmt.Errorf("invalid option \"%s\". Possible values: %s", value, strings.Join(a.Options, ", "))
+				}
 			}
 		}
 
