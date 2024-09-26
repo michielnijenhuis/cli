@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"math"
 )
 
 func ScrollBar(visible []string, firstVisible int, height int, total int, width int, color string) []string {
@@ -23,7 +24,11 @@ func ScrollBar(visible []string, firstVisible int, height int, total int, width 
 		}
 
 		length := len(line)
-		line = line[:length-1] + fmt.Sprintf("<fg=%s>%s</>", lineColor, LineVertical)
+		symbol := LineVertical
+		if i == scrollPosition {
+			symbol = LineVerticalHeavy
+		}
+		line = line[:length-1] + fmt.Sprintf("<fg=%s>%s</>", lineColor, symbol)
 		list = append(list, line)
 	}
 
@@ -45,7 +50,8 @@ func scrollPosition(firstVisible int, height int, total int) int {
 		return -1
 	}
 
-	percent := firstVisible / maxPos
+	percent := float64(firstVisible) / float64(maxPos)
+	scrollPos := int(math.Round(percent*float64(height-3))) + 1
 
-	return (percent * (height - 3)) + 1
+	return scrollPos
 }

@@ -10,9 +10,6 @@ import (
 )
 
 type DescriptorOptions struct {
-	namespace  string
-	rawText    bool
-	short      bool
 	totalWidth int
 }
 
@@ -23,27 +20,27 @@ type TextDescriptor struct {
 func (d *TextDescriptor) DescribeCommand(command *Command, options *DescriptorOptions) {
 	intro := command.GetHelp()
 	if intro != "" {
-		d.writeText(intro+Eol+Eol, options)
+		d.writeText(intro + Eol + Eol)
 	}
 
 	definition := command.Definition()
 
-	d.writeText("<primary>Usage:</primary>", options)
-	d.writeText(Eol, options)
+	d.writeText("<primary>Usage:</primary>")
+	d.writeText(Eol)
 
 	if command.Run != nil || command.RunE != nil {
-		d.writeText("  "+command.Synopsis(true), options)
+		d.writeText("  " + command.Synopsis(true))
 
 		if command.HasSubcommands() {
-			d.writeText(Eol, options)
+			d.writeText(Eol)
 		}
 	}
 
 	if command.HasSubcommands() {
 		if command.parent == nil {
-			d.writeText(fmt.Sprintf("  %s [command] [flags] [--] [arguments]", command.FullName()), options)
+			d.writeText(fmt.Sprintf("  %s [command] [flags] [--] [arguments]", command.FullName()))
 		} else {
-			d.writeText(fmt.Sprintf("  %s [command]", command.FullName()), options)
+			d.writeText(fmt.Sprintf("  %s [command]", command.FullName()))
 		}
 	}
 
@@ -53,20 +50,20 @@ func (d *TextDescriptor) DescribeCommand(command *Command, options *DescriptorOp
 	}
 
 	for _, alias := range command.Aliases {
-		d.writeText(Eol, options)
-		d.writeText(fmt.Sprintf("  %s%s", ns, alias), options)
+		d.writeText(Eol)
+		d.writeText(fmt.Sprintf("  %s%s", ns, alias))
 	}
 
-	d.writeText(Eol+Eol, options)
+	d.writeText(Eol + Eol)
 
 	d.DescribeInputDefinition(definition, options)
 
 	commands := command.All()
 
 	if len(commands) > 0 {
-		d.writeText(Eol, nil)
-		d.writeText(Eol, nil)
-		d.writeText("<primary>Available commands:</primary>", options)
+		d.writeText(Eol)
+		d.writeText(Eol)
+		d.writeText("<primary>Available commands:</primary>")
 
 		commandNames := array.SortedKeys(commands)
 		width := 0
@@ -76,7 +73,7 @@ func (d *TextDescriptor) DescribeCommand(command *Command, options *DescriptorOp
 
 		for _, name := range commandNames {
 			cmd := commands[name]
-			d.writeText(Eol, nil)
+			d.writeText(Eol)
 			spacingWidth := width - helper.Width(name)
 			command := commands[name]
 
@@ -88,19 +85,19 @@ func (d *TextDescriptor) DescribeCommand(command *Command, options *DescriptorOp
 			nameParts := strings.Split(name, ":")
 			name = strings.Join(nameParts, " ")
 
-			d.writeText(fmt.Sprintf("  <accent>%s</accent>%s%s%s", name, strings.Repeat(" ", max(spacingWidth, 0)+2), commandAliases, command.Description), options)
+			d.writeText(fmt.Sprintf("  <accent>%s</accent>%s%s%s", name, strings.Repeat(" ", max(spacingWidth, 0)+2), commandAliases, command.Description))
 		}
 	}
 
-	d.writeText(Eol, nil)
+	d.writeText(Eol)
 
 	help := command.ProcessedHelp()
 	if help != "" && help != intro && help != command.Description {
-		d.writeText(Eol, nil)
-		d.writeText("<primary>Help:</primary>", options)
-		d.writeText(Eol, nil)
-		d.writeText("  "+strings.ReplaceAll(help, Eol, "\n  "), options)
-		d.writeText(Eol, nil)
+		d.writeText(Eol)
+		d.writeText("<primary>Help:</primary>")
+		d.writeText(Eol)
+		d.writeText("  " + strings.ReplaceAll(help, Eol, "\n  "))
+		d.writeText(Eol)
 	}
 }
 
@@ -114,28 +111,25 @@ func (d *TextDescriptor) DescribeInputDefinition(definition *InputDefinition, op
 	hasFlags := len(definition.flags) > 0
 
 	if hasArgs {
-		d.writeText("<primary>Arguments:</primary>", options)
-		d.writeText(Eol, nil)
+		d.writeText("<primary>Arguments:</primary>")
+		d.writeText(Eol)
 
 		for _, argument := range definition.arguments {
 			d.DescribeArgument(argument, &DescriptorOptions{
-				namespace:  options.namespace,
-				rawText:    options.rawText,
-				short:      options.short,
 				totalWidth: totalWidth,
 			})
-			d.writeText(Eol, nil)
+			d.writeText(Eol)
 		}
 	}
 
 	if hasArgs && hasFlags {
-		d.writeText(Eol, nil)
+		d.writeText(Eol)
 	}
 
 	if hasFlags {
 		laterFlags := make([]Flag, 0)
 
-		d.writeText("<primary>Flags:</primary>", options)
+		d.writeText("<primary>Flags:</primary>")
 
 		for _, flag := range definition.flags {
 			if len(flag.GetShortcutString()) > 1 {
@@ -143,21 +137,15 @@ func (d *TextDescriptor) DescribeInputDefinition(definition *InputDefinition, op
 				continue
 			}
 
-			d.writeText(Eol, nil)
+			d.writeText(Eol)
 			d.DescribeFlag(flag, &DescriptorOptions{
-				namespace:  options.namespace,
-				rawText:    options.rawText,
-				short:      options.short,
 				totalWidth: totalWidth,
 			})
 		}
 
 		for _, flag := range laterFlags {
-			d.writeText(Eol, nil)
+			d.writeText(Eol)
 			d.DescribeFlag(flag, &DescriptorOptions{
-				namespace:  options.namespace,
-				rawText:    options.rawText,
-				short:      options.short,
 				totalWidth: totalWidth,
 			})
 		}
@@ -184,7 +172,7 @@ func (d *TextDescriptor) DescribeArgument(argument Arg, options *DescriptorOptio
 	re := regexp.MustCompile(`\s*[\r\n]\s*`)
 	desc := re.ReplaceAllString(argument.GetDescription(), strings.Repeat(" ", totalWidth+4))
 
-	d.writeText(fmt.Sprintf("  <accent>%s</accent> %s%s%s", name, width, desc, defaultValue), options)
+	d.writeText(fmt.Sprintf("  <accent>%s</accent> %s%s%s", name, width, desc, defaultValue))
 }
 
 func argHasDefaultValue(arg Arg) bool {
@@ -282,7 +270,7 @@ func (d *TextDescriptor) DescribeFlag(flag Flag, options *DescriptorOptions) {
 		arr = "<primary> (multiple values allowed)</primary>"
 	}
 
-	d.writeText(fmt.Sprintf("  <accent>%s</accent>  %s%s%s%s", synopsisString, width, desc, defaultValue, arr), options)
+	d.writeText(fmt.Sprintf("  <accent>%s</accent>  %s%s%s%s", synopsisString, width, desc, defaultValue, arr))
 }
 
 func calculateTotalWidthForFlags(flags []Flag) int {
@@ -334,17 +322,8 @@ func (d *TextDescriptor) commandAliasesText(command *Command) string {
 	return text
 }
 
-func (d *TextDescriptor) writeText(content string, options *DescriptorOptions) {
-	decorated := true
-
-	if options != nil {
-		if options.rawText {
-			re := regexp.MustCompile(`<\/?[^>]+(>|$)`)
-			content = re.ReplaceAllString(content, "")
-		}
-	}
-
-	d.Write(content, decorated)
+func (d *TextDescriptor) writeText(content string) {
+	d.Write(content, true)
 }
 
 func formatDefaultValue(value InputType) string {

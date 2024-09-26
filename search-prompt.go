@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/michielnijenhuis/cli/helper/keys"
+	"github.com/michielnijenhuis/cli/terminal"
 )
 
 // May be a map[string]string or []string
@@ -17,7 +18,6 @@ type SearchPrompt struct {
 	Label         string
 	Options       func(string) SearchResult
 	Placeholder   string
-	Scroll        int
 	Hint          string
 	matchedValues []string
 	matchedLabels []string
@@ -95,11 +95,15 @@ func (p *SearchPrompt) search() {
 	p.matchedValues = nil
 	p.Prompt.FirstVisible = 0
 	p.Prompt.State = PromptStateActive
+
+	if len(p.Matches()) == 1 {
+		p.Highlight(0)
+	}
 }
 
 func (p *SearchPrompt) View() string {
 	renderer := NewRenderer()
-	terminalWidth, _ := TerminalWidth()
+	terminalWidth := terminal.Columns()
 	maxWidth := terminalWidth - 6
 	state := p.State
 
@@ -117,7 +121,7 @@ func (p *SearchPrompt) View() string {
 			renderer.Line(fmt.Sprintf("<fg=gray>%s</>", p.Hint), true)
 		}
 	} else if state == PromptStateSearching {
-		renderer.Line(fmt.Sprintf("<fg=green>?</> <options=bold>%s</> (searching)", label), true)
+		renderer.Line(fmt.Sprintf("<fg=green>?</> <options=bold>%s</>", label), true)
 		renderer.Line(fmt.Sprintf("<fg=cyan>›</> %s", p.ValueWithCursorAndSearchcon(maxWidth)), true)
 		renderer.Line(p.renderOptions(), true)
 		if p.Hint != "" {
@@ -201,18 +205,10 @@ func (p *SearchPrompt) Visible() []string {
 	if length == 0 {
 		return matches
 	}
-	firstVisible := p.Prompt.FirstVisible
-	// if firstVisible < 0 {
-	// 	firstVisible = 0
-	// }
-	scroll := p.Prompt.Scroll
-	// if scroll < 0 {
-	// 	scroll = 0
-	// } else if scroll > length {
-	// 	scroll = length
-	// }
 
-	return matches[firstVisible:scroll]
+	start := max(0, p.FirstVisible)
+	end := min(length, start+p.Scroll)
+	return matches[start:end]
 }
 
 func (p *SearchPrompt) SearchValue() string {
@@ -232,27 +228,28 @@ func (p *SearchPrompt) SelectedLabel() string {
 func (p *SearchPrompt) renderOptions() string {
 	if p.SearchValue() == "" && len(p.Matches()) == 0 {
 		text := "No results."
-		if p.Prompt.State == PromptStateSearching {
+		if p.State == PromptStateSearching {
 			text = "Searching..."
 		}
 		return fmt.Sprintf("<fg=gray>  %s</>", text)
 	}
 
-	terminalWidth, _ := TerminalWidth()
+	terminalWidth := terminal.Columns()
 	matches := p.Matches()
 	visible := p.Visible()
 	items := make([]string, len(visible))
 	for i, item := range visible {
+		ogItem := item
 		item = Truncate(item, terminalWidth-10, "")
-		if p.Prompt.Highlighted == i {
-			item = fmt.Sprintf("<fg=cyan>%s</> %s ", ChevronSmall, item)
+		if p.Highlighted >= 0 && ogItem == matches[p.Highlighted] {
+			item = fmt.Sprintf("<fg=cyan>%s</> %s ", SmallTriangleRight, item)
 		} else {
 			item = fmt.Sprintf("  %s  ", Dim(item))
 		}
 		items[i] = item
 	}
 
-	return strings.Join(ScrollBar(items, p.Prompt.FirstVisible, p.Prompt.Scroll, len(matches), min(Longest(matches, maxLineLength, 4), terminalWidth-6), ""), Eol)
+	return strings.Join(ScrollBar(items, p.FirstVisible, p.Scroll, len(matches), min(Longest(matches, maxLineLength, 4), terminalWidth-6), ""), Eol)
 }
 
 func (p *SearchPrompt) spaceForDropdown() string {
@@ -260,9 +257,9 @@ func (p *SearchPrompt) spaceForDropdown() string {
 		return ""
 	}
 
-	terminalHeight := TerminalHeight()
+	terminalHeight := terminal.Lines()
 
-	newLines := min(p.Prompt.Scroll, terminalHeight-len(p.Matches()))
+	newLines := min(p.Scroll, terminalHeight-len(p.Matches()))
 	if len(p.Matches()) == 0 {
 		newLines++
 	}
@@ -272,5 +269,5 @@ func (p *SearchPrompt) spaceForDropdown() string {
 }
 
 func (p *SearchPrompt) Render() (string, error) {
-	return p.Prompt.doPrompt(p.View)
+	return p.doPrompt(p.View)
 }

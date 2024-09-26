@@ -18,11 +18,20 @@ type Bar struct {
 
 func Execute() {
 	app := &cli.Command{
-		Name:        "app",
-		Description: "Beautiful CLI application",
-		Version:     "v1.0.0",
-		// AutoExit:    true,
-		// CatchErrors: true,
+		Name:           "app",
+		Description:    "Beautiful CLI application",
+		Version:        "v1.0.0",
+		AutoExit:       true,
+		CatchErrors:    true,
+		PromptForInput: true,
+		Arguments: []cli.Arg{
+			&cli.StringArg{
+				Name:        "name",
+				Description: "Name of the person",
+				Options:     []string{"Michiel", "Michael", "Miguel"},
+				Required:    true,
+			},
+		},
 		Run: func(io *cli.IO) {
 			answer, err := io.Search("What is your name?", func(s string) cli.SearchResult {
 				list := make([]string, 0, 26)

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math"
 	"strings"
+
+	"github.com/michielnijenhuis/cli/terminal"
 )
 
 type View struct {
@@ -31,7 +33,7 @@ func (v *View) ShowCursor() {
 }
 
 func (v *View) Clear() {
-	terminalHeight := TerminalHeight()
+	terminalHeight := terminal.Lines()
 	previousFrameHeight := v.prevHeight()
 	v.cursor.MoveToColumn(1)
 	up := min(terminalHeight, previousFrameHeight) - 1
@@ -56,7 +58,7 @@ func (v *View) Render(frame string) {
 
 	v.Clear()
 
-	terminalHeight := TerminalHeight()
+	terminalHeight := terminal.Lines()
 	previousFrameHeight := v.prevHeight()
 
 	start := int(math.Abs(float64(min(0, terminalHeight-previousFrameHeight))))

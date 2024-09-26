@@ -8,6 +8,7 @@ import (
 
 	"github.com/michielnijenhuis/cli/helper"
 	"github.com/michielnijenhuis/cli/helper/keys"
+	"github.com/michielnijenhuis/cli/terminal"
 )
 
 const (
@@ -377,7 +378,7 @@ func (p *Prompt) Resetvalue() {
 
 func (p *Prompt) AddCursor(value string, cursorPosition int, maxWidth int) string {
 	if maxWidth <= 0 {
-		tw, _ := TerminalWidth()
+		tw := terminal.Columns()
 		maxWidth = tw
 	}
 
@@ -462,7 +463,7 @@ func (p *Prompt) InitializeScrolling(highlighted int, reservedLines int) {
 }
 
 func (p *Prompt) ReduceScrollingToFitTerminal(reservedLines int) {
-	terminalHeight := TerminalHeight()
+	terminalHeight := terminal.Lines()
 	p.Scroll = max(1, min(p.Scroll, terminalHeight-reservedLines))
 }
 
@@ -475,14 +476,8 @@ func (p *Prompt) Highlight(index int) {
 
 	if p.Highlighted < p.FirstVisible {
 		p.FirstVisible = p.Highlighted
-		panic(fmt.Sprintf("First visible: %d. Index: %d. Highlighted: %d", p.FirstVisible, index, p.Highlighted))
-		if index > 0 {
-		}
-	} else if p.Highlighted < p.FirstVisible+p.Scroll-1 {
+	} else if p.Highlighted >= p.FirstVisible+p.Scroll {
 		p.FirstVisible = p.Highlighted - p.Scroll + 1
-		panic(fmt.Sprintf("First visible: %d. Index: %d. Highlighted: %d", p.FirstVisible, index, p.Highlighted))
-		if index > 0 {
-		}
 	}
 }
 
@@ -516,7 +511,7 @@ func (p *Prompt) HighlightNext(total int) {
 			p.Highlight(0)
 		}
 	} else {
-		if p.Highlighted < -1 {
+		if p.Highlighted < 0 {
 			p.Highlighted = -1
 		}
 

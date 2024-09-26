@@ -1,4 +1,4 @@
-package cli
+package terminal
 
 import (
 	"os"
@@ -6,16 +6,16 @@ import (
 	"golang.org/x/term"
 )
 
-func TerminalWidth() (int, error) {
+func Columns() int {
 	width, _, err := term.GetSize(0)
 	if err != nil {
-		return 80, err
+		return 80
 	}
 
-	return width, nil
+	return width
 }
 
-func TerminalHeight() int {
+func Lines() int {
 	_, height, err := term.GetSize(0)
 	if err != nil {
 		return 80
@@ -24,7 +24,7 @@ func TerminalHeight() int {
 	return height
 }
 
-func TerminalSize() (int, int) {
+func Size() (int, int) {
 	w, h, err := term.GetSize(0)
 	if err != nil {
 		return 80, 80
@@ -33,6 +33,6 @@ func TerminalSize() (int, int) {
 	return w, h
 }
 
-func TerminalIsInteractive() bool {
+func IsInteractive() bool {
 	return term.IsTerminal(int(os.Stdin.Fd()))
 }

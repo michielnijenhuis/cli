@@ -6,6 +6,7 @@ import (
 
 	"github.com/michielnijenhuis/cli/helper/array"
 	"github.com/michielnijenhuis/cli/helper/keys"
+	"github.com/michielnijenhuis/cli/terminal"
 )
 
 type ArrayPrompt struct {
@@ -98,7 +99,7 @@ func NewArrayPrompt(i *Input, o *Output, label string, defaultValue []string) *A
 
 func (p *ArrayPrompt) String() string {
 	renderer := NewRenderer()
-	terminalWidth, _ := TerminalWidth()
+	terminalWidth := terminal.Columns()
 	maxWidth := terminalWidth - 6
 	state := p.State
 

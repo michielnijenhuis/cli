@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/michielnijenhuis/cli/helper"
+	"github.com/michielnijenhuis/cli/terminal"
 )
 
 const maxLineLength = 120
@@ -64,7 +65,7 @@ func setupNewOutput(input *Input, stream *os.File, formatter *OutputFormatter) *
 		formatter.Decorated = o.decorated
 	}
 
-	width, _ := TerminalWidth()
+	width := terminal.Columns()
 	if width == 0 {
 		width = maxLineLength
 	}

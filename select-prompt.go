@@ -6,6 +6,7 @@ import (
 
 	"github.com/michielnijenhuis/cli/helper/array"
 	"github.com/michielnijenhuis/cli/helper/keys"
+	"github.com/michielnijenhuis/cli/terminal"
 )
 
 type SelectPrompt struct {
@@ -34,7 +35,7 @@ func NewSelectPrompt(i *Input, o *Output, label string, values []string, labels 
 
 	p.Required = true
 	p.GetValue = func() string {
-		if !TerminalIsInteractive() {
+		if !terminal.IsInteractive() {
 			return p.DefaultValue
 		}
 
@@ -106,8 +107,7 @@ func (p *SelectPrompt) Visible() []string {
 
 func (p *SelectPrompt) String() string {
 	renderer := NewRenderer()
-	terminalWidth, _ := TerminalWidth()
-	maxWidth := terminalWidth - 6
+	maxWidth := terminal.Columns() - 6
 	state := p.State
 
 	if state == PromptStateSubmit {
@@ -128,7 +128,7 @@ func (p *SelectPrompt) String() string {
 }
 
 func (p *SelectPrompt) renderOptions() string {
-	width, _ := TerminalWidth()
+	width := terminal.Columns()
 	visible := p.Visible()
 	values := p.Values
 	color := "cyan"

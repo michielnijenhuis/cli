@@ -1,6 +1,10 @@
 package cli
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/michielnijenhuis/cli/terminal"
+)
 
 type TextPrompt struct {
 	*Prompt
@@ -36,8 +40,7 @@ func (tp *TextPrompt) ValueWithCursor(maxWidth int) string {
 
 func (tp *TextPrompt) View() string {
 	renderer := NewRenderer()
-	terminalWidth, _ := TerminalWidth()
-	maxWidth := terminalWidth - 6
+	maxWidth := terminal.Columns() - 6
 	state := tp.State
 
 	if state == PromptStateSubmit {

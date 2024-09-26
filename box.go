@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/michielnijenhuis/cli/helper"
+	"github.com/michielnijenhuis/cli/terminal"
 )
 
 const defaultBoxColor = "gray"
@@ -17,7 +18,7 @@ func Box(title string, body string, footer string, color string, info string) st
 	var output strings.Builder
 
 	minWidth := 60
-	terminalWidth, _ := TerminalWidth()
+	terminalWidth := terminal.Columns()
 	minWidth = min(minWidth, terminalWidth-6)
 
 	bodyLines := strings.Split(body, Eol)

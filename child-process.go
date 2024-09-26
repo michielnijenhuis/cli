@@ -5,6 +5,8 @@ import (
 	"os"
 	os_exec "os/exec"
 	"strings"
+
+	"github.com/michielnijenhuis/cli/terminal"
 )
 
 type ChildProcess struct {
@@ -130,7 +132,7 @@ func (cp *ChildProcess) prepareCommand(cmd string, shell string) string {
 	}
 
 	flags := make([]string, 0, 2)
-	if !cp.Pipe && TerminalIsInteractive() {
+	if !cp.Pipe && terminal.IsInteractive() {
 		flags = append(flags, "-i")
 	}
 	flags = append(flags, "-c")

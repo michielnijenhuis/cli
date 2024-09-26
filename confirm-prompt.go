@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/michielnijenhuis/cli/helper/keys"
+	"github.com/michielnijenhuis/cli/terminal"
 )
 
 type ConfirmPrompt struct {
@@ -87,7 +88,7 @@ func (cp *ConfirmPrompt) String() string {
 }
 
 func (cp *ConfirmPrompt) renderOptions() string {
-	terminalWidth, _ := TerminalWidth()
+	terminalWidth := terminal.Columns()
 	length := (terminalWidth - 14) / 2
 	yes := Truncate(cp.Yes, length, "")
 	no := Truncate(cp.No, length, "")

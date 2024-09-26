@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/michielnijenhuis/cli/terminal"
 )
 
 type Cursor struct {
@@ -111,7 +113,7 @@ func (c *Cursor) CurrentPosition() (int, int) {
 	if c.isTtySupported > 0 {
 		isTtySupported = c.isTtySupported == 1
 	} else {
-		isTtySupported = TerminalIsInteractive()
+		isTtySupported = terminal.IsInteractive()
 		if isTtySupported {
 			c.isTtySupported = 1
 		} else {

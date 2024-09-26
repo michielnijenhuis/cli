@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/michielnijenhuis/cli/helper"
+	"github.com/michielnijenhuis/cli/terminal"
 )
 
 type ConsoleSectionOutput struct {
@@ -94,7 +95,7 @@ func (c *ConsoleSectionOutput) VisibleContent() string {
 }
 
 func (c *ConsoleSectionOutput) AddContent(input string, newLine bool) int {
-	width, _ := TerminalWidth()
+	width := terminal.Columns()
 	lines := strings.Split(input, Eol)
 	linesAdded := 0
 	count := len(lines) - 1

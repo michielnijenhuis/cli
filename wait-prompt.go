@@ -25,10 +25,6 @@ func NewWaitPrompt(i *Input, o *Output, waitFunc func() bool, message string) *W
 }
 
 func (p *WaitPrompt) String() string {
-	if p.done {
-		panic("done")
-	}
-
 	renderer := NewRenderer()
 	state := p.State
 
@@ -47,7 +43,7 @@ func (p *WaitPrompt) Render() error {
 			}
 		})
 
-		// p.done = true
+		p.done = true
 	}(p)
 
 	_, err := p.doPrompt(p.String)

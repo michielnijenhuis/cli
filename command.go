@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/michielnijenhuis/cli/helper/array"
+	"github.com/michielnijenhuis/cli/terminal"
 )
 
 type CommandHandle func(io *IO)
@@ -46,7 +47,7 @@ type Command struct {
 }
 
 func (c *Command) Execute(args ...string) (err error) {
-	width, height := TerminalSize()
+	width, height := terminal.Size()
 	os.Setenv("LINES", fmt.Sprint(height))
 	os.Setenv("COLUMNS", fmt.Sprint(width))
 
@@ -655,7 +656,16 @@ func (c *Command) promptArgument(i *Input, o *Output, arg Arg) error {
 		var answer string
 		var err error
 		if a.Options != nil {
-			prompt := NewSelectPrompt(i, o, fmt.Sprintf("What is %s?", q), a.Options, nil, "")
+			prompt := NewSearchPrompt(i, o, fmt.Sprintf("What is %s?", q), func(s string) SearchResult {
+				s = strings.ToLower(s)
+				opts := make([]string, 0, len(a.Options))
+				for _, v := range a.Options {
+					if strings.Contains(strings.ToLower(v), s) {
+						opts = append(opts, v)
+					}
+				}
+				return opts
+			}, "")
 			prompt.Required = true
 			answer, err = prompt.Render()
 		} else {
@@ -673,7 +683,7 @@ func (c *Command) promptArgument(i *Input, o *Output, arg Arg) error {
 
 		return nil
 	case *ArrayArg:
-		// TODO: implement options (requires multiselect prompt)
+		// TODO: implement options (requires (search) multiselect prompt)
 		prompt := NewArrayPrompt(i, o, fmt.Sprintf("What is %s?", q), nil)
 		prompt.Required = true
 		answers, err := prompt.Render()

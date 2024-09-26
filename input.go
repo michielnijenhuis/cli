@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/michielnijenhuis/cli/helper"
+	"github.com/michielnijenhuis/cli/terminal"
 )
 
 type InputParser func(self any) error
@@ -65,7 +66,7 @@ func NewInput(args ...string) *Input {
 		flags:          make(map[string]Flag),
 		givenArguments: make([]string, 0),
 		arguments:      make(map[string]Arg),
-		interactive:    TerminalIsInteractive(),
+		interactive:    terminal.IsInteractive(),
 	}
 
 	return i
