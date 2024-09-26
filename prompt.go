@@ -97,8 +97,6 @@ func (p *Prompt) doPrompt(renderer func() string) (string, error) {
 		}
 
 		p.cursor.Hide()
-
-		defer p.Restore(false)
 	}
 
 	p.render(renderer)
@@ -109,6 +107,7 @@ func (p *Prompt) doPrompt(renderer func() string) (string, error) {
 	for {
 		read, err := stream.Read(buffer)
 		if err != nil {
+			p.Restore(false)
 			return "", err
 		}
 
@@ -133,6 +132,7 @@ func (p *Prompt) doPrompt(renderer func() string) (string, error) {
 			}
 
 			if keys.Is(key, keys.CtrlU) && p.RevertUsingFn != nil {
+				p.Restore(false)
 				return answer, errors.New("form reverted")
 			}
 
@@ -141,12 +141,13 @@ func (p *Prompt) doPrompt(renderer func() string) (string, error) {
 		}
 	}
 
+	p.Restore(false)
 	return answer, nil
 }
 
 func (p *Prompt) Restore(force bool) {
 	if !p.isChild || force {
-		p.input.RestoreTty()
+		_ = p.input.RestoreTty()
 		p.cursor.Show()
 	}
 }

@@ -131,7 +131,7 @@ func (p *SelectPrompt) renderOptions() string {
 	width := terminal.Columns()
 	visible := p.Visible()
 	values := p.Values
-	color := "cyan"
+	color := ColorCyan
 	if p.State == PromptStateCancel {
 		color = "dim"
 	}

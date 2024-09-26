@@ -38,8 +38,8 @@ type TableCellStyle struct {
 
 type TableCell struct {
 	Value       string
-	RowSpan     uint
-	ColSpan     uint
+	RowSpan     int
+	ColSpan     int
 	Style       *TableCellStyle
 	IsSeparator bool
 }
@@ -705,7 +705,7 @@ func (t *Table) renderCell(row []*TableCell, column int, cellFormat string) stri
 	}
 
 	if cell.ColSpan > 1 {
-		for nextColumn := column + 1; nextColumn < column+int(cell.ColSpan); nextColumn++ {
+		for nextColumn := column + 1; nextColumn < column+cell.ColSpan; nextColumn++ {
 			width += t.getColumnSeparatorWidth()
 			if nextColumn < len(t.effectiveColumnWidths) {
 				width += t.effectiveColumnWidths[nextColumn]
@@ -777,7 +777,7 @@ func (t *Table) buildTableRows(rows [][]*TableCell) iter.Seq[[][]*TableCell] {
 			colSpan := max(cell.ColSpan, 1)
 
 			if column < len(t.columnMaxWidths) && helper.Width(formatter.RemoveDecoration(cell.Value)) > t.columnMaxWidths[column] {
-				cell.Value = formatter.FormatAndWrap(cell.Value, t.columnMaxWidths[column]*int(colSpan))
+				cell.Value = formatter.FormatAndWrap(cell.Value, t.columnMaxWidths[column]*colSpan)
 			}
 
 			if !strings.Contains(cell.Value, Eol) {
@@ -893,7 +893,7 @@ func (t *Table) fillNextRows(rows [][]*TableCell, line int) [][]*TableCell {
 			}
 
 			if line+1 < len(unmergedRows) {
-				for i := line + 1; i < line+1+int(nbLines); i++ {
+				for i := line + 1; i < line+1+nbLines; i++ {
 					if i < len(unmergedRows) {
 						unmergedRows[i] = make([]*TableCell, 0)
 					} else {
@@ -913,7 +913,7 @@ func (t *Table) fillNextRows(rows [][]*TableCell, line int) [][]*TableCell {
 				newCell.Style = cell.Style
 				unmergedRows[unmergedRowKey][column] = newCell
 
-				if unmergedRowKey-line >= 0 && nbLines == uint(unmergedRowKey-line) {
+				if unmergedRowKey-line >= 0 && nbLines == unmergedRowKey-line {
 					break
 				}
 			}
@@ -958,7 +958,7 @@ func (t *Table) fillCells(row []*TableCell) []*TableCell {
 	for column, cell := range row {
 		newRow = append(newRow, cell)
 		if cell.ColSpan > 1 {
-			for i := column + 1; i < column+int(cell.ColSpan)-1; i++ {
+			for i := column + 1; i < column+cell.ColSpan-1; i++ {
 				newRow = append(newRow, NewTableCell(""))
 			}
 		}
@@ -984,7 +984,7 @@ func (t *Table) copyRow(rows [][]*TableCell, line int) []*TableCell {
 func (t *Table) getNumberOfColumns(row []*TableCell) int {
 	columns := len(row)
 	for _, column := range row {
-		columns += int(column.ColSpan) - 1
+		columns += column.ColSpan - 1
 	}
 	return columns
 }
@@ -998,7 +998,7 @@ func (t *Table) getRowColumns(row []*TableCell) []int {
 	for cellKey, cell := range row {
 		if cell.ColSpan > 1 {
 			start := cellKey + 1
-			end := cellKey + int(cell.ColSpan)
+			end := cellKey + cell.ColSpan
 			for i := start; i < end; i++ {
 				for _, v := range columns {
 					if v == i {
@@ -1030,7 +1030,7 @@ func (t *Table) calculateColumnsWidth(groups iter.Seq[[][]*TableCell]) {
 					textLength := helper.Width(textContent)
 
 					if len(textContent) > 0 {
-						contentColumns := MbSplit(textContent, textLength/int(cell.ColSpan))
+						contentColumns := MbSplit(textContent, textLength/cell.ColSpan)
 
 						for position, content := range contentColumns {
 							idx := i + position

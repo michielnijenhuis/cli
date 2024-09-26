@@ -244,7 +244,7 @@ func (p *MultiSelectPrompt) renderOptions() string {
 		}
 	}
 
-	color := "cyan"
+	color := ColorCyan
 	if p.State == PromptStateCancel {
 		color = "dim"
 	}

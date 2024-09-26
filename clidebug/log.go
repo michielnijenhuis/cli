@@ -1,4 +1,4 @@
-package cli_debug
+package clidebug
 
 import (
 	"fmt"

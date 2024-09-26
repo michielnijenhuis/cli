@@ -56,6 +56,17 @@ const (
 	LogLevelFatal
 )
 
+const (
+	LogTagDebug    = "debug"
+	LogTagInfo     = "info"
+	LogTagNotice   = "notice"
+	LogTagWarn     = "warn"
+	LogTagError    = "error"
+	LogTagCritical = "critical"
+	LogTagAlert    = "alert"
+	LogTagFatal    = "fatal"
+)
+
 func formatter(message string, level string, ctx any) string {
 	formattedTime := Dim("[" + time.Now().Format("15:04:05") + "]")
 	theme := levelToTheme(level)
@@ -93,99 +104,99 @@ func (l *logger) EnableDebug() {
 }
 
 func (l *logger) Debug(message string) {
-	l.log(message, "debug", nil)
+	l.log(message, LogTagDebug, nil)
 }
 
 func (l *logger) Debugc(message string, ctx any) {
-	l.log(message, "debug", ctx)
+	l.log(message, LogTagDebug, ctx)
 }
 
 func (l *logger) Debugf(format string, args ...any) {
-	l.log(fmt.Sprintf(format, args...), "debug", nil)
+	l.log(fmt.Sprintf(format, args...), LogTagDebug, nil)
 }
 
 func (l *logger) Info(message string) {
-	l.log(message, "info", nil)
+	l.log(message, LogTagInfo, nil)
 }
 
 func (l *logger) Infoc(format string, ctx any) {
-	l.log(fmt.Sprintf(format, ctx), "info", ctx)
+	l.log(fmt.Sprintf(format, ctx), LogTagInfo, ctx)
 }
 
 func (l *logger) Infof(format string, args ...any) {
-	l.log(fmt.Sprintf(format, args...), "info", nil)
+	l.log(fmt.Sprintf(format, args...), LogTagInfo, nil)
 }
 
 func (l *logger) Notice(message string) {
-	l.log(message, "notice", nil)
+	l.log(message, LogTagNotice, nil)
 }
 
 func (l *logger) Noticec(format string, ctx any) {
-	l.log(fmt.Sprintf(format, ctx), "notice", ctx)
+	l.log(fmt.Sprintf(format, ctx), LogTagNotice, ctx)
 }
 
 func (l *logger) Noticef(format string, args ...any) {
-	l.log(fmt.Sprintf(format, args...), "notice", nil)
+	l.log(fmt.Sprintf(format, args...), LogTagNotice, nil)
 }
 
 func (l *logger) Warn(message string) {
-	l.log(message, "warn", nil)
+	l.log(message, LogTagWarn, nil)
 }
 
 func (l *logger) Warnc(format string, ctx any) {
-	l.log(fmt.Sprintf(format, ctx), "warn", ctx)
+	l.log(fmt.Sprintf(format, ctx), LogTagWarn, ctx)
 }
 
 func (l *logger) Warnf(format string, args ...any) {
-	l.log(fmt.Sprintf(format, args...), "warn", nil)
+	l.log(fmt.Sprintf(format, args...), LogTagWarn, nil)
 }
 
 func (l *logger) Error(message string) {
-	l.log(message, "error", nil)
+	l.log(message, LogTagError, nil)
 }
 
 func (l *logger) Errorc(format string, ctx any) {
-	l.log(fmt.Sprintf(format, ctx), "error", ctx)
+	l.log(fmt.Sprintf(format, ctx), LogTagError, ctx)
 }
 
 func (l *logger) Errorf(format string, args ...any) {
-	l.log(fmt.Sprintf(format, args...), "error", nil)
+	l.log(fmt.Sprintf(format, args...), LogTagError, nil)
 }
 
 func (l *logger) Critical(message string) {
-	l.log(message, "critical", nil)
+	l.log(message, LogTagCritical, nil)
 }
 
 func (l *logger) Criticalc(format string, ctx any) {
-	l.log(fmt.Sprintf(format, ctx), "critical", ctx)
+	l.log(fmt.Sprintf(format, ctx), LogTagCritical, ctx)
 }
 
 func (l *logger) Criticalf(format string, args ...any) {
-	l.log(fmt.Sprintf(format, args...), "critical", nil)
+	l.log(fmt.Sprintf(format, args...), LogTagCritical, nil)
 }
 
 func (l *logger) Alert(message string) {
-	l.log(message, "alert", nil)
+	l.log(message, LogTagAlert, nil)
 }
 
 func (l *logger) Alertc(format string, ctx any) {
-	l.log(fmt.Sprintf(format, ctx), "alert", ctx)
+	l.log(fmt.Sprintf(format, ctx), LogTagAlert, ctx)
 }
 
 func (l *logger) Alertf(format string, args ...any) {
-	l.log(fmt.Sprintf(format, args...), "alert", nil)
+	l.log(fmt.Sprintf(format, args...), LogTagAlert, nil)
 }
 
 func (l *logger) Fatal(message string) {
-	l.log(message, "fatal", nil)
+	l.log(message, LogTagFatal, nil)
 }
 
 func (l *logger) Fatalc(format string, ctx any) {
-	l.log(fmt.Sprintf(format, ctx), "fatal", ctx)
+	l.log(fmt.Sprintf(format, ctx), LogTagFatal, ctx)
 }
 
 func (l *logger) Fatalf(format string, args ...any) {
-	l.log(fmt.Sprintf(format, args...), "fatal", nil)
+	l.log(fmt.Sprintf(format, args...), LogTagFatal, nil)
 }
 
 func (l *logger) log(message string, level string, ctx any) {
@@ -198,7 +209,7 @@ func (l *logger) log(message string, level string, ctx any) {
 	if l.debug || l.level <= levelToInt(level) {
 		l.o.Writeln(formatter(message, level, ctx), 0)
 
-		if level == "fatal" {
+		if level == LogTagFatal {
 			os.Exit(1)
 		}
 	}
@@ -206,21 +217,21 @@ func (l *logger) log(message string, level string, ctx any) {
 
 func levelToInt(level string) int {
 	switch level {
-	case "debug":
+	case LogTagDebug:
 		return 0
-	case "info":
+	case LogTagInfo:
 		return 1
-	case "notice":
+	case LogTagNotice:
 		return 2
-	case "warn":
+	case LogTagWarn:
 		return 3
-	case "error":
+	case LogTagError:
 		return 4
-	case "critical":
+	case LogTagCritical:
 		return 5
-	case "alert":
+	case LogTagAlert:
 		return 6
-	case "fatal":
+	case LogTagFatal:
 		return 7
 	default:
 		return 0
@@ -229,16 +240,16 @@ func levelToInt(level string) int {
 
 func levelToTheme(level string) *Theme {
 	switch level {
-	case "debug":
+	case LogTagDebug:
 		return nil
-	case "info", "notice":
-		t, _ := GetTheme("info")
+	case LogTagInfo, LogTagNotice:
+		t, _ := GetTheme(LogTagInfo)
 		return t
-	case "warn":
-		t, _ := GetTheme("warn")
+	case LogTagWarn:
+		t, _ := GetTheme(LogTagWarn)
 		return t
-	case "error", "critical", "alert", "fatal":
-		t, _ := GetTheme("error")
+	case LogTagError, LogTagCritical, LogTagAlert, LogTagFatal:
+		t, _ := GetTheme(LogTagError)
 		return t
 	default:
 		return nil
@@ -257,23 +268,23 @@ func (l *logger) SetLogLevel(level int) {
 
 func logLevelToColor(level string) string {
 	switch level {
-	case "debug":
-		return "white"
-	case "info":
-		return "bright-blue"
-	case "notice":
-		return "bright-blue"
-	case "warn":
-		return "bright-yellow"
-	case "error":
-		return "bright-red"
-	case "critical":
-		return "bright-red"
-	case "alert":
-		return "bright-red"
-	case "fatal":
-		return "bright-red"
+	case LogTagDebug:
+		return ColorWhite
+	case LogTagInfo:
+		return ColorBrightBlue
+	case LogTagNotice:
+		return ColorBrightBlue
+	case LogTagWarn:
+		return ColorBrightYellow
+	case LogTagError:
+		return ColorBrightRed
+	case LogTagCritical:
+		return ColorBrightRed
+	case LogTagAlert:
+		return ColorBrightRed
+	case LogTagFatal:
+		return ColorBrightRed
 	default:
-		return "white"
+		return ColorWhite
 	}
 }

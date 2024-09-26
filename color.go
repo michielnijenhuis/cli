@@ -22,36 +22,66 @@ type Color struct {
 	parsed     bool
 }
 
+const (
+	ColorBlack   = "black"
+	ColorRed     = "red"
+	ColorGreen   = "green"
+	ColorYellow  = "yellow"
+	ColorBlue    = "blue"
+	ColorMagenta = "magenta"
+	ColorCyan    = "cyan"
+	ColorWhite   = "white"
+	ColorGray    = "gray"
+	ColorDefault = "default"
+
+	ColorBrightRed     = "bright-red"
+	ColorBrightGreen   = "bright-green"
+	ColorBrightYellow  = "bright-yellow"
+	ColorBrightBlue    = "bright-blue"
+	ColorBrightMagenta = "bright-magenta"
+	ColorBrightCyan    = "bright-cyan"
+	ColorBrightWhite   = "bright-white"
+)
+
+const (
+	ColorOptionBold       = "bold"
+	ColorOptionItalic     = "italic"
+	ColorOptionUnderscore = "underscore"
+	ColorOptionBlink      = "blink"
+	ColorOptionReverse    = "reverse"
+	ColorOptionConceal    = "conceal"
+)
+
 var colors = map[string]int{
-	"black":   0,
-	"red":     1,
-	"green":   2,
-	"yellow":  3,
-	"blue":    4,
-	"magenta": 5,
-	"cyan":    6,
-	"white":   7,
-	"default": 9,
+	ColorBlack:   0,
+	ColorRed:     1,
+	ColorGreen:   2,
+	ColorYellow:  3,
+	ColorBlue:    4,
+	ColorMagenta: 5,
+	ColorCyan:    6,
+	ColorWhite:   7,
+	ColorDefault: 9,
 }
 
 var brightColors = map[string]int{
-	"gray":           0,
-	"bright-red":     1,
-	"bright-green":   2,
-	"bright-yellow":  3,
-	"bright-blue":    4,
-	"bright-magenta": 5,
-	"bright-cyan":    6,
-	"bright-white":   7,
+	ColorGray:          0,
+	ColorBrightRed:     1,
+	ColorBrightGreen:   2,
+	ColorBrightYellow:  3,
+	ColorBrightBlue:    4,
+	ColorBrightMagenta: 5,
+	ColorBrightCyan:    6,
+	ColorBrightWhite:   7,
 }
 
 var availableOptions = map[string]AvailableOption{
-	"bold":       {set: 1, unset: 22},
-	"italic":     {set: 3, unset: 23},
-	"underscore": {set: 4, unset: 24},
-	"blink":      {set: 5, unset: 25},
-	"reverse":    {set: 7, unset: 27},
-	"conceal":    {set: 8, unset: 28},
+	ColorOptionBold:       {set: 1, unset: 22},
+	ColorOptionItalic:     {set: 3, unset: 23},
+	ColorOptionUnderscore: {set: 4, unset: 24},
+	ColorOptionBlink:      {set: 5, unset: 25},
+	ColorOptionReverse:    {set: 7, unset: 27},
+	ColorOptionConceal:    {set: 8, unset: 28},
 }
 
 func (c *Color) parse() {

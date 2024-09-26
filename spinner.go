@@ -78,7 +78,7 @@ func NewSpinner(i *Input, o *Output, message string, frames []string, color stri
 	}
 
 	if color == "" {
-		color = "cyan"
+		color = ColorCyan
 	}
 
 	s := &Spinner{

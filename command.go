@@ -679,7 +679,10 @@ func (c *Command) promptArgument(i *Input, o *Output, arg Arg) error {
 		}
 
 		i.Args = append(i.Args, answer)
-		i.SetArgument(name, answer)
+		err = i.SetArgument(name, answer)
+		if err != nil {
+			return err
+		}
 
 		return nil
 	case *ArrayArg:
@@ -703,7 +706,10 @@ func (c *Command) promptArgument(i *Input, o *Output, arg Arg) error {
 		}
 
 		for _, answer := range answers {
-			i.SetArgument(name, answer)
+			err = i.SetArgument(name, answer)
+			if err != nil {
+				return err
+			}
 		}
 
 		i.Args = append(i.Args, answers...)

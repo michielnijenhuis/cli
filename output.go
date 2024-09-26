@@ -216,7 +216,7 @@ func doSetVerbosity(o *Output, verbose uint) {
 	}
 
 	if o.Logger != nil {
-		logLevel := -1
+		var logLevel int
 		switch verbose {
 		case VerbosityQuiet:
 			logLevel = LogLevelFatal

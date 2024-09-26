@@ -4,7 +4,7 @@ import "strings"
 
 type TrimmedBufferOutput struct {
 	buffer    strings.Builder
-	maxLength uint
+	maxLength int
 	*Output
 }
 
@@ -15,7 +15,7 @@ func (o *TrimmedBufferOutput) DoWrite(message string, newLine bool) {
 		o.buffer.WriteString(Eol)
 	}
 
-	if o.buffer.Len() >= int(o.maxLength) {
+	if o.buffer.Len() >= o.maxLength {
 		var newBuffer strings.Builder
 		newBuffer.WriteString(o.buffer.String()[0:o.maxLength])
 	}

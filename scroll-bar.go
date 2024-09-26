@@ -20,7 +20,7 @@ func ScrollBar(visible []string, firstVisible int, height int, total int, width 
 		if i != scrollPosition {
 			lineColor = "gray"
 		} else if lineColor == "" {
-			lineColor = "cyan"
+			lineColor = ColorCyan
 		}
 
 		length := len(line)
