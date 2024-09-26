@@ -18,54 +18,23 @@ type Bar struct {
 
 func Execute() {
 	app := &cli.Command{
-		Name:           "app",
-		Description:    "Beautiful CLI application",
-		Version:        "v1.0.0",
-		AutoExit:       true,
-		CatchErrors:    true,
-		PromptForInput: true,
-		Arguments: []cli.Arg{
-			&cli.StringArg{
-				Name:        "name",
-				Description: "Name of the person",
-				Options:     []string{"Michiel", "Michael", "Miguel"},
-				Required:    true,
-			},
-		},
+		Name:        "app",
+		Description: "Beautiful CLI application",
+		Version:     "v1.0.0",
+		AutoExit:    true,
+		CatchErrors: true,
 		Run: func(io *cli.IO) {
-			answer, err := io.Search("What is your name?", func(s string) cli.SearchResult {
-				list := make([]string, 0, 26)
-				for i := 'a'; i <= 'z'; i++ {
-					list = append(list, string(i))
-				}
-				return list
-				m := map[string]string{
-					"Michiel": "Halouminator",
-					"Michael": "Mperor",
-					"Miguel":  "Muzzul",
-				}
-
-				if s == "" {
-					return m
-				}
-
-				s = strings.ToLower(s)
-				for k, v := range m {
-					v = strings.ToLower(v)
-					if !strings.Contains(v, s) {
-						delete(m, k)
-					}
-				}
-
-				return m
-			}, "")
-
+			selected, err := io.MultiSelect("What is your name?", map[string]string{
+				"Nijenhuis":   "Michiel",
+				"Rouwenhorst": "Suus",
+				"Lesman":      "Anita",
+			}, nil)
 			if err != nil {
 				io.Err(err)
 				return
 			}
 
-			io.Success(fmt.Sprintf("Hello %s", answer))
+			io.Success(fmt.Sprintf("Hello %s", strings.Join(selected, ", ")))
 		},
 	}
 

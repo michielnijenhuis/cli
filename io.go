@@ -275,3 +275,7 @@ func (io *IO) WithGracefulExit(fn func(done <-chan bool)) bool {
 func (io *IO) Search(label string, options func(string) SearchResult, placeholder string) (string, error) {
 	return io.Output.Search(label, options, placeholder)
 }
+
+func (io *IO) MultiSelect(label string, options MultiSelectOptions, defaultValues []string) ([]string, error) {
+	return io.Output.MultiSelect(label, options, defaultValues)
+}

@@ -525,12 +525,12 @@ func (p *Prompt) ScrollToHighlighted(total int) {
 	}
 
 	remaining := total - p.Highlighted - 1
-	halfScroll := p.Scroll / 2
-	endOffset := max(0, halfScroll-remaining)
+	halfScroll := float64(p.Scroll) / 2
+	endOffset := max(0, int(halfScroll)-remaining)
 
 	if p.Scroll%2 == 0 {
 		endOffset--
 	}
 
-	p.FirstVisible = max(0, p.Highlighted-halfScroll-endOffset)
+	p.FirstVisible = max(0, p.Highlighted-int(halfScroll)-endOffset)
 }

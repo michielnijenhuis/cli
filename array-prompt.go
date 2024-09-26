@@ -16,7 +16,7 @@ type ArrayPrompt struct {
 	DefaultValue string
 	Hint         string
 	Values       []string
-	deletePrompt *SelectPrompt // todo: make multiselect, with search
+	deletePrompt *MultiSelectPrompt // todo: make multiselect with search
 }
 
 func NewArrayPrompt(i *Input, o *Output, label string, defaultValue []string) *ArrayPrompt {
@@ -71,15 +71,17 @@ func NewArrayPrompt(i *Input, o *Output, label string, defaultValue []string) *A
 			p.Prompt.render(p.String)
 
 			if p.deletePrompt == nil {
-				p.deletePrompt = NewSelectPrompt(p.input, p.output, "Delete values?", p.Values, nil, "")
+				p.deletePrompt = NewMultiSelectPrompt(p.input, p.output, "Delete values?", p.Values, nil)
 				p.deletePrompt.isChild = true
 
 				toDelete, err := p.deletePrompt.Render()
 
-				if err == nil && toDelete != "" {
-					i := array.IndexOf(p.Values, toDelete)
-					if i >= 0 {
-						p.Values = append(p.Values[:i], p.Values[i+1:]...)
+				if err == nil && len(toDelete) > 0 {
+					for _, value := range toDelete {
+						i := array.IndexOf(p.Values, value)
+						if i >= 0 {
+							p.Values = append(p.Values[:i], p.Values[i+1:]...)
+						}
 					}
 				}
 

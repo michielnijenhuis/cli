@@ -52,7 +52,7 @@ func NewSelectPrompt(i *Input, o *Output, label string, values []string, labels 
 			i = 0
 		}
 		p.InitializeScrolling(i, 0)
-		// p.scrollToHighlighted(len(values)) // TODO: fix
+		p.ScrollToHighlighted(len(values))
 	} else {
 		p.InitializeScrolling(0, 0)
 	}

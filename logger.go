@@ -56,22 +56,7 @@ const (
 	LogLevelFatal
 )
 
-func defaultFormatter(message string, level string, ctx any) string {
-	formattedTime := time.Now().Format("15:04:05")
-	color := logLevelToColor(level)
-
-	mj := ""
-	if ctx != nil {
-		j, err := json.Marshal(ctx)
-		if err != nil {
-			mj = Eol + Dim(string(j))
-		}
-	}
-
-	return fmt.Sprintf("<fg=%s>[%s] %s: %s</>%s", color, formattedTime, strings.ToUpper(level), message, mj)
-}
-
-func iconFormatter(message string, level string, ctx any) string {
+func formatter(message string, level string, ctx any) string {
 	formattedTime := Dim("[" + time.Now().Format("15:04:05") + "]")
 	theme := levelToTheme(level)
 	color := logLevelToColor(level)
@@ -90,19 +75,6 @@ func iconFormatter(message string, level string, ctx any) string {
 	}
 
 	return fmt.Sprintf("%s <fg=%s>%s%s:</> %s%s", formattedTime, color, icon, strings.ToUpper(level), message, mj)
-}
-
-func boxFormatter(message string, level string, ctx any) string {
-	formattedTime := Dim(time.Now().Format("15:04:05"))
-	color := logLevelToColor(level)
-	mj := ""
-	if ctx != nil {
-		j, err := json.Marshal(ctx)
-		if err != nil {
-			mj = Eol + Dim(string(j))
-		}
-	}
-	return strings.TrimSuffix(Box(fmt.Sprintf("%s <fg=%s>%s</>", formattedTime, color, strings.ToUpper(level)), message+mj, "", "", ""), Eol)
 }
 
 func NewLogger(o *Output, level int) Logger {
@@ -217,14 +189,10 @@ func (l *logger) Fatalf(format string, args ...any) {
 }
 
 func (l *logger) log(message string, level string, ctx any) {
-	var formatter logFormatter
-	switch currentTheme {
-	case ThemeBlock:
-		formatter = boxFormatter
-	case ThemeIcon:
-		formatter = iconFormatter
-	default:
-		formatter = defaultFormatter
+	var formatter logFormatter = formatter
+	theme, err := GetTheme(level)
+	if theme != nil && err != nil && theme.LogFormatter != nil {
+		formatter = theme.LogFormatter
 	}
 
 	if l.debug || l.level <= levelToInt(level) {

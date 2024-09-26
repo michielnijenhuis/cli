@@ -17,148 +17,14 @@ type Theme struct {
 	Label        string
 	FullyColored bool
 	Padding      bool
+	LogFormatter logFormatter
 	style        *OutputFormatterStyle
 }
 
-const (
-	ThemeBlock = "block"
-	ThemeIcon  = "icon"
-)
-
-var currentTheme string = ThemeIcon
+var currentTheme string = "default"
 
 var themes = map[string]map[string]*Theme{
-	"_default": {
-		"error": {
-			Foreground:   "red",
-			FullyColored: true,
-		},
-		"info": {
-			Foreground:   "bright-blue",
-			FullyColored: true,
-		},
-		"success": {
-			Foreground:   "bright-green",
-			FullyColored: true,
-		},
-		"ok": {
-			Foreground:   "bright-green",
-			FullyColored: true,
-		},
-		"warn": {
-			Foreground:   "yellow",
-			FullyColored: true,
-		},
-		"warning": {
-			Foreground:   "yellow",
-			FullyColored: true,
-		},
-		"caution": {
-			Foreground:   "yellow",
-			FullyColored: true,
-		},
-		"comment": {
-			Foreground:   "default",
-			Background:   "default",
-			Label:        " // ",
-			FullyColored: true,
-		},
-		"note": {
-			Foreground:   "yellow",
-			FullyColored: true,
-		},
-		"primary": {
-			Foreground:   "bright-magenta",
-			FullyColored: true,
-		},
-		"accent": {
-			Foreground:   "bright-cyan",
-			FullyColored: true,
-		},
-		"prompt": {
-			Foreground:   "cyan",
-			FullyColored: true,
-		},
-		"question": {
-			Foreground:   "cyan",
-			FullyColored: true,
-		},
-	},
-	ThemeBlock: {
-		"error": {
-			Foreground:   "white",
-			Background:   "red",
-			Label:        " [ERROR] ",
-			Padding:      true,
-			FullyColored: true,
-		},
-		"info": {
-			Foreground:   "white",
-			Background:   "blue",
-			Label:        " [INFO] ",
-			Padding:      true,
-			FullyColored: true,
-		},
-		"success": {
-			Foreground:   "black",
-			Background:   "green",
-			Label:        " [OK] ",
-			Padding:      true,
-			FullyColored: true,
-		},
-		"ok": {
-			Foreground:   "black",
-			Background:   "green",
-			Label:        " [OK] ",
-			Padding:      true,
-			FullyColored: true,
-		},
-		"warn": {
-			Foreground:   "black",
-			Background:   "yellow",
-			Label:        " [WARNING] ",
-			Padding:      true,
-			FullyColored: true,
-		},
-		"warning": {
-			Foreground:   "black",
-			Background:   "yellow",
-			Label:        " [WARNING] ",
-			Padding:      true,
-			FullyColored: true,
-		},
-		"caution": {
-			Foreground:   "black",
-			Background:   "yellow",
-			Label:        " [CAUTION] ",
-			Padding:      true,
-			FullyColored: true,
-		},
-		"comment": {
-			Foreground: "default",
-			Background: "default",
-			Label:      " // ",
-		},
-		"note": {
-			Foreground:   "yellow",
-			Label:        " [NOTE] ",
-			Padding:      true,
-			FullyColored: true,
-		},
-		"primary": {
-			Foreground: "bright-magenta",
-		},
-		"accent": {
-			Foreground: "bright-cyan",
-		},
-		"prompt": {
-			Foreground: "cyan",
-		},
-		"question": {
-			Foreground: "cyan",
-		},
-	},
-	ThemeIcon: {
+	"default": {
 		"error": {
 			Foreground:   "bright-red",
 			Label:        "Error: ",
@@ -232,7 +98,7 @@ func GetStyleTags() []string {
 		if ok {
 			styleTags = array.Keys(themeSet)
 		} else {
-			styleTags = array.Keys(themes["_default"])
+			styleTags = array.Keys(themes["default"])
 		}
 	}
 
@@ -252,7 +118,7 @@ func AddTheme(set string, tag string, theme *Theme) {
 	set = strings.ToLower(set)
 	if set == "" {
 		if currentTheme == "" {
-			currentTheme = "_default"
+			currentTheme = "default"
 		}
 
 		set = currentTheme
@@ -287,14 +153,14 @@ func GetTheme(tag string) (*Theme, error) {
 	tag = strings.ToLower(tag)
 
 	if currentTheme == "" {
-		currentTheme = "_default"
+		currentTheme = "default"
 	}
 
 	themeSet, ok := themes[currentTheme]
 
 	var errUnknownCurrentTheme error
 	if !ok {
-		themeSet = themes["_default"]
+		themeSet = themes["default"]
 		errUnknownCurrentTheme = fmt.Errorf("unknown theme: \"%s\"", currentTheme)
 	}
 

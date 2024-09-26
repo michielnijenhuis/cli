@@ -559,3 +559,8 @@ func (o *Output) Search(label string, options func(string) SearchResult, placeho
 	p := NewSearchPrompt(o.input, o, label, options, placeholder)
 	return p.Render()
 }
+
+func (o *Output) MultiSelect(label string, options MultiSelectOptions, defaultValues []string) ([]string, error) {
+	p := NewMultiSelectPrompt(o.input, o, label, options, defaultValues)
+	return p.Render()
+}

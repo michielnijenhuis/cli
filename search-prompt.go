@@ -179,21 +179,25 @@ func (p *SearchPrompt) Matches() []string {
 
 		switch r := result.(type) {
 		case []string:
+			sort.Strings(r)
 			p.matchedLabels = r
 			p.matchedValues = r
 		case map[string]string:
+			labelToValue := make(map[string]string)
 			p.matchedLabels = make([]string, 0, len(r))
+			for value, label := range r {
+				labelToValue[label] = value
+				p.matchedLabels = append(p.matchedLabels, label)
+			}
+			sort.Strings(p.matchedLabels)
 			p.matchedValues = make([]string, 0, len(r))
-			for key, val := range r {
-				p.matchedValues = append(p.matchedValues, key)
-				p.matchedLabels = append(p.matchedLabels, val)
+			for _, label := range p.matchedLabels {
+				p.matchedValues = append(p.matchedValues, labelToValue[label])
 			}
 		default:
 			panic("invalid search result")
 		}
 
-		sort.Strings(p.matchedLabels)
-		sort.Strings(p.matchedValues)
 	}
 
 	return p.matchedLabels

@@ -683,12 +683,23 @@ func (c *Command) promptArgument(i *Input, o *Output, arg Arg) error {
 
 		return nil
 	case *ArrayArg:
-		// TODO: implement options (requires (search) multiselect prompt)
-		prompt := NewArrayPrompt(i, o, fmt.Sprintf("What is %s?", q), nil)
-		prompt.Required = true
-		answers, err := prompt.Render()
-		if err != nil {
-			return err
+		var answers []string
+		var err error
+		if len(a.Options) > 0 {
+			// TODO: use multiselect prompt with search
+			prompt := NewMultiSelectPrompt(i, o, fmt.Sprintf("What is %s?", q), a.Options, a.Value)
+			prompt.Required = true
+			answers, err = prompt.Render()
+			if err != nil {
+				return err
+			}
+		} else {
+			prompt := NewArrayPrompt(i, o, fmt.Sprintf("What is %s?", q), nil)
+			prompt.Required = true
+			answers, err = prompt.Render()
+			if err != nil {
+				return err
+			}
 		}
 
 		for _, answer := range answers {
