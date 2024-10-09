@@ -114,10 +114,13 @@ func (p *ArrayPrompt) String() string {
 		renderer.Line(fmt.Sprintf("<fg=green>?</> <options=bold>%s</> <fg=yellow>%s</>", p.Label, p.CancelMessage), true)
 	} else if state == PromptStateError {
 		renderer.Line(fmt.Sprintf("<fg=green>?</> <options=bold>%s</> <fg=red>%s</>", p.Label, p.Error), true)
-		renderer.Line(fmt.Sprintf("<fg=cyan>></> %s", p.ValueWithCursor(maxWidth)), true)
+		renderer.Line(fmt.Sprintf("<fg=cyan>›</> %s", p.ValueWithCursor(maxWidth)), true)
+		renderer.Line("<fg=gray>  Press Shift+Tab to delete values</>", true)
 	} else {
 		renderer.Line(fmt.Sprintf("<fg=green>?</> <options=bold>%s</> <fg=cyan>%s</>", p.Label, strings.Join(p.Values, ", ")), true)
 		renderer.Line(fmt.Sprintf("<fg=cyan>›</> %s", p.ValueWithCursor(maxWidth)), true)
+		renderer.Line("", true)
+		renderer.Line("<fg=gray>  Press Shift+Tab to delete values</>", true)
 	}
 
 	return renderer.ToString(p.State)

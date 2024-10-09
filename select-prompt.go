@@ -70,7 +70,7 @@ func NewSelectPrompt(i *Input, o *Output, label string, values []string, labels 
 			return
 		}
 
-		if keys.Is(key, keys.CtrlE, keys.End...) {
+		if keys.Is(key, keys.CtrlE) || keys.Is(key, keys.End...) {
 			p.Highlight(total - 1)
 			return
 		}

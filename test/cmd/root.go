@@ -8,33 +8,41 @@ import (
 	"github.com/michielnijenhuis/cli"
 )
 
-type Foo struct {
-	Name string
-}
-
-type Bar struct {
-	*Foo
-}
-
 func Execute() {
 	app := &cli.Command{
-		Name:        "app",
-		Description: "Beautiful CLI application",
-		Version:     "v1.0.0",
-		AutoExit:    true,
-		CatchErrors: true,
+		Name:           "app",
+		Description:    "Beautiful CLI application",
+		Version:        "v1.0.0",
+		AutoExit:       true,
+		CatchErrors:    true,
+		PromptForInput: true,
+		Arguments: []cli.Arg{
+			&cli.StringArg{
+				Name:        "name",
+				Description: "Your name",
+				Options:     []string{"Michiel", "Suus", "Anita"},
+				Required:    true,
+			},
+			&cli.ArrayArg{
+				Name:        "names",
+				Description: "Your names",
+				// Options:     []string{"Michiel", "Suus", "Anita"},
+				Min: 1,
+			},
+		},
 		Run: func(io *cli.IO) {
 			selected, err := io.MultiSelect("What is your name?", map[string]string{
 				"Nijenhuis":   "Michiel",
 				"Rouwenhorst": "Suus",
 				"Lesman":      "Anita",
 			}, nil)
+
 			if err != nil {
 				io.Err(err)
 				return
 			}
 
-			io.Success(fmt.Sprintf("Hello %s", strings.Join(selected, ", ")))
+			io.Info(fmt.Sprintf("Hello %s", strings.Join(selected, ", ")))
 		},
 	}
 

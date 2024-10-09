@@ -311,9 +311,9 @@ func (p *Prompt) Track(key string) {
 			p.cursorPosition = max(0, p.cursorPosition-1)
 		case keys.Is(key, keys.Right, keys.RightArrow, keys.CtrlF):
 			p.cursorPosition = min(len(p.typedValue), p.cursorPosition+1)
-		case keys.Is(key, keys.CtrlA, keys.Home...):
+		case keys.Is(key, keys.CtrlA) || keys.Is(key, keys.Home...):
 			p.cursorPosition = 0
-		case keys.Is(key, keys.CtrlE, keys.End...):
+		case keys.Is(key, keys.CtrlE) || keys.Is(key, keys.End...):
 			p.cursorPosition = len(p.typedValue)
 		case keys.Is(key, keys.Delete):
 			p.typedValue = p.typedValue[:p.cursorPosition] + p.typedValue[p.cursorPosition+1:]

@@ -75,9 +75,9 @@ func NewMultiSelectPrompt(i *Input, o *Output, label string, options MultiSelect
 			p.HighlightPrevious(len(p.values))
 		case keys.Is(key, keys.Down, keys.DownArrow, keys.Right, keys.RightArrow, keys.Tab, keys.CtrlN, keys.CtrlF, "j", "l"):
 			p.HighlightNext(len(p.values))
-		case keys.Is(key, keys.CtrlA, keys.Home...):
+		case keys.Is(key, keys.Home...) || keys.Is(key, keys.CtrlA):
 			p.Highlight(0)
-		case keys.Is(key, keys.CtrlE, keys.End...):
+		case keys.Is(key, keys.End...) || keys.Is(key, keys.CtrlE):
 			p.Highlight(len(p.values) - 1)
 		case keys.Is(key, keys.Space):
 			p.toggleHighlighted()

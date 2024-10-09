@@ -82,9 +82,6 @@ func (d *TextDescriptor) DescribeCommand(command *Command, options *DescriptorOp
 				commandAliases = d.commandAliasesText(cmd)
 			}
 
-			nameParts := strings.Split(name, ":")
-			name = strings.Join(nameParts, " ")
-
 			d.writeText(fmt.Sprintf("  <accent>%s</accent>%s%s%s", name, strings.Repeat(" ", max(spacingWidth, 0)+2), commandAliases, command.Description))
 		}
 	}
@@ -299,24 +296,8 @@ func calculateTotalWidthForFlags(flags []Flag) int {
 
 func (d *TextDescriptor) commandAliasesText(command *Command) string {
 	var text string
-	commandAliases := command.Aliases
-
-	if commandAliases == nil {
-		return text
-	}
-
-	aliases := make([]string, 0, len(commandAliases))
-
-	for _, alias := range commandAliases {
-		segments := strings.Split(alias, ":")
-		if len(segments) > 1 {
-			segments = segments[1:]
-		}
-		aliases = append(aliases, strings.Join(segments, ":"))
-	}
-
-	if len(aliases) > 0 {
-		text = fmt.Sprintf("[%s] ", strings.Join(aliases, "|"))
+	if len(command.Aliases) > 0 {
+		text = fmt.Sprintf("[%s] ", strings.Join(command.Aliases, "|"))
 	}
 
 	return text

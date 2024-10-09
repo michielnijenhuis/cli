@@ -53,7 +53,7 @@ func NewSearchPrompt(i *Input, o *Output, label string, options func(string) Sea
 	}
 
 	p.trackTypedValue("", false, func(key string) bool {
-		return (keys.Is(key, keys.CtrlA, keys.Home...) || keys.Is(key, keys.CtrlE, keys.End...)) && p.Highlighted >= 0
+		return (keys.Is(key, keys.CtrlA) || keys.Is(key, keys.CtrlE) || keys.Is(key, keys.End...) || keys.Is(key, keys.End...)) && p.Highlighted >= 0
 	}, false)
 
 	p.InitializeScrolling(-1, reservedLines)
@@ -63,11 +63,11 @@ func NewSearchPrompt(i *Input, o *Output, label string, options func(string) Sea
 			p.HighlightPrevious(len(p.matchedValues))
 		} else if keys.Is(key, keys.Down, keys.DownArrow, keys.Tab, keys.CtrlN) {
 			p.HighlightNext(len(p.matchedValues))
-		} else if keys.Is(key, keys.CtrlA, keys.Home...) {
+		} else if keys.Is(key, keys.CtrlA) || keys.Is(key, keys.Home...) {
 			if p.Highlighted >= 0 {
 				p.Highlight(0)
 			}
-		} else if keys.Is(key, keys.CtrlE, keys.End...) {
+		} else if keys.Is(key, keys.CtrlE) || keys.Is(key, keys.End...) {
 			if p.Highlighted >= 0 {
 				p.Highlight(len(p.matchedValues) - 1)
 			}
