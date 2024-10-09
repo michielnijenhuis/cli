@@ -111,11 +111,14 @@ func (d *TextDescriptor) DescribeInputDefinition(definition *InputDefinition, op
 		d.writeText("<primary>Arguments:</primary>")
 		d.writeText(Eol)
 
-		for _, argument := range definition.arguments {
+		for i, argument := range definition.arguments {
 			d.DescribeArgument(argument, &DescriptorOptions{
 				totalWidth: totalWidth,
 			})
-			d.writeText(Eol)
+
+			if i+1 < len(definition.arguments) || hasFlags {
+				d.writeText(Eol)
+			}
 		}
 	}
 

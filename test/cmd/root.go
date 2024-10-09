@@ -16,6 +16,7 @@ func Execute() {
 		AutoExit:       true,
 		CatchErrors:    true,
 		PromptForInput: true,
+		NativeFlags:    []string{"help", "version"},
 		Arguments: []cli.Arg{
 			&cli.StringArg{
 				Name:        "name",
@@ -23,12 +24,12 @@ func Execute() {
 				Options:     []string{"Michiel", "Suus", "Anita"},
 				Required:    true,
 			},
-			&cli.ArrayArg{
-				Name:        "names",
-				Description: "Your names",
-				// Options:     []string{"Michiel", "Suus", "Anita"},
-				Min: 1,
-			},
+			// &cli.ArrayArg{
+			// 	Name:        "names",
+			// 	Description: "Your names",
+			// 	// Options:     []string{"Michiel", "Suus", "Anita"},
+			// 	Min: 1,
+			// },
 		},
 		Run: func(io *cli.IO) {
 			selected, err := io.MultiSelect("What is your name?", map[string]string{

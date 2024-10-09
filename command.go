@@ -36,6 +36,7 @@ type Command struct {
 	Hidden                 bool
 	PromptForInput         bool
 	PrintHelpFunc          func(o *Output, command *Command)
+	NativeFlags            []string
 	definition             *InputDefinition
 	synopsis               map[string]string
 	usages                 []string
@@ -118,9 +119,11 @@ func (c *Command) HasSubcommands() bool {
 func (c *Command) execute(i *Input, o *Output) error {
 	c.validate()
 
-	if i.HasParameterFlag("--version", true) || i.HasParameterFlag("-V", true) {
-		o.Writeln(c.version(), 0)
-		return nil
+	if c.hasFlag(i, "version") {
+		if i.HasParameterFlag("--version", true) || i.HasParameterFlag("-V", true) {
+			o.Writeln(c.version(), 0)
+			return nil
+		}
 	}
 
 	definition := c.Definition()
@@ -175,7 +178,7 @@ func (c *Command) execute(i *Input, o *Output) error {
 		}
 	}
 
-	wantsHelp := i.HasParameterFlag("--help", true) || i.HasParameterFlag("-h", true)
+	wantsHelp := c.hasFlag(i, "help") && (i.HasParameterFlag("--help", true) || i.HasParameterFlag("-h", true))
 	if wantsHelp && command != nil {
 		c.printHelp(o, command)
 		return nil
@@ -393,15 +396,23 @@ func (c *Command) RenderError(o *Output, err error) {
 	}
 }
 
+func (c *Command) hasFlag(i *Input, name string) bool {
+	return i.HasFlag(name) || c.NativeFlags == nil || slices.Contains(c.NativeFlags, name)
+}
+
 func (c *Command) configureIO(i *Input, o *Output) {
-	if i.HasParameterFlag("--ansi", true) {
-		o.SetDecorated(true)
-	} else if i.HasParameterFlag("--no-ansi", true) {
-		o.SetDecorated(false)
+	if c.hasFlag(i, "ansi") {
+		if i.HasParameterFlag("--ansi", true) {
+			o.SetDecorated(true)
+		} else if i.HasParameterFlag("--no-ansi", true) {
+			o.SetDecorated(false)
+		}
 	}
 
-	if i.HasParameterFlag("--no-interaction", true) || i.HasParameterFlag("-n", true) {
-		i.SetInteractive(false)
+	if c.hasFlag(i, "no-interaction") {
+		if i.HasParameterFlag("--no-interaction", true) || i.HasParameterFlag("-n", true) {
+			i.SetInteractive(false)
+		}
 	}
 
 	shellVerbosity, err := strconv.Atoi(os.Getenv("SHELL_VERBOSITY"))
@@ -422,10 +433,10 @@ func (c *Command) configureIO(i *Input, o *Output) {
 		shellVerbosity = 0
 	}
 
-	if i.HasParameterFlag("--quiet", true) || i.HasParameterFlag("-q", true) {
+	if c.hasFlag(i, "quiet") && (i.HasParameterFlag("--quiet", true) || i.HasParameterFlag("-q", true)) {
 		o.SetVerbosity(VerbosityQuiet)
 		shellVerbosity = -1
-	} else {
+	} else if c.hasFlag(i, "verbose") {
 		if i.HasParameterFlag("-vvv", true) ||
 			i.HasParameterFlag("--verbose=3", true) ||
 			i.ParameterFlag("--verbose", false, true) == "3" {
@@ -534,47 +545,77 @@ func (c *Command) findCommand(input *Input, definition *InputDefinition) (*Comma
 }
 
 func (c *Command) defaultInputDefinition() *InputDefinition {
-	helpFlag := &BoolFlag{
-		Name:        "help",
-		Shortcuts:   []string{"h"},
-		Description: "Display help for the program or a given command",
-	}
-	versionFlag := &BoolFlag{
-		Name:        "version",
-		Shortcuts:   []string{"V"},
-		Description: "Display the program version",
-	}
-	quietFlag := &BoolFlag{
-		Name:        "quiet",
-		Shortcuts:   []string{"q"},
-		Description: "Do not output any message",
-	}
-	verboseflag := &BoolFlag{
-		Name:        "verbose",
-		Shortcuts:   []string{"v", "vv", "vvv"},
-		Description: "Increase the verbosity of messages: normal (1), verbose (2) or debug (3)",
-	}
-	ansiFlag := &BoolFlag{
-		Name:        "ansi",
-		Negatable:   true,
-		Description: "Force (or disable --no-ansi) ANSI output",
-	}
-	noInteractionFlag := &BoolFlag{
-		Name:        "no-interaction",
-		Shortcuts:   []string{"n"},
-		Description: "Do not ask any interactive question",
-	}
-
-	flags := []Flag{
-		helpFlag,
-		quietFlag,
-		verboseflag,
-		versionFlag,
-		ansiFlag,
-		noInteractionFlag,
-	}
-
 	definition := &InputDefinition{}
+	flags := make([]Flag, 0, 6)
+	requested := c.NativeFlags
+
+	if requested != nil && len(requested) == 0 {
+		return definition
+	}
+
+	all := requested == nil
+
+	if all || slices.Contains(requested, "help") {
+		var description string
+		if c.HasSubcommands() {
+			description = "Display help for a command or a given command"
+		} else {
+			description = "Display help for the command"
+		}
+
+		helpFlag := &BoolFlag{
+			Name:        "help",
+			Shortcuts:   []string{"h"},
+			Description: description,
+		}
+		flags = append(flags, helpFlag)
+	}
+
+	if all || slices.Contains(requested, "version") {
+		versionFlag := &BoolFlag{
+			Name:        "version",
+			Shortcuts:   []string{"V"},
+			Description: "Display the command version",
+		}
+		flags = append(flags, versionFlag)
+	}
+
+	if all || slices.Contains(requested, "quiet") {
+		quietFlag := &BoolFlag{
+			Name:        "quiet",
+			Shortcuts:   []string{"q"},
+			Description: "Do not output any message",
+		}
+		flags = append(flags, quietFlag)
+	}
+
+	if all || slices.Contains(requested, "verbose") {
+		verboseflag := &BoolFlag{
+			Name:        "verbose",
+			Shortcuts:   []string{"v", "vv", "vvv"},
+			Description: "Increase the verbosity of messages: normal (1), verbose (2) or debug (3)",
+		}
+		flags = append(flags, verboseflag)
+	}
+
+	if all || slices.Contains(requested, "ansi") {
+		ansiFlag := &BoolFlag{
+			Name:        "ansi",
+			Negatable:   true,
+			Description: "Force (or disable --no-ansi) ANSI output",
+		}
+		flags = append(flags, ansiFlag)
+	}
+
+	if all || slices.Contains(requested, "no-interaction") {
+		noInteractionFlag := &BoolFlag{
+			Name:        "no-interaction",
+			Shortcuts:   []string{"n"},
+			Description: "Do not ask any interactive question",
+		}
+		flags = append(flags, noInteractionFlag)
+	}
+
 	definition.SetFlags(flags)
 
 	return definition
