@@ -28,6 +28,7 @@ type Arg interface {
 	GetDescription() string
 	IsRequired() bool
 	HasValue() bool
+	Opts() []string
 }
 
 func (a *StringArg) GetName() string {
@@ -46,6 +47,10 @@ func (a *StringArg) HasValue() bool {
 	return a.Value != ""
 }
 
+func (a *StringArg) Opts() []string {
+	return a.Options
+}
+
 func (a *ArrayArg) GetName() string {
 	return a.Name
 }
@@ -60,6 +65,10 @@ func (a *ArrayArg) IsRequired() bool {
 
 func (a *ArrayArg) HasValue() bool {
 	return len(a.Value) > 0
+}
+
+func (a *ArrayArg) Opts() []string {
+	return a.Options
 }
 
 func GetArgStringValue(arg Arg) string {

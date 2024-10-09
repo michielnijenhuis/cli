@@ -150,9 +150,11 @@ func (d *TextDescriptor) DescribeInputDefinition(definition *InputDefinition, op
 }
 
 func (d *TextDescriptor) DescribeArgument(argument Arg, options *DescriptorOptions) {
-	var defaultValue string
+	var accent string
 	if argHasDefaultValue(argument) {
-		defaultValue = fmt.Sprintf("<primary> [default: %s]</primary>", formatArgValue(argument))
+		accent = fmt.Sprintf("<primary> [default: %s]</primary>", formatArgValue(argument))
+	} else if argument.IsRequired() && len(argument.Opts()) > 0 {
+		accent = fmt.Sprintf("<primary> [options: %s]</primary>", strings.Join(argument.Opts(), ", "))
 	}
 
 	name := argument.GetName()
@@ -169,7 +171,7 @@ func (d *TextDescriptor) DescribeArgument(argument Arg, options *DescriptorOptio
 	re := regexp.MustCompile(`\s*[\r\n]\s*`)
 	desc := re.ReplaceAllString(argument.GetDescription(), strings.Repeat(" ", totalWidth+4))
 
-	d.writeText(fmt.Sprintf("  <accent>%s</accent> %s%s%s", name, width, desc, defaultValue))
+	d.writeText(fmt.Sprintf("  <accent>%s</accent> %s%s%s", name, width, desc, accent))
 }
 
 func argHasDefaultValue(arg Arg) bool {
