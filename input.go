@@ -513,8 +513,7 @@ func (i *Input) addShortFlag(shortcut string, token string) error {
 }
 
 func (i *Input) addLongFlag(name string, token string) error {
-	boolean := token != ""
-	isNegation := false
+	boolean := true
 
 	if !i.definition.HasFlag(name) {
 		if !i.definition.HasNegation(name) {
@@ -526,7 +525,7 @@ func (i *Input) addLongFlag(name string, token string) error {
 		}
 
 		name = i.definition.NegationToName(name)
-		isNegation = true
+		boolean = false
 	}
 
 	flag, e := i.definition.Flag(name)
@@ -536,10 +535,6 @@ func (i *Input) addLongFlag(name string, token string) error {
 		}
 
 		return e
-	}
-
-	if isNegation {
-		boolean = false
 	}
 
 	if token != "" && !FlagAcceptsValue(flag) {
@@ -557,14 +552,8 @@ func (i *Input) addLongFlag(name string, token string) error {
 		}
 	}
 
-	if token == "" {
-		if FlagRequiresValue(flag) {
-			return fmt.Errorf("the \"--%s\" flag requires a value", name)
-		}
-
-		if !FlagIsArray(flag) && !FlagValueIsOptional(flag) && (!FlagIsNegatable(flag) || !isNegation) {
-			boolean = true
-		}
+	if token == "" && FlagRequiresValue(flag) {
+		return fmt.Errorf("the \"--%s\" flag requires a value", name)
 	}
 
 	i.flags[name] = flag

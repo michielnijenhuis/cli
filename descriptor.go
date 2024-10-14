@@ -23,7 +23,7 @@ func (d *TextDescriptor) DescribeCommand(command *Command, options *DescriptorOp
 		d.writeText(intro + Eol + Eol)
 	}
 
-	definition := command.Definition()
+	definition, _ := command.Definition()
 
 	d.writeText("<primary>Usage:</primary>")
 	d.writeText(Eol)

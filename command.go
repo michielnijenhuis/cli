@@ -116,7 +116,10 @@ func (c *Command) Exit(err error) {
 }
 
 func (c *Command) Subcommand(name string) *Command {
-	c.init()
+	if err := c.init(); err != nil {
+		return nil
+	}
+
 	return c.commands[name]
 }
 
@@ -136,11 +139,13 @@ func (c *Command) execute(i *Input, o *Output) error {
 		}
 	}
 
-	definition := c.Definition()
+	definition, err := c.Definition()
+	if err != nil {
+		return err
+	}
 
 	var command *Command
 	var args []string
-	var err error
 
 	if len(i.Args) == 0 && c.PromptForCommand && c.HasSubcommands() && c.Run == nil && c.RunE == nil {
 		command, err = c.promptForCommand(i, o)
@@ -215,7 +220,12 @@ func (c *Command) execute(i *Input, o *Output) error {
 		return nil
 	}
 
-	err = i.Bind(command.Definition())
+	def, err := command.Definition()
+	if err != nil {
+		return err
+	}
+
+	err = i.Bind(def)
 	if err != nil && !command.IgnoreValidationErrors {
 		return err
 	}
@@ -238,11 +248,16 @@ func (c *Command) execute(i *Input, o *Output) error {
 	}
 
 	c.runningCommand = command
+	def, err = command.Definition()
+	if err != nil {
+		return err
+	}
+
 	io := &IO{
 		Command:    command,
 		Input:      i,
 		Output:     o,
-		definition: command.Definition(),
+		definition: def,
 		Args:       i.Args,
 	}
 
@@ -272,7 +287,9 @@ func (c *Command) GetHelp() string {
 }
 
 func (c *Command) All() map[string]*Command {
-	c.init()
+	if err := c.init(); err != nil {
+		return nil
+	}
 
 	cmds := make(map[string]*Command)
 	for _, cmd := range c.commands {
@@ -306,7 +323,9 @@ func (c *Command) AddCommand(command *Command) error {
 		return errors.New("cannot add a command to itself")
 	}
 
-	c.init()
+	if err := c.init(); err != nil {
+		return err
+	}
 
 	if command.Name == "" {
 		return errors.New("commands must have a name")
@@ -341,7 +360,8 @@ func (c *Command) Synopsis(short bool) string {
 	}
 
 	if c.synopsis[key] == "" {
-		c.synopsis[key] = strings.TrimSpace(fmt.Sprintf("%s %s", c.FullName(), c.Definition().Synopsis(short)))
+		d, _ := c.Definition()
+		c.synopsis[key] = strings.TrimSpace(fmt.Sprintf("%s %s", c.FullName(), d.Synopsis(short)))
 	}
 
 	return c.synopsis[key]
@@ -570,7 +590,12 @@ func (c *Command) findCommand(input *Input, definition *InputDefinition) (*Comma
 			input.tokens = array.Remove(input.tokens, arg)
 			command = cmd
 		} else {
-			if len(command.Definition().arguments) == 0 && command.HasSubcommands() {
+			d, err := command.Definition()
+			if err != nil {
+				return nil, nil, err
+			}
+
+			if len(d.arguments) == 0 && command.HasSubcommands() {
 				alternatives := c.findAlternatives(arg, array.SortedKeys(command.commands))
 				return nil, arguments[:i+1], CommandNotFound(fmt.Sprintf("command \"%s\" does not exist", arg), alternatives)
 			}
@@ -582,13 +607,13 @@ func (c *Command) findCommand(input *Input, definition *InputDefinition) (*Comma
 	return command, nil, nil
 }
 
-func (c *Command) defaultInputDefinition() *InputDefinition {
+func (c *Command) defaultInputDefinition() (*InputDefinition, error) {
 	definition := &InputDefinition{}
 	flags := make([]Flag, 0, 6)
 	requested := c.NativeFlags
 
 	if requested != nil && len(requested) == 0 {
-		return definition
+		return definition, nil
 	}
 
 	all := requested == nil
@@ -654,14 +679,14 @@ func (c *Command) defaultInputDefinition() *InputDefinition {
 		flags = append(flags, noInteractionFlag)
 	}
 
-	definition.SetFlags(flags)
+	err := definition.SetFlags(flags)
 
-	return definition
+	return definition, err
 }
 
-func (c *Command) init() {
+func (c *Command) init() error {
 	if c.initialized {
-		return
+		return nil
 	}
 
 	c.initialized = true
@@ -672,24 +697,42 @@ func (c *Command) init() {
 
 	for _, command := range c.Commands {
 		command.SetParent(c)
-		c.AddCommand(command)
+		if err := c.AddCommand(command); err != nil {
+			return err
+		}
 	}
 
 	c.Commands = nil
+	return nil
 }
 
-func (c *Command) Definition() *InputDefinition {
+func (c *Command) Definition() (*InputDefinition, error) {
+	var err error
 	if c.definition == nil {
-		nativeDefinition := c.defaultInputDefinition()
+		nativeDefinition, e := c.defaultInputDefinition()
+		if e != nil {
+			err = e
+		}
 
 		c.definition = &InputDefinition{}
-		c.definition.SetArguments(c.Arguments)
-		c.definition.SetFlags(c.Flags)
-		c.definition.AddArguments(nativeDefinition.GetArguments())
-		c.definition.AddFlags(nativeDefinition.GetFlags())
+		if e := c.definition.SetArguments(c.Arguments); e != nil && err != nil {
+			err = e
+		}
+
+		if e := c.definition.SetFlags(c.Flags); e != nil && err != nil {
+			err = e
+		}
+
+		if e := c.definition.AddArguments(nativeDefinition.GetArguments()); e != nil && err != nil {
+			err = e
+		}
+
+		if e := c.definition.AddFlags(nativeDefinition.GetFlags()); e != nil && err != nil {
+			err = e
+		}
 	}
 
-	return c.definition
+	return c.definition, err
 }
 
 func (c *Command) printHelp(output *Output) {
@@ -941,7 +984,9 @@ func (c *Command) promptForCommand(i *Input, o *Output) (*Command, error) {
 	}()
 
 	for {
-		target.init()
+		if err := target.init(); err != nil {
+			return nil, err
+		}
 
 		if !target.HasSubcommands() {
 			break

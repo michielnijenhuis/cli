@@ -1,7 +1,9 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
+	"log"
 	"os"
 	"regexp"
 	"strings"
@@ -154,6 +156,7 @@ func (o *Output) WriteMany(messages []string, newLine bool, options uint) {
 
 	re := regexp.MustCompile("<[^>]+>")
 
+	errs := make([]error, 0)
 	var message string
 	for _, m := range messages {
 		message = m
@@ -166,15 +169,21 @@ func (o *Output) WriteMany(messages []string, newLine bool, options uint) {
 
 		o.DoWrite(message, newLine)
 	}
+
+	if len(errs) > 0 && o.IsDebug() {
+		log.Fatalln(errors.Join(errs...))
+	}
 }
 
-func (o *Output) DoWrite(message string, newLine bool) error {
+func (o *Output) DoWrite(message string, newLine bool) {
 	if newLine {
 		message += Eol
 	}
 
 	_, err := o.Stream.WriteString(message)
-	return err
+	if err != nil && o.IsDebug() {
+		log.Fatalln(err)
+	}
 }
 
 func (o *Output) SetDecorated(decorated bool) {
@@ -389,7 +398,7 @@ func (o *Output) TableFromSlices(headers []string, rows [][]any, options *TableO
 	o.Table(headers, o.CreateTableRowsFromSlices(rows), options)
 }
 
-func (o *Output) TableFromMap(rows []map[string]any, headers []string, options *TableOptions) {
+func (o *Output) TableFromMap(headers []string, rows []map[string]any, options *TableOptions) {
 	tableRows := o.CreateTableRowsFromMaps(headers, rows)
 
 	if headers == nil && len(rows) > 0 {
@@ -414,7 +423,6 @@ type TableOptions struct {
 func (o *Output) Table(headers []string, rows [][]*TableCell, options *TableOptions) {
 	t := o.CreateTable(headers, rows, options)
 	t.Render()
-	o.NewLine(1)
 }
 
 func (o *Output) CreateTableRowsFromMaps(headers []string, rows []map[string]any) [][]*TableCell {

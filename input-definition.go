@@ -22,28 +22,39 @@ type InputDefinition struct {
 	shortcuts            map[string]string
 }
 
-func (d *InputDefinition) SetDefinition(arguments []Arg, flags []Flag) {
-	d.SetArguments(arguments)
-	d.SetFlags(flags)
+func (d *InputDefinition) SetDefinition(arguments []Arg, flags []Flag) error {
+	if err := d.SetArguments(arguments); err != nil {
+		return err
+	}
+
+	if err := d.SetFlags(flags); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (d *InputDefinition) SetArguments(arguments []Arg) {
+func (d *InputDefinition) SetArguments(arguments []Arg) error {
 	d.requiredCount = 0
 	d.firstArgument = nil
 	d.lastOptionalArgument = nil
 	d.lastArrayArgument = nil
 	d.arguments = make([]Arg, 0)
-	d.AddArguments(arguments)
+	return d.AddArguments(arguments)
 }
 
-func (d *InputDefinition) AddArguments(arguments []Arg) {
+func (d *InputDefinition) AddArguments(arguments []Arg) error {
 	for i, arg := range arguments {
 		if i == 0 {
 			d.firstArgument = arg
 		}
 
-		d.AddArgument(arg)
+		if err := d.AddArgument(arg); err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 func (d *InputDefinition) AddArgument(argument Arg) error {
@@ -136,11 +147,11 @@ func (d *InputDefinition) ArgumentRequiredCount() uint {
 	return d.requiredCount
 }
 
-func (d *InputDefinition) SetFlags(flags []Flag) {
+func (d *InputDefinition) SetFlags(flags []Flag) error {
 	d.shortcuts = make(map[string]string)
 	d.negations = make(map[string]string)
 	d.flags = make([]Flag, 0)
-	d.AddFlags(flags)
+	return d.AddFlags(flags)
 }
 
 func (d *InputDefinition) AddFlags(flags []Flag) error {

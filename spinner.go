@@ -112,9 +112,6 @@ func (s *Spinner) Spin(fn func()) {
 			case <-c.Done():
 				return
 			default:
-				s.render(func() string {
-					return RenderSpinner(s)
-				})
 				s.Count++
 				time.Sleep(time.Duration(s.Interval) * time.Millisecond)
 			}

@@ -271,3 +271,15 @@ func (io *IO) Search(label string, options func(string) SearchResult, placeholde
 func (io *IO) MultiSelect(label string, options MultiSelectOptions, defaultValues []string) ([]string, error) {
 	return io.Output.MultiSelect(label, options, defaultValues)
 }
+
+func (io *IO) Table(headers []string, rows [][]*TableCell, options *TableOptions) {
+	io.Output.Table(headers, rows, options)
+}
+
+func (io *IO) TableFromSlices(headers []string, rows [][]any, options *TableOptions) {
+	io.Output.TableFromSlices(headers, rows, options)
+}
+
+func (io *IO) TableFromMap(headers []string, rows []map[string]any, options *TableOptions) {
+	io.Output.TableFromMap(headers, rows, options)
+}

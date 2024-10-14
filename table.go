@@ -337,7 +337,6 @@ func (t *Table) AppendRow(row []*TableCell) {
 	}
 
 	t.AddRow(row)
-	t.Render()
 }
 
 func (t *Table) SetRow(columnIndex int, row []*TableCell) {

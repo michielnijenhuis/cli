@@ -89,6 +89,7 @@ func NewArrayPrompt(i *Input, o *Output, label string, defaultValue []string) *A
 				p.deletePrompt = nil
 				lines := strings.Split(p.prevFrame, Eol)
 				p.cursor.Move(-999, (-1*len(lines))+2)
+
 				p.eraseDown()
 			}
 

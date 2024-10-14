@@ -53,7 +53,6 @@ func (v *View) Render(frame string) {
 	if !v.init {
 		v.Write(frame)
 		v.init = true
-		return
 	}
 
 	v.Clear()
