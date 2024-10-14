@@ -26,10 +26,6 @@ type SearchPrompt struct {
 const reservedLines = 7
 
 func NewSearchPrompt(i *Input, o *Output, label string, options func(string) SearchResult, placeholder string) *SearchPrompt {
-	if options == nil {
-		panic("options cannot be nil")
-	}
-
 	p := &SearchPrompt{
 		Prompt:      NewPrompt(i, o),
 		Label:       label,
@@ -195,7 +191,8 @@ func (p *SearchPrompt) Matches() []string {
 				p.matchedValues = append(p.matchedValues, labelToValue[label])
 			}
 		default:
-			panic("invalid search result")
+			p.matchedLabels = []string{}
+			p.matchedValues = []string{}
 		}
 
 	}

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -45,7 +46,7 @@ func (d *InputDefinition) AddArguments(arguments []Arg) {
 	}
 }
 
-func (d *InputDefinition) AddArgument(argument Arg) {
+func (d *InputDefinition) AddArgument(argument Arg) error {
 	if d.arguments == nil {
 		d.arguments = make([]Arg, 0)
 	}
@@ -57,19 +58,19 @@ func (d *InputDefinition) AddArgument(argument Arg) {
 	name := argument.GetName()
 
 	if d.HasArgument(name) {
-		panic(fmt.Sprintf("an argument with name \"%s\" already exists", name))
+		return fmt.Errorf("an argument with name \"%s\" already exists", name)
 	}
 
 	if d.HasFlag(name) {
-		panic(fmt.Sprintf("a flag with name \"%s\" already exists", name))
+		return fmt.Errorf("a flag with name \"%s\" already exists", name)
 	}
 
 	if d.lastArrayArgument != nil {
-		panic(fmt.Sprintf("cannot add a required argument \"%s\" after an array argument \"%s\"", name, d.lastArrayArgument.Name))
+		return fmt.Errorf("cannot add a required argument \"%s\" after an array argument \"%s\"", name, d.lastArrayArgument.Name)
 	}
 
 	if argument.IsRequired() && d.lastOptionalArgument != nil {
-		panic(fmt.Sprintf("cannot add a required argument \"%s\" after an flagal one \"%s\"", name, d.lastOptionalArgument.GetName()))
+		return fmt.Errorf("cannot add a required argument \"%s\" after an flagal one \"%s\"", name, d.lastOptionalArgument.GetName())
 	}
 
 	if arr, ok := argument.(*ArrayArg); ok {
@@ -83,6 +84,7 @@ func (d *InputDefinition) AddArgument(argument Arg) {
 	}
 
 	d.arguments = append(d.arguments, argument)
+	return nil
 }
 
 func (d *InputDefinition) HasArgument(name string) bool {
@@ -141,15 +143,19 @@ func (d *InputDefinition) SetFlags(flags []Flag) {
 	d.AddFlags(flags)
 }
 
-func (d *InputDefinition) AddFlags(flags []Flag) {
+func (d *InputDefinition) AddFlags(flags []Flag) error {
 	for _, flag := range flags {
-		d.AddFlag(flag)
+		if err := d.AddFlag(flag); err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
-func (d *InputDefinition) AddFlag(flag Flag) {
+func (d *InputDefinition) AddFlag(flag Flag) error {
 	if flag == nil {
-		return
+		return errors.New("flag cannot be nil")
 	}
 
 	if d.flags == nil {
@@ -159,15 +165,15 @@ func (d *InputDefinition) AddFlag(flag Flag) {
 	name := flag.GetName()
 
 	if d.HasFlag(name) {
-		panic(fmt.Sprintf("a flag named \"%s\" already exists", name))
+		return fmt.Errorf("a flag named \"%s\" already exists", name)
 	}
 
 	if d.HasArgument(name) {
-		panic(fmt.Sprintf("flag cannot be added, as an argument named \"%s\" already exists", name))
+		return fmt.Errorf("flag cannot be added, as an argument named \"%s\" already exists", name)
 	}
 
 	if d.negations[name] != "" {
-		panic(fmt.Sprintf("a flag named \"%s\" already exists", name))
+		return fmt.Errorf("a flag named \"%s\" already exists", name)
 	}
 
 	shortcuts := flag.GetShortcuts()
@@ -177,7 +183,7 @@ func (d *InputDefinition) AddFlag(flag Flag) {
 			if ok {
 				f, _ := d.Flag(name)
 				if f != nil && FlagEquals(flag, f) {
-					panic(fmt.Sprintf("a flag with shortcut \"%s\" already exists", s))
+					return fmt.Errorf("a flag with shortcut \"%s\" already exists", s)
 				}
 			}
 		}
@@ -197,7 +203,7 @@ func (d *InputDefinition) AddFlag(flag Flag) {
 		negatedName := fmt.Sprintf("no-%s", name)
 
 		if negated, _ := d.Flag(negatedName); negated != nil {
-			panic(fmt.Sprintf("a flag named \"%s\" already exists", negatedName))
+			return fmt.Errorf("a flag named \"%s\" already exists", negatedName)
 		}
 
 		if d.negations == nil {
@@ -206,6 +212,8 @@ func (d *InputDefinition) AddFlag(flag Flag) {
 
 		d.negations[negatedName] = name
 	}
+
+	return nil
 }
 
 func (d *InputDefinition) HasFlag(name string) bool {

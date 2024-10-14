@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -132,6 +133,6 @@ func ValidateArg(arg Arg) error {
 
 		return nil
 	default:
-		panic("invalid argument type")
+		return errors.New("invalid argument type")
 	}
 }

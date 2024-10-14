@@ -39,10 +39,7 @@ type spinnerRenderer struct {
 }
 
 func (r *spinnerRenderer) Render(p any) {
-	s, ok := p.(*Spinner)
-	if !ok {
-		panic("expected a spinner prompt")
-	}
+	s := p.(*Spinner)
 
 	if s.State == PromptStateCancel {
 		r.Line(fmt.Sprintf("<fg=yellow>%s</>", s.CancelMessage), true)

@@ -25,10 +25,6 @@ package cli
 // }
 
 // func NewMultiSearchPrompt(i *Input, o *Output, label string, options func(string) MultiSearchResult, placeholder string, defaultValues []string) *MultiSearchPrompt {
-// 	if options == nil {
-// 		panic("options cannot be nil")
-// 	}
-
 // 	p := &MultiSearchPrompt{
 // 		Prompt:      NewPrompt(i, o),
 // 		Label:       label,
@@ -128,7 +124,8 @@ package cli
 // 				p.matchedValues = append(p.matchedValues, labelToValue[label])
 // 			}
 // 		default:
-// 			panic("invalid search result")
+// 			p.matchedLabels = []string{}
+// 			p.matchedValues = []string{}
 // 		}
 
 // 	}

@@ -45,7 +45,8 @@ func NewMultiSelectPrompt(i *Input, o *Output, label string, options MultiSelect
 			values = append(values, labelToValue[label])
 		}
 	default:
-		panic("invalid multiselect options")
+		labels = []string{}
+		values = []string{}
 	}
 
 	p := &MultiSelectPrompt{

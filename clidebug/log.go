@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func LogToFile(format string, args ...any) {
+func LogToFile(format string, args ...any) error {
 	path := "./cli.log"
 	var file *os.File
 	var err error
@@ -15,13 +15,13 @@ func LogToFile(format string, args ...any) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		file, err = os.Create(path)
 		if err != nil {
-			panic(err)
+			return err
 		}
 	} else {
 		// get the file handle
 		file, err = os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0644)
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
 
@@ -31,6 +31,8 @@ func LogToFile(format string, args ...any) {
 	// write to the file
 	_, err = file.WriteString(fmt.Sprintf(format, args...) + "\n")
 	if err != nil {
-		panic(err)
+		return err
 	}
+
+	return nil
 }

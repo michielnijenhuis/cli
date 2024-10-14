@@ -194,7 +194,7 @@ func formatArgValue(arg Arg) string {
 	case *ArrayArg:
 		return formatDefaultValue(a.Value)
 	default:
-		panic("invalid argument type")
+		return ""
 	}
 }
 
@@ -219,7 +219,7 @@ func formatFlagValue(flag Flag) string {
 		}
 		return formatDefaultValue(f.Boolean)
 	default:
-		panic("invalid argument type")
+		return ""
 	}
 }
 

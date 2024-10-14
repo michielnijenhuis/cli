@@ -1,5 +1,7 @@
 package cli
 
+import "errors"
+
 const (
 	FormText = iota
 	FormTextArea
@@ -64,7 +66,7 @@ func (f form) Submit() error {
 		switch cur.Type {
 		case FormText:
 			if cur.String == nil {
-				panic("form type FormText expects a string pointer")
+				return errors.New("form type FormText expects a string pointer")
 			}
 			prompt := NewTextPrompt(f.i, f.o, cur.Label, *cur.String)
 			prompt.Placeholder = cur.Placeholder
@@ -75,10 +77,10 @@ func (f form) Submit() error {
 			}
 			*cur.String = answer
 		case FormTextArea:
-			panic("form type not yet implemented")
+			return errors.New("form type not yet implemented")
 		case FormArray:
 			if cur.Array == nil {
-				panic("form type FormText expects a string pointer")
+				return errors.New("form type FormText expects a string pointer")
 			}
 			prompt := NewArrayPrompt(f.i, f.o, cur.Label, *cur.Array)
 			prompt.Required = cur.Required
@@ -89,10 +91,10 @@ func (f form) Submit() error {
 			*cur.Array = answer
 		case FormSelect:
 			if cur.String == nil {
-				panic("form type FormSelect expects a string pointer")
+				return errors.New("form type FormSelect expects a string pointer")
 			}
 			if cur.Values == nil || len(cur.Values) < 2 {
-				panic("form type FormSelect expects at least two choices")
+				return errors.New("form type FormSelect expects at least two choices")
 			}
 			prompt := NewSelectPrompt(f.i, f.o, cur.Label, cur.Values, cur.Labels, *cur.String)
 			prompt.Required = cur.Required
@@ -102,10 +104,10 @@ func (f form) Submit() error {
 			}
 			*cur.String = answer
 		case FormMultiselect:
-			panic("form type not yet implemented")
+			return errors.New("form type not yet implemented")
 		case FormConfirm:
 			if cur.Bool == nil {
-				panic("form type FormText expects a bool pointer")
+				return errors.New("form type FormText expects a bool pointer")
 			}
 			prompt := NewConfirmPrompt(f.i, f.o, cur.Label, *cur.Bool)
 			prompt.Required = cur.Required
@@ -116,7 +118,7 @@ func (f form) Submit() error {
 			*cur.Bool = answer
 		case FormWait:
 			if cur.WaitFunc == nil {
-				panic("form type FormWait expects a WaitFunc")
+				return errors.New("form type FormWait expects a WaitFunc")
 			}
 
 			spinner := NewSpinner(f.i, f.o, cur.Label, nil, "")
@@ -131,7 +133,7 @@ func (f form) Submit() error {
 				return nil
 			}
 		default:
-			panic("unsupported form type")
+			return errors.New("unsupported form type")
 		}
 	}
 

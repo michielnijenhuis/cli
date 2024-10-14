@@ -168,15 +168,13 @@ func (o *Output) WriteMany(messages []string, newLine bool, options uint) {
 	}
 }
 
-func (o *Output) DoWrite(message string, newLine bool) {
+func (o *Output) DoWrite(message string, newLine bool) error {
 	if newLine {
 		message += Eol
 	}
 
 	_, err := o.Stream.WriteString(message)
-	if err != nil {
-		panic(err)
-	}
+	return err
 }
 
 func (o *Output) SetDecorated(decorated bool) {

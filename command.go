@@ -125,7 +125,9 @@ func (c *Command) HasSubcommands() bool {
 }
 
 func (c *Command) execute(i *Input, o *Output) error {
-	c.validate()
+	if err := c.validate(); err != nil {
+		return err
+	}
 
 	if c.hasFlag(i, "version") {
 		if i.HasParameterFlag("--version", true) || i.HasParameterFlag("-V", true) {
@@ -251,7 +253,7 @@ func (c *Command) execute(i *Input, o *Output) error {
 	} else if command == c || command.HasSubcommands() {
 		command.printHelp(o)
 	} else {
-		panic("command must have a handle or subcommands")
+		return errors.New("command must have a handle or subcommands")
 	}
 
 	c.runningCommand = nil
@@ -281,8 +283,6 @@ func (c *Command) All() map[string]*Command {
 }
 
 func (c *Command) version() string {
-	c.validate()
-
 	if c.LongVersion != "" {
 		return c.LongVersion
 	}
@@ -301,33 +301,33 @@ func (c *Command) version() string {
 	return desc
 }
 
-func (c *Command) AddCommand(command *Command) {
+func (c *Command) AddCommand(command *Command) error {
 	if command == c {
-		panic("cannot add a command to itself")
+		return errors.New("cannot add a command to itself")
 	}
 
 	c.init()
 
 	if command.Name == "" {
-		panic("Commands must have a name.")
+		return errors.New("commands must have a name")
 	}
 
 	if _, exists := c.commands[command.Name]; exists {
-		panic(fmt.Sprintf("command \"%s\" already exists", command.Name))
+		return fmt.Errorf("command \"%s\" already exists", command.Name)
 	}
 
 	c.commands[command.Name] = command
 
 	for _, alias := range command.Aliases {
 		if _, exists := c.commands[alias]; exists {
-			panic(fmt.Sprintf("command \"%s\" already exists", alias))
+			return fmt.Errorf("command \"%s\" already exists", alias)
 		}
 
 		c.commands[alias] = command
 	}
 
 	command.SetParent(c)
-	command.validate()
+	return command.validate()
 }
 
 func (c *Command) Synopsis(short bool) string {
@@ -397,22 +397,24 @@ func (c *Command) ProcessedHelp() string {
 	return help
 }
 
-func (c *Command) validate() {
+func (c *Command) validate() error {
 	if c.validated {
-		return
+		return nil
 	}
 	c.validated = true
 
 	re := regexp.MustCompile("^[^:]+(:[^:]+)*")
 	if !re.MatchString(c.Name) {
-		panic(fmt.Sprintf("command name \"%s\" is invalid", c.Name))
+		return fmt.Errorf("command name \"%s\" is invalid", c.Name)
 	}
 
 	for _, alias := range c.Aliases {
 		if !re.MatchString(alias) {
-			panic(fmt.Sprintf("command alias \"%s\" is invalid", alias))
+			return fmt.Errorf("command alias \"%s\" is invalid", alias)
 		}
 	}
+
+	return nil
 }
 
 func (c *Command) RenderError(o *Output, err error) {
@@ -723,7 +725,7 @@ func (c *Command) promptArgument(i *Input, o *Output, arg Arg) error {
 
 	desc := arg.GetDescription()
 	if desc == "" {
-		panic(fmt.Sprintf("argument \"%s\" is missing a description", name))
+		return fmt.Errorf("argument \"%s\" is missing a description", name)
 	}
 
 	q := strings.ToLower(string(desc[0])) + desc[1:]
@@ -793,7 +795,7 @@ func (c *Command) promptArgument(i *Input, o *Output, arg Arg) error {
 
 		return nil
 	default:
-		panic("unsupported argument type")
+		return errors.New("unsupported argument type")
 	}
 }
 
@@ -950,7 +952,7 @@ func (c *Command) promptForCommand(i *Input, o *Output) (*Command, error) {
 			label = "Select the child command to run for <primary>" + target.FullName() + "</primary>"
 		}
 
-		options := make([]string, 0, len(target.commands))
+		options := make(map[string]string, len(target.commands))
 		maxCommandNameLength := 0
 		for _, cmd := range target.commands {
 			if cmd.Hidden {
@@ -970,7 +972,7 @@ func (c *Command) promptForCommand(i *Input, o *Output) (*Command, error) {
 				indent = strings.Repeat(" ", maxCommandNameLength-length)
 			}
 
-			options = append(options, fmt.Sprintf("<primary>%s</primary>%s  %s", cmd.Name, indent, cmd.Description))
+			options[cmd.Name] = fmt.Sprintf("<primary>%s</primary>%s  %s", cmd.Name, indent, cmd.Description)
 		}
 
 		if lastPrompt != nil {
@@ -989,6 +991,7 @@ func (c *Command) promptForCommand(i *Input, o *Output) (*Command, error) {
 					filtered = append(filtered, option)
 				}
 			}
+
 			return filtered
 		}, "")
 		prompt.Required = false

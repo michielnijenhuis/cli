@@ -57,7 +57,7 @@ func (s *OutputFormatterStyleStack) Pop(style *OutputFormatterStyle) *OutputForm
 		}
 	}
 
-	panic("incorrectly nested style tag found")
+	return nil
 }
 
 func (s *OutputFormatterStyleStack) Current() *OutputFormatterStyle {

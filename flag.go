@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"slices"
 	"strings"
 )
@@ -88,7 +89,7 @@ func SetFlagValue(f Flag, str string, boolean bool) {
 		flag.Value = append(flag.Value, str)
 		flag.Boolean = boolean
 	default:
-		panic("invalid flag type")
+		return
 	}
 }
 
@@ -280,7 +281,7 @@ func FlagType(f Flag) uint {
 	case *OptionalArrayFlag:
 		return flagTypeOptionalArray
 	default:
-		panic("unknown flag type")
+		return 9999
 	}
 }
 
@@ -316,7 +317,7 @@ func FlagEquals(f1 Flag, f2 Flag) bool {
 	case flagTypeOptionalArray:
 		return GetFlagBoolValue(f1) == GetFlagBoolValue(f2) && slices.Equal(GetFlagArrayValue(f1), GetFlagArrayValue(f2))
 	default:
-		panic("unknown flag type")
+		return false
 	}
 }
 
@@ -393,7 +394,7 @@ func ValidateFlag(f Flag) error {
 		}
 		return nil
 	default:
-		panic("invalid flag type")
+		return errors.New("invalid flag type")
 	}
 }
 
@@ -407,6 +408,6 @@ func ArgSetValue(arg Arg, token string) {
 		}
 		a.Value = append(a.Value, token)
 	default:
-		panic("invalid argument type")
+		return
 	}
 }

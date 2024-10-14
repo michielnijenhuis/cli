@@ -18,6 +18,7 @@ func Execute() {
 
 	childA2 := &cli.Command{
 		Name:        "some-long-command",
+		Aliases:     []string{"s"},
 		Description: "A beautiful and brilliant command",
 		Run: func(io *cli.IO) {
 			io.Warn("This command has a long name")
