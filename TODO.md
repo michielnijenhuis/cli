@@ -7,4 +7,3 @@
     - password
     - suggest
     - textarea
-- zsh completion

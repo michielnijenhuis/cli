@@ -72,7 +72,7 @@ func NewSearchPrompt(i *Input, o *Output, label string, options func(string) Sea
 				p.Highlight(len(p.matchedValues) - 1)
 			}
 		} else if keys.Is(key, keys.Enter) {
-			if p.Highlighted >= 0 {
+			if p.Highlighted >= 0 || !p.Required {
 				p.submit()
 			} else {
 				p.search()

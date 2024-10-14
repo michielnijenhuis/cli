@@ -9,6 +9,7 @@ import (
 )
 
 type IO struct {
+	Command    *Command
 	Input      *Input
 	Output     *Output
 	Args       []string

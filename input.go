@@ -430,6 +430,10 @@ func (i *Input) parseShortFlag(token string) error {
 		if i.definition.HasShortcut(short) {
 			flag, err := i.definition.FlagForShortcut(short)
 			if err != nil {
+				if !i.Strict {
+					return nil
+				}
+
 				return err
 			}
 
@@ -450,11 +454,19 @@ func (i *Input) parseShortFlagSet(name string) error {
 	for idx := 0; idx < length; idx++ {
 		char := name[idx : idx+1]
 		if !i.definition.HasShortcut(char) {
+			if !i.Strict {
+				continue
+			}
+
 			return fmt.Errorf("the \"-%s\" flag does not exist", char)
 		}
 
 		flag, err := i.definition.FlagForShortcut(char)
 		if err != nil {
+			if !i.Strict {
+				continue
+			}
+
 			return err
 		}
 
@@ -485,6 +497,10 @@ func (i *Input) parseShortFlagSet(name string) error {
 
 func (i *Input) addShortFlag(shortcut string, token string) error {
 	if !i.definition.HasShortcut(shortcut) {
+		if !i.Strict {
+			return nil
+		}
+
 		return fmt.Errorf("the \"-%s\" flag does not exist", shortcut)
 	}
 
@@ -502,6 +518,10 @@ func (i *Input) addLongFlag(name string, token string) error {
 
 	if !i.definition.HasFlag(name) {
 		if !i.definition.HasNegation(name) {
+			if !i.Strict {
+				return nil
+			}
+
 			return fmt.Errorf("the \"--%s\" flag does not exist", name)
 		}
 
@@ -511,14 +531,16 @@ func (i *Input) addLongFlag(name string, token string) error {
 
 	flag, e := i.definition.Flag(name)
 	if e != nil {
+		if !i.Strict {
+			return nil
+		}
+
 		return e
 	}
 
 	if isNegation {
 		boolean = false
 	}
-
-	i.flags[name] = flag
 
 	if token != "" && !FlagAcceptsValue(flag) {
 		return fmt.Errorf("the \"--%s\" flag does not accept a value", name)
@@ -545,6 +567,7 @@ func (i *Input) addLongFlag(name string, token string) error {
 		}
 	}
 
+	i.flags[name] = flag
 	SetFlagValue(flag, token, boolean)
 
 	return nil

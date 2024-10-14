@@ -376,7 +376,7 @@ func (o *Output) Info(messages ...string) {
 }
 
 func (o *Output) Note(messages ...string) {
-	o.Block(messages, "note", true)
+	o.Block(messages, "note", false)
 }
 
 func (o *Output) Caution(messages ...string) {

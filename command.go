@@ -35,8 +35,10 @@ type Command struct {
 	IgnoreValidationErrors bool
 	Hidden                 bool
 	PromptForInput         bool
+	PromptForCommand       bool
 	PrintHelpFunc          func(o *Output, command *Command)
 	NativeFlags            []string
+	CascadeNativeFlags     bool
 	definition             *InputDefinition
 	synopsis               map[string]string
 	usages                 []string
@@ -45,6 +47,9 @@ type Command struct {
 	runningCommand         *Command
 	initialized            bool
 	validated              bool
+	configuredIO           bool
+	input                  *Input
+	output                 *Output
 }
 
 func (c *Command) Execute(args ...string) (err error) {
@@ -55,6 +60,9 @@ func (c *Command) Execute(args ...string) (err error) {
 	i := NewInput(args...)
 	i.Strict = c.Strict
 	o := NewOutput(i)
+
+	c.input = i
+	c.output = o
 
 	var caughtError = false
 
@@ -94,16 +102,16 @@ func (c *Command) handleError(o *Output, err error) {
 		c.RenderError(o, err)
 	}
 
-	c.Exit(err)
+	if c.AutoExit {
+		c.Exit(err)
+	}
 }
 
 func (c *Command) Exit(err error) {
-	if c.AutoExit {
-		if err != nil {
-			os.Exit(1)
-		} else {
-			os.Exit(0)
-		}
+	if err != nil {
+		os.Exit(1)
+	} else {
+		os.Exit(0)
 	}
 }
 
@@ -127,7 +135,22 @@ func (c *Command) execute(i *Input, o *Output) error {
 	}
 
 	definition := c.Definition()
-	command, args, err := c.findCommand(i, definition)
+
+	var command *Command
+	var args []string
+	var err error
+
+	if len(i.Args) == 0 && c.PromptForCommand && c.HasSubcommands() && c.Run == nil && c.RunE == nil {
+		command, err = c.promptForCommand(i, o)
+	}
+
+	if err != nil {
+		return err
+	} else if command == nil {
+		command, args, err = c.findCommand(i, definition)
+	} else if command == c {
+		os.Exit(1)
+	}
 
 	if err != nil {
 		notFound, ok := err.(*CommandNotFoundError)
@@ -178,9 +201,15 @@ func (c *Command) execute(i *Input, o *Output) error {
 		}
 	}
 
+	if c.CascadeNativeFlags && command.NativeFlags != nil {
+		command.NativeFlags = c.NativeFlags
+	}
+
+	command.configuredIO = true
+
 	wantsHelp := c.hasFlag(i, "help") && (i.HasParameterFlag("--help", true) || i.HasParameterFlag("-h", true))
 	if wantsHelp && command != nil {
-		c.printHelp(o, command)
+		command.printHelp(o)
 		return nil
 	}
 
@@ -208,6 +237,7 @@ func (c *Command) execute(i *Input, o *Output) error {
 
 	c.runningCommand = command
 	io := &IO{
+		Command:    command,
 		Input:      i,
 		Output:     o,
 		definition: command.Definition(),
@@ -219,7 +249,7 @@ func (c *Command) execute(i *Input, o *Output) error {
 	} else if command.Run != nil {
 		command.Run(io)
 	} else if command == c || command.HasSubcommands() {
-		c.printHelp(o, command)
+		command.printHelp(o)
 	} else {
 		panic("command must have a handle or subcommands")
 	}
@@ -356,7 +386,7 @@ func (c *Command) ProcessedHelp() string {
 	replacements := []string{name, title}
 
 	help := c.Help
-	if help == "" && c.HasSubcommands() {
+	if help == "" && c.HasSubcommands() && slices.Contains(c.NativeFlags, "help") {
 		help = fmt.Sprintf("Use \"%s [command] --help\" for more information about a command", c.FullName())
 	}
 
@@ -401,6 +431,12 @@ func (c *Command) hasFlag(i *Input, name string) bool {
 }
 
 func (c *Command) configureIO(i *Input, o *Output) {
+	if c.configuredIO {
+		return
+	} else {
+		c.configuredIO = true
+	}
+
 	if c.hasFlag(i, "ansi") {
 		if i.HasParameterFlag("--ansi", true) {
 			o.SetDecorated(true)
@@ -654,14 +690,14 @@ func (c *Command) Definition() *InputDefinition {
 	return c.definition
 }
 
-func (c *Command) printHelp(output *Output, command *Command) {
+func (c *Command) printHelp(output *Output) {
 	if c.PrintHelpFunc != nil {
-		c.PrintHelpFunc(output, command)
+		c.PrintHelpFunc(output, c)
 		return
 	}
 
 	d := TextDescriptor{output}
-	d.DescribeCommand(command, &DescriptorOptions{})
+	d.DescribeCommand(c, &DescriptorOptions{})
 }
 
 func (c *Command) doPromptForInput(i *Input, o *Output, missingArgs []string) error {
@@ -759,6 +795,14 @@ func (c *Command) promptArgument(i *Input, o *Output, arg Arg) error {
 	default:
 		panic("unsupported argument type")
 	}
+}
+
+func (c *Command) Root() *Command {
+	root := c
+	for root.parent != nil {
+		root = root.parent
+	}
+	return root
 }
 
 func (c *Command) Namespace() string {
@@ -877,4 +921,97 @@ func levenshtein(a string, b string) int {
 	}
 
 	return matrix[aLen][bLen]
+}
+
+func (c *Command) promptForCommand(i *Input, o *Output) (*Command, error) {
+	var target *Command = c
+	var lastPrompt *SearchPrompt
+
+	defer func() {
+		if lastPrompt != nil {
+			lastPrompt.Clear()
+		}
+
+		if target != c {
+			o.Writeln(Dim(fmt.Sprintf("Running command \"<primary>%s</primary>\"", target.FullName())), 0)
+			o.NewLine(1)
+		}
+	}()
+
+	for {
+		target.init()
+
+		if !target.HasSubcommands() {
+			break
+		}
+
+		label := "Select the command to run"
+		if target != nil {
+			label = "Select the child command to run for <primary>" + target.FullName() + "</primary>"
+		}
+
+		options := make([]string, 0, len(target.commands))
+		maxCommandNameLength := 0
+		for _, cmd := range target.commands {
+			if cmd.Hidden {
+				continue
+			}
+
+			maxCommandNameLength = max(maxCommandNameLength, len(cmd.Name))
+		}
+
+		for _, cmd := range target.commands {
+			if cmd.Hidden {
+				continue
+			}
+			length := len(cmd.Name)
+			indent := ""
+			if length < maxCommandNameLength {
+				indent = strings.Repeat(" ", maxCommandNameLength-length)
+			}
+
+			options = append(options, fmt.Sprintf("<primary>%s</primary>%s  %s", cmd.Name, indent, cmd.Description))
+		}
+
+		if lastPrompt != nil {
+			lastPrompt.Clear()
+			lastPrompt = nil
+		}
+
+		prompt := NewSearchPrompt(i, o, label, func(s string) SearchResult {
+			if s == "" {
+				return options
+			}
+
+			filtered := make([]string, 0, len(options))
+			for _, option := range options {
+				if strings.Contains(option, s) {
+					filtered = append(filtered, option)
+				}
+			}
+			return filtered
+		}, "")
+		prompt.Required = false
+		lastPrompt = prompt
+
+		answer, err := prompt.Render()
+		if err != nil {
+			return nil, err
+		}
+
+		if answer == "" {
+			break
+		}
+
+		name := StripEscapeSequences(strings.Split(answer, " ")[0])
+
+		cmd := target.Subcommand(name)
+		if cmd == nil {
+			return nil, fmt.Errorf("command \"%s\" not found", name)
+		}
+
+		target = cmd
+	}
+
+	return target, nil
 }
