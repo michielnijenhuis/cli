@@ -68,11 +68,18 @@ func (d *TextDescriptor) DescribeCommand(command *Command, options *DescriptorOp
 		commandNames := array.SortedKeys(commands)
 		width := 0
 		for _, name := range commandNames {
-			width = max(width, len(name))
+			cmd := commands[name]
+			if !cmd.Hidden {
+				width = max(width, len(name))
+			}
 		}
 
 		for _, name := range commandNames {
 			cmd := commands[name]
+			if cmd.Hidden {
+				continue
+			}
+
 			d.writeText(Eol)
 			spacingWidth := width - helper.Width(name)
 			command := commands[name]

@@ -1,0 +1,125 @@
+[2024-10-18 14:19:56] To complete: 
+[2024-10-18 14:19:56] Trimmed args: __complete
+[2024-10-18 14:19:56] Final command: bruh
+[2024-10-18 14:19:56] Found 2 completions: --help	Display help for a command or a given command, -h	Display help for a command or a given command
+[2024-10-18 14:19:56] ------------
+[2024-10-18 14:20:18] To complete: 
+[2024-10-18 14:20:18] Trimmed args: __complete --version
+[2024-10-18 14:20:18] Final command: bruh
+[2024-10-18 14:20:18] Found 3 completions: some-long-command	A beautiful and brilliant command, completion	Generate the autocompletion script for the specified shell, child-a	Child command A
+[2024-10-18 14:20:18] ------------
+[2024-10-18 14:21:30] To complete: 
+[2024-10-18 14:21:30] Trimmed args: __complete
+[2024-10-18 14:21:30] Final command: bruh
+[2024-10-18 14:21:30] Found 3 completions: completion	Generate the autocompletion script for the specified shell, child-a	Child command A, some-long-command	A beautiful and brilliant command
+[2024-10-18 14:21:30] ------------
+[2024-10-18 14:23:57] To complete: 
+[2024-10-18 14:23:57] Trimmed args: __complete
+[2024-10-18 14:23:57] Final command: bruh
+[2024-10-18 14:23:57] Found 3 completions: completion	Generate the autocompletion script for the specified shell, child-a	Child command A, some-long-command	A beautiful and brilliant command
+[2024-10-18 14:23:57] ------------
+[2024-10-18 14:24:26] To complete: 
+[2024-10-18 14:24:26] Trimmed args: __complete
+[2024-10-18 14:24:26] Final command: bruh
+[2024-10-18 14:24:26] Found 3 completions: completion	Generate the autocompletion script for the specified shell, child-a	Child command A, some-long-command	A beautiful and brilliant command
+[2024-10-18 14:24:26] ------------
+[2024-10-18 14:31:16] To complete: 
+[2024-10-18 14:31:16] Trimmed args: __complete
+[2024-10-18 14:31:16] Final command: bruh
+[2024-10-18 14:31:16] Found 3 completions: child-a	Child command A, some-long-command	A beautiful and brilliant command, completion	Generate the autocompletion script for the specified shell
+[2024-10-18 14:31:16] ------------
+[2024-10-18 14:31:17] To complete: 
+[2024-10-18 14:31:17] Trimmed args: __complete child-a
+[2024-10-18 14:31:17] Final command: child-a
+[2024-10-18 14:31:17] Found 1 completions: child-b	Child command B
+[2024-10-18 14:31:17] ------------
+[2024-10-18 14:31:19] To complete: 
+[2024-10-18 14:31:19] Trimmed args: __complete child-a
+[2024-10-18 14:31:19] Final command: child-a
+[2024-10-18 14:31:19] Found 13 completions: --help	Display help for a command or a given command, -h	Display help for a command or a given command, --version	Display the command version, -V	Display the command version, --quiet	Do not output any message, -q	Do not output any message, --verbose	Increase the verbosity of messages: normal (1), verbose (2) or debug (3), -v	Increase the verbosity of messages: normal (1), verbose (2) or debug (3), -vv	Increase the verbosity of messages: normal (1), verbose (2) or debug (3), -vvv	Increase the verbosity of messages: normal (1), verbose (2) or debug (3), --ansi	Force (or disable --no-ansi) ANSI output, --no-interaction	Do not ask any interactive question, -n	Do not ask any interactive question
+[2024-10-18 14:31:19] ------------
+[2024-10-18 14:31:20] To complete: 
+[2024-10-18 14:31:20] Trimmed args: __complete child-a --ansi
+[2024-10-18 14:31:20] Final command: child-a
+[2024-10-18 14:31:20] Found 12 completions: --help	Display help for a command or a given command, -h	Display help for a command or a given command, --version	Display the command version, -V	Display the command version, --quiet	Do not output any message, -q	Do not output any message, --verbose	Increase the verbosity of messages: normal (1), verbose (2) or debug (3), -v	Increase the verbosity of messages: normal (1), verbose (2) or debug (3), -vv	Increase the verbosity of messages: normal (1), verbose (2) or debug (3), -vvv	Increase the verbosity of messages: normal (1), verbose (2) or debug (3), --no-interaction	Do not ask any interactive question, -n	Do not ask any interactive question
+[2024-10-18 14:31:20] ------------
+[2024-10-18 14:31:24] To complete: 
+[2024-10-18 14:31:24] Trimmed args: __complete child-a --ansi --verbose
+[2024-10-18 14:31:24] Final command: child-a
+[2024-10-18 14:31:24] Found 8 completions: --help	Display help for a command or a given command, -h	Display help for a command or a given command, --version	Display the command version, -V	Display the command version, --quiet	Do not output any message, -q	Do not output any message, --no-interaction	Do not ask any interactive question, -n	Do not ask any interactive question
+[2024-10-18 14:31:24] ------------
+[2024-10-18 14:31:29] To complete: 
+[2024-10-18 14:31:29] Trimmed args: __complete child-a --ansi --verbose --quiet
+[2024-10-18 14:31:29] Final command: child-a
+[2024-10-18 14:31:29] Found 1 completions: child-b	Child command B
+[2024-10-18 14:31:29] ------------
+[2024-10-18 14:31:33] To complete: 
+[2024-10-18 14:31:33] Trimmed args: __complete child-a --ansi --verbose --quiet
+[2024-10-18 14:31:33] Final command: child-a
+[2024-10-18 14:31:33] Found 1 completions: child-b	Child command B
+[2024-10-18 14:31:33] ------------
+[2024-10-18 14:31:34] To complete: 
+[2024-10-18 14:31:34] Trimmed args: __complete child-a --ansi --verbose --quiet child-b
+[2024-10-18 14:31:34] Final command: child-b
+[2024-10-18 14:31:34] Found 6 completions: --help	Display help for a command or a given command, -h	Display help for a command or a given command, --version	Display the command version, -V	Display the command version, --no-interaction	Do not ask any interactive question, -n	Do not ask any interactive question
+[2024-10-18 14:31:34] ------------
+[2024-10-18 14:31:36] To complete: -
+[2024-10-18 14:31:36] Trimmed args: __complete child-a --ansi --verbose --quiet child-b --version
+[2024-10-18 14:31:36] Final command: child-b
+[2024-10-18 14:31:36] Found 0 completions: 
+[2024-10-18 14:31:36] ------------
+[2024-10-18 14:31:37] To complete: 
+[2024-10-18 14:31:37] Trimmed args: __complete child-a --ansi --verbose --quiet child-b --version
+[2024-10-18 14:31:37] Final command: child-b
+[2024-10-18 14:31:37] Found 0 completions: 
+[2024-10-18 14:31:37] ------------
+[2024-10-18 14:31:37] To complete: 
+[2024-10-18 14:31:37] Trimmed args: __complete child-a --ansi --verbose --quiet child-b --version
+[2024-10-18 14:31:37] Final command: child-b
+[2024-10-18 14:31:37] Found 0 completions: 
+[2024-10-18 14:31:37] ------------
+[2024-10-18 14:31:37] To complete: version
+[2024-10-18 14:31:37] Trimmed args: __complete child-a --ansi --verbose --quiet child-b
+[2024-10-18 14:31:37] Final command: child-b
+[2024-10-18 14:31:37] Found 3 completions: --help	Display help for a command or a given command, --version	Display the command version, --no-interaction	Do not ask any interactive question
+[2024-10-18 14:31:37] ------------
+[2024-10-18 14:31:38] To complete: 
+[2024-10-18 14:31:38] Trimmed args: __complete child-a --ansi --verbose --quiet child-b --version
+[2024-10-18 14:31:38] Final command: child-b
+[2024-10-18 14:31:38] Found 0 completions: 
+[2024-10-18 14:31:38] ------------
+[2024-10-18 14:31:39] To complete: version
+[2024-10-18 14:31:39] Trimmed args: __complete child-a --ansi --verbose --quiet child-b
+[2024-10-18 14:31:39] Final command: child-b
+[2024-10-18 14:31:39] Found 3 completions: --help	Display help for a command or a given command, --version	Display the command version, --no-interaction	Do not ask any interactive question
+[2024-10-18 14:31:39] ------------
+[2024-10-18 14:31:39] To complete: 
+[2024-10-18 14:31:39] Trimmed args: __complete child-a --ansi --verbose --quiet child-b --version
+[2024-10-18 14:31:39] Final command: child-b
+[2024-10-18 14:31:39] Found 0 completions: 
+[2024-10-18 14:31:39] ------------
+[2024-10-18 14:31:40] To complete: version
+[2024-10-18 14:31:40] Trimmed args: __complete child-a --ansi --verbose --quiet child-b
+[2024-10-18 14:31:40] Final command: child-b
+[2024-10-18 14:31:40] Found 3 completions: --help	Display help for a command or a given command, --version	Display the command version, --no-interaction	Do not ask any interactive question
+[2024-10-18 14:31:40] ------------
+[2024-10-18 14:31:40] To complete: 
+[2024-10-18 14:31:40] Trimmed args: __complete child-a --ansi --verbose --quiet child-b --version
+[2024-10-18 14:31:40] Final command: child-b
+[2024-10-18 14:31:40] Found 0 completions: 
+[2024-10-18 14:31:40] ------------
+[2024-10-18 14:31:40] To complete: 
+[2024-10-18 14:31:40] Trimmed args: __complete child-a --ansi --verbose --quiet child-b --version
+[2024-10-18 14:31:40] Final command: child-b
+[2024-10-18 14:31:40] Found 0 completions: 
+[2024-10-18 14:31:40] ------------
+[2024-10-18 14:31:40] To complete: 
+[2024-10-18 14:31:40] Trimmed args: __complete child-a --ansi --verbose --quiet child-b --version
+[2024-10-18 14:31:40] Final command: child-b
+[2024-10-18 14:31:40] Found 0 completions: 
+[2024-10-18 14:31:40] ------------
+[2024-10-18 14:31:45] To complete: 
+[2024-10-18 14:31:45] Trimmed args: __complete child-a --ansi --verbose --quiet child-b
+[2024-10-18 14:31:45] Final command: child-b
+[2024-10-18 14:31:45] Found 3 completions: --help	Display help for a command or a given command, --version	Display the command version, --no-interaction	Do not ask any interactive question
+[2024-10-18 14:31:45] ------------

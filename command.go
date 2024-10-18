@@ -88,6 +88,8 @@ func (c *Command) Execute(args ...string) (err error) {
 	}
 
 	c.configureIO(i, o)
+	c.InitDefaultCompletionCmd(o.Stream)
+	c.initCompleteCmd(i.Args)
 	err = c.execute(i, o)
 
 	if !caughtError {
@@ -154,7 +156,7 @@ func (c *Command) execute(i *Input, o *Output) error {
 	if err != nil {
 		return err
 	} else if command == nil {
-		command, args, err = c.findCommand(i, definition)
+		command, args, err = c.findCommand(i.Args, &i.tokens, definition)
 	} else if command == c {
 		os.Exit(1)
 	}
@@ -528,12 +530,13 @@ func (c *Command) Parent() *Command {
 	return c.parent
 }
 
-func (c *Command) findCommand(input *Input, definition *InputDefinition) (*Command, []string, error) {
+// TODO: use inspector?
+func (c *Command) findCommand(args []string, tokens *[]string, definition *InputDefinition) (*Command, []string, error) {
 	isOption := false
-	argc := len(input.Args)
+	argc := len(args)
 	arguments := make([]string, 0)
 
-	for idx, token := range input.Args {
+	for idx, token := range args {
 		// Is option
 		if strings.HasPrefix(token, "-") {
 			// If we have arguments, we can't have options anymore,
@@ -567,7 +570,7 @@ func (c *Command) findCommand(input *Input, definition *InputDefinition) (*Comma
 			}
 
 			// If flag accepts a value, check if the next token is not an option value
-			if FlagAcceptsValue(flag) && !strings.HasPrefix(input.Args[idx+1], "-") {
+			if FlagAcceptsValue(flag) && !strings.HasPrefix(args[idx+1], "-") {
 				isOption = true
 			}
 
@@ -587,7 +590,10 @@ func (c *Command) findCommand(input *Input, definition *InputDefinition) (*Comma
 	for i, arg := range arguments {
 		cmd := command.commands[arg]
 		if cmd != nil {
-			input.tokens = array.Remove(input.tokens, arg)
+			if tokens != nil {
+				*tokens = array.Remove(*tokens, arg)
+			}
+
 			command = cmd
 		} else {
 			d, err := command.Definition()
@@ -1062,4 +1068,25 @@ func (c *Command) promptForCommand(i *Input, o *Output) (*Command, error) {
 	}
 
 	return target, nil
+}
+
+func (c *Command) Subcommands() map[string]*Command {
+	if err := c.init(); err != nil {
+		return nil
+	}
+
+	cmds := make(map[string]*Command)
+	for _, cmd := range c.commands {
+		cmds[cmd.Name] = cmd
+	}
+
+	return cmds
+}
+
+func (c *Command) Flag(name string) (Flag, error) {
+	return c.definition.Flag(name)
+}
+
+func (c *Command) Arg(name string) (Arg, error) {
+	return c.definition.Argument(name)
 }

@@ -91,13 +91,13 @@ func (i *Input) Bind(definition *InputDefinition) error {
 	i.givenArguments = make([]string, 0)
 	i.flags = make(map[string]Flag)
 	i.definition = definition
-	return i.parse()
+	return i.parse(i.tokens, nil)
 }
 
-func (i *Input) parse() error {
+func (i *Input) parse(tokens []string, inspector *InputInspector) error {
 	parseFlags := true
-	i.parsed = make([]string, 0, len(i.tokens))
-	i.parsed = append(i.parsed, i.tokens...)
+	i.parsed = make([]string, 0, len(tokens))
+	i.parsed = append(i.parsed, tokens...)
 	var (
 		token       string
 		err         error
@@ -110,7 +110,7 @@ func (i *Input) parse() error {
 		}
 
 		token = helper.Shift(&i.parsed)
-		parseFlags, err, keepParsing = i.parseToken(token, parseFlags)
+		parseFlags, err, keepParsing = i.parseToken(inspector, token, parseFlags)
 		if err != nil {
 			return err
 		} else if !keepParsing {
@@ -293,9 +293,9 @@ func (i *Input) EscapeToken(token string) string {
 	return re2.ReplaceAllString(token, "'\\''")
 }
 
-func (i *Input) parseToken(token string, parseFlags bool) (bool, error, bool) {
+func (i *Input) parseToken(inspector *InputInspector, token string, parseFlags bool) (bool, error, bool) {
 	if parseFlags && token == "" {
-		err, keepParsing := i.parseArgument(token)
+		err, keepParsing := i.parseArgument(inspector, token)
 
 		if err != nil {
 			return false, err, true
@@ -305,17 +305,17 @@ func (i *Input) parseToken(token string, parseFlags bool) (bool, error, bool) {
 	} else if parseFlags && token == "" {
 		return false, nil, true
 	} else if parseFlags && strings.HasPrefix(token, "--") {
-		err := i.parseLongFlag(token)
+		err := i.parseLongFlag(inspector, token)
 		if err != nil {
 			return false, err, true
 		}
 	} else if parseFlags && strings.HasPrefix(token, "-") && token != "-" {
-		err := i.parseShortFlag(token)
+		err := i.parseShortFlag(inspector, token)
 		if err != nil {
 			return false, err, true
 		}
 	} else {
-		err, keepParsing := i.parseArgument(token)
+		err, keepParsing := i.parseArgument(inspector, token)
 		if err != nil {
 			return false, err, keepParsing
 		} else if !keepParsing {
@@ -326,11 +326,15 @@ func (i *Input) parseToken(token string, parseFlags bool) (bool, error, bool) {
 	return parseFlags, nil, true
 }
 
-func (i *Input) parseArgument(token string) (error, bool) {
+func (i *Input) parseArgument(inspector *InputInspector, token string) (error, bool) {
 	definition := i.definition
 	currentCount := uint(len(i.arguments))
 	argsCount := uint(len(definition.arguments))
-	i.givenArguments = append(i.givenArguments, token)
+
+	if inspector != nil {
+		inspector.Args = append(inspector.Args, token)
+		return nil, true
+	}
 
 	if currentCount < argsCount {
 		// if input is expecting another argument, add it
@@ -407,22 +411,35 @@ func (i *Input) parseArgument(token string) (error, bool) {
 	}
 }
 
-func (i *Input) parseLongFlag(token string) error {
+func (i *Input) parseLongFlag(inspector *InputInspector, token string) error {
 	name := token[2:]
 	pos := strings.Index(name, "=")
 
 	if pos != -1 {
+		flagName := name[0:pos]
 		value := name[pos+1:]
+
 		if value == "" {
 			helper.Unshift(&i.parsed, value)
 		}
-		return i.addLongFlag(name[0:pos], value)
+
+		if inspector != nil {
+			inspector.AddFlag(flagName, value)
+			return nil
+		}
+
+		return i.addLongFlag(flagName, value)
 	} else {
+		if inspector != nil {
+			inspector.AddFlag(name, "")
+			return nil
+		}
+
 		return i.addLongFlag(name, "")
 	}
 }
 
-func (i *Input) parseShortFlag(token string) error {
+func (i *Input) parseShortFlag(inspector *InputInspector, token string) error {
 	name := token[1:]
 
 	if len(name) > 1 {
@@ -438,18 +455,23 @@ func (i *Input) parseShortFlag(token string) error {
 			}
 
 			if FlagAcceptsValue(flag) {
+				if inspector != nil {
+					inspector.AddFlag(short, name[1:])
+					return nil
+				}
+
 				// a flag with a value (with no space)
 				return i.addShortFlag(short, name[1:])
 			}
 		}
 
-		return i.parseShortFlagSet(name)
+		return i.parseShortFlagSet(inspector, name)
 	} else {
 		return i.addShortFlag(name, "")
 	}
 }
 
-func (i *Input) parseShortFlagSet(name string) error {
+func (i *Input) parseShortFlagSet(inspector *InputInspector, name string) error {
 	length := len(name)
 	for idx := 0; idx < length; idx++ {
 		char := name[idx : idx+1]
@@ -472,11 +494,21 @@ func (i *Input) parseShortFlagSet(name string) error {
 
 		if FlagAcceptsValue(flag) {
 			if length-1 == idx {
+				if inspector != nil {
+					inspector.AddFlag(flag.GetName(), "")
+					return nil
+				}
+
 				err := i.addLongFlag(flag.GetName(), "")
 				if err != nil {
 					return err
 				}
 			} else {
+				if inspector != nil {
+					inspector.AddFlag(flag.GetName(), name[idx+1:])
+					return nil
+				}
+
 				err := i.addLongFlag(flag.GetName(), name[idx+1:])
 				if err != nil {
 					return err
@@ -485,6 +517,11 @@ func (i *Input) parseShortFlagSet(name string) error {
 
 			break
 		} else {
+			if inspector != nil {
+				inspector.AddFlag(flag.GetName(), "")
+				return nil
+			}
+
 			err := i.addLongFlag(flag.GetName(), "")
 			if err != nil {
 				return err
@@ -699,6 +736,49 @@ func (i *Input) RestoreTty() error {
 	return nil
 }
 
+type InputInspector struct {
+	Args  []string
+	Flags map[string][]string
+}
+
+func (i *InputInspector) AddArg(value string) {
+	if i.Args == nil {
+		i.Args = make([]string, 0)
+	}
+
+	i.Args = append(i.Args, value)
+}
+
+func (i *InputInspector) AddFlag(name string, value string) {
+	if i.Flags == nil {
+		i.Flags = make(map[string][]string)
+	}
+
+	if i.Flags[name] == nil {
+		i.Flags[name] = make([]string, 0)
+	}
+
+	if value != "" {
+		i.Flags[name] = append(i.Flags[name], value)
+	}
+}
+
+func (i InputInspector) ArgsCount() int {
+	return len(i.Args)
+}
+
+func (i InputInspector) FlagsCount() int {
+	return len(i.Flags)
+}
+
+func (i *Input) Inspect(tokens []string) (InputInspector, error) {
+	inspector := InputInspector{}
+	err := i.parse(tokens, &inspector)
+
+	return inspector, err
+}
+
+// TODO: refactor, use Inspect()
 func (i *Input) GivenArguments() []string {
 	isOption := false
 	tokenCount := len(i.Args)
