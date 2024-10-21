@@ -91,7 +91,8 @@ func (i *Input) Bind(definition *InputDefinition) error {
 	i.givenArguments = make([]string, 0)
 	i.flags = make(map[string]Flag)
 	i.definition = definition
-	return i.parse(i.tokens, nil)
+	inspector := InputInspector{tokens: i.tokens}
+	return i.parse(i.tokens, &inspector)
 }
 
 func (i *Input) parse(tokens []string, inspector *InputInspector) error {
@@ -524,7 +525,7 @@ func (i *Input) parseShortFlagSet(inspector *InputInspector, name string) error 
 		} else {
 			if inspector != nil {
 				inspector.AddFlag(flag.GetName(), "")
-				return nil
+				continue
 			}
 
 			err := i.addLongFlag(flag.GetName(), "")
@@ -742,14 +743,15 @@ func (i *Input) RestoreTty() error {
 }
 
 type InputInspector struct {
-	Args  []string
-	Flags map[string][]string
+	Args   []string
+	Flags  map[string][]string
+	tokens []string
 }
 
 func (i InputInspector) String() string {
 	var sb strings.Builder
 
-	sb.WriteString("Input inspection:\n")
+	sb.WriteString(fmt.Sprintf("Input inspection: %[1]s\n", strings.Join(i.tokens, " ")))
 
 	if i.ArgsCount() > 0 {
 		sb.WriteString("  Args:\n")
@@ -819,7 +821,7 @@ func (i InputInspector) FlagIsGiven(flag Flag) bool {
 }
 
 func (i *Input) Inspect(tokens []string) (InputInspector, error) {
-	inspector := InputInspector{}
+	inspector := InputInspector{tokens: tokens}
 	err := i.parse(tokens, &inspector)
 
 	return inspector, err

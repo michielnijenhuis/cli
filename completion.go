@@ -109,7 +109,6 @@ func (c *Command) initCompleteCmd(args []string) {
 			&ArrayArg{
 				Name:        "command-line",
 				Description: "The command line to request completions for.",
-				Min:         1,
 			},
 		},
 		Description: "Request shell completion choices for the specified command-line",
@@ -141,7 +140,7 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 	root := c.Root()
 	root.init()
 
-	toComplete := args[len(args)-1] // TODO: use (show flags, or apply search)
+	toComplete := args[len(args)-1]
 	trimmedArgs := args[:len(args)-1]
 
 	flagCompletion := false
@@ -170,7 +169,10 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 	}
 
 	i.Bind(definition)
-	inspection, _ := i.Inspect(tokens)
+	inspectable := make([]string, len(tokens))
+	copy(inspectable, tokens)
+	inspectable = append(inspectable, args[len(args)-1])
+	inspection, _ := i.Inspect(inspectable)
 
 	if (finalCmd.hasFlag(i, "help") && (inspection.Flags["help"] != nil || inspection.Flags["h"] != nil)) ||
 		(finalCmd.hasFlag(i, "version") && (inspection.Flags["version"] != nil || inspection.Flags["V"] != nil)) {
@@ -181,8 +183,6 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 
 	directive = ShellCompDirectiveDefault
 
-	// TODO: fix - if --help flag is present, completion will use those results always.
-	// TODO: chaining short flags (e.g. `-abc`, where a, b and c are short flags)
 	if flagCompletion {
 		includeShort := strings.HasPrefix(toComplete, "-") && !strings.HasPrefix(toComplete, "--")
 		isShort := includeShort
@@ -198,6 +198,7 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 		}
 
 		flag, _ := definition.Flag(toComplete)
+
 		if flag != nil {
 			if (hasValue || len(toComplete) == 1) && (FlagRequiresValue(flag) || FlagValueIsOptional(flag)) {
 				opts, ok := flag.(HasOptions)
@@ -209,6 +210,7 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 				directive = ShellCompDirectiveDefault
 			} else if isShort {
 				completions = make([]string, 0)
+				directive = ShellCompDirectiveNoSpace
 				for _, f := range definition.flags {
 					if inspection.FlagIsGiven(f) {
 						continue
@@ -217,8 +219,20 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 					for _, short := range f.GetShortcuts() {
 						completions = append(completions, fmt.Sprintf("%s\t%s", short, f.GetDescription()))
 					}
+				}
+			}
 
-					directive = ShellCompDirectiveNoSpace
+			return
+		} else if isShort && len(toComplete) > 0 {
+			completions = make([]string, 0)
+			directive = ShellCompDirectiveNoSpace
+			for _, f := range definition.flags {
+				if inspection.FlagIsGiven(f) {
+					continue
+				}
+
+				for _, short := range f.GetShortcuts() {
+					completions = append(completions, fmt.Sprintf("%s\t%s", short, f.GetDescription()))
 				}
 			}
 
@@ -226,6 +240,10 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 		}
 
 		directive = ShellCompDirectiveNoFileComp
+		if isShort {
+			directive = ShellCompDirectiveNoSpace
+		}
+
 		completions = make([]string, 0)
 
 		for _, f := range definition.flags {

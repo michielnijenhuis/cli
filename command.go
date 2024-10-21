@@ -35,7 +35,6 @@ type Command struct {
 	IgnoreValidationErrors bool
 	Hidden                 bool
 	PromptForInput         bool
-	PromptForCommand       bool
 	PrintHelpFunc          func(o *Output, command *Command)
 	NativeFlags            []string
 	CascadeNativeFlags     bool
@@ -141,21 +140,7 @@ func (c *Command) execute(i *Input, o *Output) error {
 		}
 	}
 
-	var command *Command
-	var args []string
-	var err error
-
-	if len(i.Args) == 0 && c.PromptForCommand && c.HasSubcommands() && c.Run == nil && c.RunE == nil {
-		command, err = c.promptForCommand(i, o)
-	}
-
-	if err != nil {
-		return err
-	} else if command == nil {
-		command, args, err = c.findCommand(i.Args, &i.tokens)
-	} else if command == c {
-		os.Exit(1)
-	}
+	command, args, err := c.findCommand(i.Args, &i.tokens)
 
 	if err != nil {
 		notFound, ok := err.(*CommandNotFoundError)
@@ -227,15 +212,6 @@ func (c *Command) execute(i *Input, o *Output) error {
 	if err != nil && !command.IgnoreValidationErrors {
 		return err
 	}
-
-	// inspection, _ := i.Inspect(i.Args)
-	// n, _ := def.Flag("name")
-	// if inspection.FlagIsGiven(n) {
-	// 	fmt.Print("GIVEN")
-	// 	return nil
-	// }
-	// fmt.Print(inspection.String())
-	// return nil
 
 	err = i.Validate()
 	if err != nil && !command.IgnoreValidationErrors {
@@ -525,7 +501,6 @@ func (c *Command) Parent() *Command {
 	return c.parent
 }
 
-// TODO: use inspector?
 func (c *Command) findCommand(args []string, tokens *[]string) (*Command, []string, error) {
 	isOption := false
 	argc := len(args)
@@ -594,8 +569,6 @@ func (c *Command) findCommand(args []string, tokens *[]string) (*Command, []stri
 				return nil, arguments[:idx+1], CommandNotFound(fmt.Sprintf("command \"%s\" does not exist", token), alternatives)
 			}
 		}
-
-		// arguments = append(arguments, token)
 	}
 
 	if tokens != nil {
@@ -966,102 +939,6 @@ func levenshtein(a string, b string) int {
 	}
 
 	return matrix[aLen][bLen]
-}
-
-func (c *Command) promptForCommand(i *Input, o *Output) (*Command, error) {
-	var target *Command = c
-	var lastPrompt *SearchPrompt
-
-	defer func() {
-		if lastPrompt != nil {
-			lastPrompt.Clear()
-		}
-
-		if target != c {
-			o.Writeln(Dim(fmt.Sprintf("Running command \"<primary>%s</primary>\"", target.FullName())), 0)
-			o.NewLine(1)
-		}
-	}()
-
-	for {
-		if err := target.init(); err != nil {
-			return nil, err
-		}
-
-		if !target.HasSubcommands() {
-			break
-		}
-
-		label := "Select the command to run"
-		if target != nil {
-			label = "Select the child command to run for <primary>" + target.FullName() + "</primary>"
-		}
-
-		options := make(map[string]string, len(target.commands))
-		maxCommandNameLength := 0
-		for _, cmd := range target.commands {
-			if cmd.Hidden {
-				continue
-			}
-
-			maxCommandNameLength = max(maxCommandNameLength, len(cmd.Name))
-		}
-
-		for _, cmd := range target.commands {
-			if cmd.Hidden {
-				continue
-			}
-			length := len(cmd.Name)
-			indent := ""
-			if length < maxCommandNameLength {
-				indent = strings.Repeat(" ", maxCommandNameLength-length)
-			}
-
-			options[cmd.Name] = fmt.Sprintf("<primary>%s</primary>%s  %s", cmd.Name, indent, cmd.Description)
-		}
-
-		if lastPrompt != nil {
-			lastPrompt.Clear()
-			lastPrompt = nil
-		}
-
-		prompt := NewSearchPrompt(i, o, label, func(s string) SearchResult {
-			if s == "" {
-				return options
-			}
-
-			filtered := make([]string, 0, len(options))
-			for _, option := range options {
-				if strings.Contains(option, s) {
-					filtered = append(filtered, option)
-				}
-			}
-
-			return filtered
-		}, "")
-		prompt.Required = false
-		lastPrompt = prompt
-
-		answer, err := prompt.Render()
-		if err != nil {
-			return nil, err
-		}
-
-		if answer == "" {
-			break
-		}
-
-		name := StripEscapeSequences(strings.Split(answer, " ")[0])
-
-		cmd := target.Subcommand(name)
-		if cmd == nil {
-			return nil, fmt.Errorf("command \"%s\" not found", name)
-		}
-
-		target = cmd
-	}
-
-	return target, nil
 }
 
 func (c *Command) Subcommands() map[string]*Command {
