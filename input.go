@@ -91,8 +91,7 @@ func (i *Input) Bind(definition *InputDefinition) error {
 	i.givenArguments = make([]string, 0)
 	i.flags = make(map[string]Flag)
 	i.definition = definition
-	inspector := InputInspector{tokens: i.tokens}
-	return i.parse(i.tokens, &inspector)
+	return i.parse(i.tokens, nil)
 }
 
 func (i *Input) parse(tokens []string, inspector *InputInspector) error {
@@ -247,7 +246,7 @@ func (i *Input) HasFlag(name string) bool {
 		return false
 	}
 
-	return definition.HasFlag(name) || definition.HasNegation(name)
+	return definition.HasFlag(name) || definition.HasNegation(name) || definition.HasShortcut(name)
 }
 
 func (i *Input) runArgumentValidators() error {
@@ -878,4 +877,19 @@ func (i *Input) GivenArguments() []string {
 	}
 
 	return arguments
+}
+
+func (i *Input) FlagProvided(name string) bool {
+	_, present := i.flags[name]
+	if !present {
+		name = i.definition.ShortcutToName(name)
+		_, present = i.flags[name]
+
+		if !present {
+			name = i.definition.NegationToName(name)
+			_, present = i.flags[name]
+		}
+	}
+
+	return present
 }

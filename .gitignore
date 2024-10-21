@@ -1,2 +1,6 @@
 !.vscode
-test/laravel
+test/*
+!test.cmd
+!test/go.mod
+!test/go.sum
+!test/main.go

@@ -11,7 +11,7 @@
             "mode": "debug",
             "program": "${workspaceRoot}/test/main.go",
             "env": {},
-            "args": ["child-a", "-nqv"],
+            "args": ["child-a", "-nq", "child-b"],
             "showLog": true
         }
     ]

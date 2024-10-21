@@ -46,7 +46,6 @@ type Command struct {
 	runningCommand         *Command
 	initialized            bool
 	validated              bool
-	configuredIO           bool
 	input                  *Input
 	output                 *Output
 }
@@ -87,8 +86,13 @@ func (c *Command) Execute(args ...string) (err error) {
 	}
 
 	c.configureIO(i, o)
-	c.InitDefaultCompletionCmd(o.Stream)
+
+	if c.HasSubcommands() {
+		c.InitDefaultCompletionCmd(o.Stream)
+	}
+
 	c.initCompleteCmd(i.Args)
+
 	err = c.execute(i, o)
 
 	if !caughtError {
@@ -131,13 +135,6 @@ func (c *Command) HasSubcommands() bool {
 func (c *Command) execute(i *Input, o *Output) error {
 	if err := c.validate(); err != nil {
 		return err
-	}
-
-	if c.hasFlag(i, "version") {
-		if i.HasParameterFlag("--version", true) || i.HasParameterFlag("-V", true) {
-			o.Writeln(c.version(), 0)
-			return nil
-		}
 	}
 
 	command, args, err := c.findCommand(i.Args, &i.tokens)
@@ -195,14 +192,6 @@ func (c *Command) execute(i *Input, o *Output) error {
 		command.NativeFlags = c.NativeFlags
 	}
 
-	command.configuredIO = true
-
-	wantsHelp := c.hasFlag(i, "help") && (i.HasParameterFlag("--help", true) || i.HasParameterFlag("-h", true))
-	if wantsHelp && command != nil {
-		command.printHelp(o)
-		return nil
-	}
-
 	def, err := command.Definition()
 	if err != nil {
 		return err
@@ -232,6 +221,8 @@ func (c *Command) execute(i *Input, o *Output) error {
 
 	c.runningCommand = command
 
+	command.configureIO(i, o)
+
 	io := &IO{
 		Command:    command,
 		Input:      i,
@@ -240,7 +231,11 @@ func (c *Command) execute(i *Input, o *Output) error {
 		Args:       i.Args,
 	}
 
-	if command.RunE != nil {
+	if !command.Hidden && command.hasFlag(i, "help") && io.Bool("help") {
+		command.printHelp(o)
+	} else if command.hasFlag(i, "version") && io.Bool("version") {
+		io.Writeln(c.version())
+	} else if command.RunE != nil {
 		err = command.RunE(io)
 	} else if command.Run != nil {
 		command.Run(io)
@@ -432,22 +427,22 @@ func (c *Command) hasFlag(i *Input, name string) bool {
 }
 
 func (c *Command) configureIO(i *Input, o *Output) {
-	if c.configuredIO {
-		return
-	} else {
-		c.configuredIO = true
-	}
-
 	if c.hasFlag(i, "ansi") {
 		if i.HasParameterFlag("--ansi", true) {
 			o.SetDecorated(true)
 		} else if i.HasParameterFlag("--no-ansi", true) {
+			o.SetDecorated(false)
+		} else if ok, err := i.Bool("ansi"); ok && err == nil {
+			o.SetDecorated(true)
+		} else if ok, err := i.Bool("no-ansi"); !ok && err == nil && i.FlagProvided("no-ansi") {
 			o.SetDecorated(false)
 		}
 	}
 
 	if c.hasFlag(i, "no-interaction") {
 		if i.HasParameterFlag("--no-interaction", true) || i.HasParameterFlag("-n", true) {
+			i.SetInteractive(false)
+		} else if ok, err := i.Bool("no-interaction"); ok && err == nil {
 			i.SetInteractive(false)
 		}
 	}
@@ -470,7 +465,19 @@ func (c *Command) configureIO(i *Input, o *Output) {
 		shellVerbosity = 0
 	}
 
-	if c.hasFlag(i, "quiet") && (i.HasParameterFlag("--quiet", true) || i.HasParameterFlag("-q", true)) {
+	var isQuiet = false
+	if c.hasFlag(i, "quiet") {
+		if i.HasParameterFlag("--quiet", true) || i.HasParameterFlag("-q", true) {
+			isQuiet = true
+		} else {
+			ok, err := i.Bool("quiet")
+			if ok && err == nil {
+				isQuiet = true
+			}
+		}
+	}
+
+	if isQuiet {
 		o.SetVerbosity(VerbosityQuiet)
 		shellVerbosity = -1
 	} else if c.hasFlag(i, "verbose") {
@@ -481,6 +488,9 @@ func (c *Command) configureIO(i *Input, o *Output) {
 			o.SetVerbosity(VerbosityVeryVerbose)
 			shellVerbosity = 2
 		} else if i.HasParameterFlag("-v", true) {
+			o.SetVerbosity(VerbosityVerbose)
+			shellVerbosity = 1
+		} else if ok, err := i.Bool("verbose"); ok && err == nil {
 			o.SetVerbosity(VerbosityVerbose)
 			shellVerbosity = 1
 		}
