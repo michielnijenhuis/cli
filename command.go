@@ -141,13 +141,9 @@ func (c *Command) execute(i *Input, o *Output) error {
 		}
 	}
 
-	definition, err := c.Definition()
-	if err != nil {
-		return err
-	}
-
 	var command *Command
 	var args []string
+	var err error
 
 	if len(i.Args) == 0 && c.PromptForCommand && c.HasSubcommands() && c.Run == nil && c.RunE == nil {
 		command, err = c.promptForCommand(i, o)
@@ -156,7 +152,7 @@ func (c *Command) execute(i *Input, o *Output) error {
 	if err != nil {
 		return err
 	} else if command == nil {
-		command, args, err = c.findCommand(i.Args, &i.tokens, definition)
+		command, args, err = c.findCommand(i.Args, &i.tokens)
 	} else if command == c {
 		os.Exit(1)
 	}
@@ -232,6 +228,15 @@ func (c *Command) execute(i *Input, o *Output) error {
 		return err
 	}
 
+	// inspection, _ := i.Inspect(i.Args)
+	// n, _ := def.Flag("name")
+	// if inspection.FlagIsGiven(n) {
+	// 	fmt.Print("GIVEN")
+	// 	return nil
+	// }
+	// fmt.Print(inspection.String())
+	// return nil
+
 	err = i.Validate()
 	if err != nil && !command.IgnoreValidationErrors {
 		if command.PromptForInput {
@@ -250,10 +255,6 @@ func (c *Command) execute(i *Input, o *Output) error {
 	}
 
 	c.runningCommand = command
-	def, err = command.Definition()
-	if err != nil {
-		return err
-	}
 
 	io := &IO{
 		Command:    command,
@@ -497,19 +498,13 @@ func (c *Command) configureIO(i *Input, o *Output) {
 		o.SetVerbosity(VerbosityQuiet)
 		shellVerbosity = -1
 	} else if c.hasFlag(i, "verbose") {
-		if i.HasParameterFlag("-vvv", true) ||
-			i.HasParameterFlag("--verbose=3", true) ||
-			i.ParameterFlag("--verbose", false, true) == "3" {
+		if i.HasParameterFlag("-vvv", true) {
 			o.SetVerbosity(VerbosityDebug)
 			shellVerbosity = 3
-		} else if i.HasParameterFlag("-vv", true) ||
-			i.HasParameterFlag("--verbose=2", true) ||
-			i.ParameterFlag("--verbose", false, true) == "2" {
+		} else if i.HasParameterFlag("-vv", true) {
 			o.SetVerbosity(VerbosityVeryVerbose)
 			shellVerbosity = 2
-		} else if i.HasParameterFlag("-v", true) ||
-			i.HasParameterFlag("--verbose=1", true) ||
-			i.HasParameterFlag("--verbose", true) {
+		} else if i.HasParameterFlag("-v", true) {
 			o.SetVerbosity(VerbosityVerbose)
 			shellVerbosity = 1
 		}
@@ -531,10 +526,14 @@ func (c *Command) Parent() *Command {
 }
 
 // TODO: use inspector?
-func (c *Command) findCommand(args []string, tokens *[]string, definition *InputDefinition) (*Command, []string, error) {
+func (c *Command) findCommand(args []string, tokens *[]string) (*Command, []string, error) {
 	isOption := false
 	argc := len(args)
 	arguments := make([]string, 0)
+
+	current := c
+	definition, _ := current.Definition()
+	toRemove := make([]string, 0)
 
 	for idx, token := range args {
 		// Is option
@@ -583,34 +582,29 @@ func (c *Command) findCommand(args []string, tokens *[]string, definition *Input
 			continue
 		}
 
-		arguments = append(arguments, token)
+		current.init()
+		cmd := current.commands[token]
+		if cmd != nil {
+			current = cmd
+			definition, _ = current.Definition()
+			toRemove = append(toRemove, token)
+		} else {
+			if len(definition.arguments) == 0 && current.HasSubcommands() {
+				alternatives := c.findAlternatives(token, array.SortedKeys(current.commands))
+				return nil, arguments[:idx+1], CommandNotFound(fmt.Sprintf("command \"%s\" does not exist", token), alternatives)
+			}
+		}
+
+		// arguments = append(arguments, token)
 	}
 
-	var command *Command = c
-	for i, arg := range arguments {
-		cmd := command.commands[arg]
-		if cmd != nil {
-			if tokens != nil {
-				*tokens = array.Remove(*tokens, arg)
-			}
-
-			command = cmd
-		} else {
-			d, err := command.Definition()
-			if err != nil {
-				return nil, nil, err
-			}
-
-			if len(d.arguments) == 0 && command.HasSubcommands() {
-				alternatives := c.findAlternatives(arg, array.SortedKeys(command.commands))
-				return nil, arguments[:i+1], CommandNotFound(fmt.Sprintf("command \"%s\" does not exist", arg), alternatives)
-			}
-
-			break
+	if tokens != nil {
+		for _, token := range toRemove {
+			*tokens = array.Remove(*tokens, token)
 		}
 	}
 
-	return command, nil, nil
+	return current, nil, nil
 }
 
 func (c *Command) defaultInputDefinition() (*InputDefinition, error) {
@@ -662,7 +656,7 @@ func (c *Command) defaultInputDefinition() (*InputDefinition, error) {
 		verboseflag := &BoolFlag{
 			Name:        "verbose",
 			Shortcuts:   []string{"v", "vv", "vvv"},
-			Description: "Increase the verbosity of messages: normal (1), verbose (2) or debug (3)",
+			Description: "Increase the verbosity of messages: normal, verbose or debug",
 		}
 		flags = append(flags, verboseflag)
 	}

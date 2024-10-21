@@ -54,17 +54,18 @@ func Execute() {
 	childD := &cli.Command{
 		Name:        "offspring-d",
 		Description: "Child command D",
-		Arguments: []cli.Arg{
-			&cli.StringArg{
+		Flags: []cli.Flag{
+			&cli.StringFlag{
 				Name:        "name",
 				Description: "Name of the person",
-				Required:    true,
+				Shortcuts:   []string{"n"},
 				Options:     []string{"foo", "barr"},
 			},
 		},
+		NativeFlags: []string{"help"},
 		Run: func(io *cli.IO) {
 			name := io.String("name")
-			io.Info(fmt.Sprintf("Hello from child B, %s", name))
+			io.Info(fmt.Sprintf("Hello from offspring d, %s", name))
 		},
 	}
 
@@ -73,7 +74,7 @@ func Execute() {
 	childB.AddCommand(childD)
 
 	rootCmd := &cli.Command{
-		Name:           "bruh",
+		Name:           "omg",
 		Description:    "Beautiful CLI application",
 		Version:        "v1.0.0",
 		AutoExit:       true,

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"errors"
+	"fmt"
 	"slices"
 	"strings"
 )
@@ -15,12 +16,17 @@ type Flag interface {
 	WasGiven() bool
 }
 
+type HasOptions interface {
+	Opts() []string
+}
+
 type StringFlag struct {
 	Name        string
 	Shortcuts   []string
 	Description string
 	Value       string
 	Validator   func(string) error
+	Options     []string
 	given       bool
 }
 
@@ -40,6 +46,7 @@ type ArrayFlag struct {
 	Description string
 	Value       []string
 	Validator   func([]string) error
+	Options     []string
 	given       bool
 }
 
@@ -50,6 +57,7 @@ type OptionalStringFlag struct {
 	Boolean     bool
 	Value       string
 	Validator   func(bool, string) error
+	Options     []string
 	given       bool
 }
 
@@ -60,6 +68,7 @@ type OptionalArrayFlag struct {
 	Boolean     bool
 	Value       []string
 	Validator   func(bool, []string) error
+	Options     []string
 	given       bool
 }
 
@@ -144,6 +153,10 @@ func (f *StringFlag) GetShortcuts() []string {
 	return f.Shortcuts
 }
 
+func (f *StringFlag) Opts() []string {
+	return f.Options
+}
+
 func joinShortcuts(shortcuts []string) string {
 	return strings.Join(shortcuts, "|")
 }
@@ -212,6 +225,10 @@ func (f *ArrayFlag) HasValue() bool {
 	return len(f.Value) > 0
 }
 
+func (f *ArrayFlag) Opts() []string {
+	return f.Options
+}
+
 func (f *OptionalStringFlag) GetName() string {
 	return f.Name
 }
@@ -236,6 +253,10 @@ func (f *OptionalStringFlag) WasGiven() bool {
 	return f.given
 }
 
+func (f *OptionalStringFlag) Opts() []string {
+	return f.Options
+}
+
 func (f *OptionalArrayFlag) GetName() string {
 	return f.Name
 }
@@ -258,6 +279,10 @@ func (f *OptionalArrayFlag) WasGiven() bool {
 
 func (f *OptionalArrayFlag) HasValue() bool {
 	return f.Boolean || len(f.Value) > 0
+}
+
+func (f *OptionalArrayFlag) Opts() []string {
+	return f.Options
 }
 
 const (
@@ -369,29 +394,62 @@ func FlagHasDefaultValue(f Flag) bool {
 func ValidateFlag(f Flag) error {
 	switch t := f.(type) {
 	case *StringFlag:
+		if len(t.Options) > 0 {
+			if !slices.Contains(t.Options, t.Value) {
+				return fmt.Errorf("invalid value \"%s\" for flag \"%s\". Expected one of: %s", t.Value, t.Name, strings.Join(t.Options, ", "))
+			}
+		}
+
 		if t.Validator != nil {
 			return t.Validator(t.Value)
 		}
+
 		return nil
 	case *BoolFlag:
 		if t.Validator != nil {
 			return t.Validator(t.Value)
 		}
+
 		return nil
 	case *ArrayFlag:
+		if len(t.Options) > 0 {
+			for _, val := range t.Value {
+				if !slices.Contains(t.Options, val) {
+					return fmt.Errorf("invalid value \"%s\" for flag \"%s\". Expected one of: %s", val, t.Name, strings.Join(t.Options, ", "))
+				}
+			}
+		}
+
 		if t.Validator != nil {
 			return t.Validator(t.Value)
 		}
+
 		return nil
 	case *OptionalStringFlag:
+		if len(t.Options) > 0 && t.Value != "" {
+			if !slices.Contains(t.Options, t.Value) {
+				return fmt.Errorf("invalid value \"%s\" for flag \"%s\". Expected one of: %s", t.Value, t.Name, strings.Join(t.Options, ", "))
+			}
+		}
+
 		if t.Validator != nil {
 			return t.Validator(t.Boolean, t.Value)
 		}
+
 		return nil
 	case *OptionalArrayFlag:
+		if len(t.Options) > 0 && len(t.Value) > 0 {
+			for _, val := range t.Value {
+				if !slices.Contains(t.Options, val) {
+					return fmt.Errorf("invalid value \"%s\" for flag \"%s\". Expected one of: %s", val, t.Name, strings.Join(t.Options, ", "))
+				}
+			}
+		}
+
 		if t.Validator != nil {
 			return t.Validator(t.Boolean, t.Value)
 		}
+
 		return nil
 	default:
 		return errors.New("invalid flag type")

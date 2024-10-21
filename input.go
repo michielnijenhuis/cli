@@ -467,6 +467,11 @@ func (i *Input) parseShortFlag(inspector *InputInspector, token string) error {
 
 		return i.parseShortFlagSet(inspector, name)
 	} else {
+		if inspector != nil {
+			inspector.AddFlag(name, "")
+			return nil
+		}
+
 		return i.addShortFlag(name, "")
 	}
 }
@@ -741,6 +746,32 @@ type InputInspector struct {
 	Flags map[string][]string
 }
 
+func (i InputInspector) String() string {
+	var sb strings.Builder
+
+	sb.WriteString("Input inspection:\n")
+
+	if i.ArgsCount() > 0 {
+		sb.WriteString("  Args:\n")
+		for i, arg := range i.Args {
+			sb.WriteString(fmt.Sprintf("    %d: %s\n", i, arg))
+		}
+	}
+
+	if i.FlagsCount() > 0 {
+		sb.WriteString("  Flags:\n")
+		for name, values := range i.Flags {
+			if len(values) == 0 {
+				sb.WriteString(fmt.Sprintf("    %s\n", name))
+			} else {
+				sb.WriteString(fmt.Sprintf("    %s: %s\n", name, strings.Join(values, ", ")))
+			}
+		}
+	}
+
+	return sb.String()
+}
+
 func (i *InputInspector) AddArg(value string) {
 	if i.Args == nil {
 		i.Args = make([]string, 0)
@@ -769,6 +800,22 @@ func (i InputInspector) ArgsCount() int {
 
 func (i InputInspector) FlagsCount() int {
 	return len(i.Flags)
+}
+
+func (i InputInspector) FlagIsGiven(flag Flag) bool {
+	for name := range i.Flags {
+		if name == flag.GetName() {
+			return true
+		}
+
+		for _, short := range flag.GetShortcuts() {
+			if name == short {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func (i *Input) Inspect(tokens []string) (InputInspector, error) {

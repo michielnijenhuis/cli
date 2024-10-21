@@ -14,7 +14,7 @@ type InputValidator func(value InputType) error
 type InputDefinition struct {
 	arguments            []Arg
 	flags                []Flag
-	requiredCount        uint
+	requiredCount        int
 	firstArgument        Arg
 	lastArrayArgument    *ArrayArg
 	lastOptionalArgument Arg
@@ -135,15 +135,15 @@ func (d *InputDefinition) ArgumentByIndex(index uint) (Arg, error) {
 	return d.arguments[index], nil
 }
 
-func (d *InputDefinition) ArgumentCount() uint {
+func (d *InputDefinition) ArgumentCount() int {
 	if d.lastArrayArgument != nil {
-		return uint(math.Inf(1))
+		return int(math.Inf(1))
 	}
 
 	return d.requiredCount
 }
 
-func (d *InputDefinition) ArgumentRequiredCount() uint {
+func (d *InputDefinition) ArgumentRequiredCount() int {
 	return d.requiredCount
 }
 
@@ -233,6 +233,14 @@ func (d *InputDefinition) HasFlag(name string) bool {
 }
 
 func (d *InputDefinition) Flag(name string) (Flag, error) {
+	if d.HasShortcut(name) {
+		return d.FlagForShortcut(name)
+	}
+
+	if d.HasNegation(name) {
+		name = d.NegationToName(name)
+	}
+
 	for _, o := range d.flags {
 		if o.GetName() == name {
 			return o, nil
@@ -243,11 +251,11 @@ func (d *InputDefinition) Flag(name string) (Flag, error) {
 }
 
 func (d *InputDefinition) HasShortcut(name string) bool {
-	return d.shortcuts[name] != ""
+	return d.shortcuts != nil && d.shortcuts[name] != ""
 }
 
 func (d *InputDefinition) HasNegation(name string) bool {
-	return d.negations[name] != ""
+	return d.negations != nil && d.negations[name] != ""
 }
 
 func (d *InputDefinition) FlagForShortcut(shortcut string) (Flag, error) {

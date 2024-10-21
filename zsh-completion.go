@@ -89,10 +89,19 @@ _%[1]s()
 
     # For zsh, when completing a flag with an = (e.g., %[1]s -n=<TAB>)
     # completions must be prefixed with the flag
+    # Ensure we're in a local context and enable regex matching with BASH_REMATCH
     setopt local_options BASH_REMATCH
-    if [[ "${lastParam}" =~ '-.*=' ]]; then
-        # We are dealing with a flag with an =
+
+    # Check if lastParam is a long flag with an '=' (e.g., --foo=) or short flags (e.g., -ab)
+    if [[ "${lastParam}" =~ '--[^=]+=' ]]; then
+        # Long flag with an '=' (e.g., --foo=)
         flagPrefix="-P ${BASH_REMATCH}"
+    elif [[ "${lastParam}" =~ '-[a-zA-Z]+$' ]]; then
+        # Short flag(s) detected (e.g., -ab)
+        remainingFlags="${lastParam:1}"  # Remove the leading dash (-) to get the flags (e.g., ab)
+
+        # Suggest more short flags
+        flagPrefix="-P -${remainingFlags}"
     fi
 
     # Prepare the command to obtain completions

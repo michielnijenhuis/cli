@@ -21,8 +21,6 @@ import (
 	"os"
 	"slices"
 	"strings"
-
-	"github.com/michielnijenhuis/cli/clidebug"
 )
 
 const (
@@ -121,7 +119,7 @@ func (c *Command) initCompleteCmd(args []string) {
 			cmd := io.Command
 			_, completions, directive, err := cmd.getCompletions(io.Input, args)
 			if err != nil {
-				CompErrorln(err.Error())
+				CompErrorln(io.Output.Formatter().RemoveDecoration(StripEscapeSequences(err.Error())))
 			}
 
 			out := io.Output.Stream
@@ -151,14 +149,6 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 		flagCompletion = true
 	}
 
-	defer func() {
-		clidebug.LogToFile("To complete: %s", toComplete)
-		clidebug.LogToFile("Trimmed args: %s", strings.Join(trimmedArgs, " "))
-		clidebug.LogToFile("Final command: %s", finalCmd.Name)
-		clidebug.LogToFile("Found %d completions: %s", len(completions), strings.Join(completions, ", "))
-		clidebug.LogToFile("------------")
-	}()
-
 	tokens := make([]string, 0, len(trimmedArgs))
 	for _, arg := range trimmedArgs {
 		if strings.TrimSpace(arg) != "" && arg != "__complete" {
@@ -166,51 +156,91 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 		}
 	}
 
-	rootDefinition, err := root.Definition()
-	if err != nil {
-		return
-	}
-
-	inspection, _ := i.Inspect(tokens)
-	finalCmd, _, err = root.findCommand(inspection.Args, &inspection.Args, rootDefinition)
+	finalCmd, _, err = root.findCommand(tokens, &tokens)
 	if err != nil {
 		return
 	}
 
 	finalCmd.init()
 
-	stopIfContains := []string{"--help", "-h", "--version", "-V"}
-	for _, token := range tokens {
-		if slices.Contains(stopIfContains, token) {
-			directive = ShellCompDirectiveNoFileComp
-			return
-		}
+	var definition *InputDefinition
+	definition, err = finalCmd.Definition()
+	if err != nil {
+		return
+	}
+
+	i.Bind(definition)
+	inspection, _ := i.Inspect(tokens)
+
+	if (finalCmd.hasFlag(i, "help") && (inspection.Flags["help"] != nil || inspection.Flags["h"] != nil)) ||
+		(finalCmd.hasFlag(i, "version") && (inspection.Flags["version"] != nil || inspection.Flags["V"] != nil)) {
+		completions = []string{}
+		directive = ShellCompDirectiveNoFileComp
+		return
 	}
 
 	directive = ShellCompDirectiveDefault
 
 	// TODO: fix - if --help flag is present, completion will use those results always.
+	// TODO: chaining short flags (e.g. `-abc`, where a, b and c are short flags)
 	if flagCompletion {
 		includeShort := strings.HasPrefix(toComplete, "-") && !strings.HasPrefix(toComplete, "--")
+		isShort := includeShort
 
 		for strings.HasPrefix(toComplete, "-") {
 			toComplete = strings.TrimPrefix(toComplete, "-")
 		}
 
-		definition, e := finalCmd.Definition()
-		if e != nil {
-			return nil, nil, ShellCompDirectiveDefault, e
+		hasValue := false
+		if strings.HasSuffix(toComplete, "=") {
+			hasValue = true
+			toComplete = strings.TrimSuffix(toComplete, "=")
 		}
 
+		flag, _ := definition.Flag(toComplete)
+		if flag != nil {
+			if (hasValue || len(toComplete) == 1) && (FlagRequiresValue(flag) || FlagValueIsOptional(flag)) {
+				opts, ok := flag.(HasOptions)
+				if !ok {
+					return
+				}
+
+				completions = opts.Opts()
+				directive = ShellCompDirectiveDefault
+			} else if isShort {
+				completions = make([]string, 0)
+				for _, f := range definition.flags {
+					if inspection.FlagIsGiven(f) {
+						continue
+					}
+
+					for _, short := range f.GetShortcuts() {
+						completions = append(completions, fmt.Sprintf("%s\t%s", short, f.GetDescription()))
+					}
+
+					directive = ShellCompDirectiveNoSpace
+				}
+			}
+
+			return
+		}
+
+		directive = ShellCompDirectiveNoFileComp
 		completions = make([]string, 0)
+
 		for _, f := range definition.flags {
-			if _, present := inspection.Flags[f.GetName()]; present {
+			if inspection.FlagIsGiven(f) {
+				continue
+			}
+
+			if toComplete != "" && !strings.HasPrefix(f.GetName(), toComplete) {
 				continue
 			}
 
 			var suffix string
 			if FlagRequiresValue(f) {
 				suffix = "="
+				directive = ShellCompDirectiveNoSpace
 			}
 
 			completions = append(completions, fmt.Sprintf("--%s%s\t%s", f.GetName(), suffix, f.GetDescription()))
@@ -222,19 +252,10 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 			}
 		}
 
-		directive = ShellCompDirectiveNoFileComp
-
 		return
 	}
 
-	requiredArguments := make([]Arg, 0)
-	for _, arg := range finalCmd.Arguments {
-		if arg.IsRequired() {
-			requiredArguments = append(requiredArguments, arg)
-		}
-	}
-
-	if len(requiredArguments) > 0 {
+	if len(finalCmd.Arguments) > 0 {
 		j := 0
 		for i := 0; i < len(finalCmd.Arguments); i++ {
 			arg := finalCmd.Arguments[i]
@@ -243,18 +264,18 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 			case *StringArg:
 				if j >= len(inspection.Args) {
 					if len(arg.Opts()) > 0 {
-						// we require an argument to be given and have options to suggest
 						completions = append(completions, arg.Opts()...)
 						return
 					}
+
+					if arg.IsRequired() {
+						return
+					}
 				} else {
-					// value has been given, continue and shift token window to the right
 					j++
 				}
 			case *ArrayArg:
 				if opts := arg.Opts(); len(opts) > 0 {
-					// we have an array argument with options that we can suggest
-
 					availableOptions := make([]string, 0, len(opts))
 					for _, opt := range opts {
 						if !slices.Contains(inspection.Args, opt) {
@@ -267,16 +288,14 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 					} else {
 						completions = availableOptions
 					}
+				} else if arg.IsRequired() {
+					return
 				}
-
-				return
 			default:
 				return
 			}
 		}
 	}
-
-	// TODO: handle optional args with options?
 
 	if finalCmd.HasSubcommands() {
 		completions = make([]string, 0)
