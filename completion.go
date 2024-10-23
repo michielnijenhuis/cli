@@ -224,6 +224,17 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 
 			return
 		} else if isShort && len(toComplete) > 0 {
+			name := toComplete[:1]
+			value := ""
+			if len(toComplete) > 1 {
+				value = toComplete[1:]
+			}
+
+			if values := inspection.Flags[name]; values != nil && slices.Contains(values, value) {
+				directive = ShellCompDirectiveNoFileComp
+				return
+			}
+
 			completions = make([]string, 0)
 			directive = ShellCompDirectiveNoSpace
 			for _, f := range definition.flags {
@@ -280,6 +291,8 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 
 			switch arg.(type) {
 			case *StringArg:
+				j++
+
 				if j >= len(inspection.Args) {
 					if len(arg.Opts()) > 0 {
 						completions = append(completions, arg.Opts()...)
@@ -289,8 +302,8 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 					if arg.IsRequired() {
 						return
 					}
-				} else {
-					j++
+				} else if arg.IsRequired() {
+					return
 				}
 			case *ArrayArg:
 				if opts := arg.Opts(); len(opts) > 0 {
@@ -312,6 +325,11 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 			default:
 				return
 			}
+		}
+
+		if j >= len(finalCmd.Arguments) && !finalCmd.HasSubcommands() {
+			directive = ShellCompDirectiveNoFileComp
+			return
 		}
 	}
 

@@ -105,7 +105,7 @@ _%[1]s()
     fi
 
     # Prepare the command to obtain completions
-    requestComp="${words[1]} %[2]s ${words[2,-1]}"
+    requestComp="${words[1]} --no-ansi %[2]s ${words[2,-1]}"
     if [ "${lastChar}" = "" ]; then
         # If the last parameter is complete (there is a space following it)
         # We add an extra empty parameter so we can indicate this to the go completion code.

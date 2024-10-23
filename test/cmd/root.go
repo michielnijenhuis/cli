@@ -62,10 +62,18 @@ func Execute() {
 				Options:     []string{"foo", "barr"},
 			},
 		},
+		Arguments: []cli.Arg{
+			&cli.StringArg{
+				Name:        "test",
+				Description: "bro",
+				Required:    true,
+			},
+		},
 		NativeFlags: []string{"help"},
 		Run: func(io *cli.IO) {
 			name := io.String("name")
-			io.Info(fmt.Sprintf("Hello from offspring d, %s", name))
+			test := io.String("test")
+			io.Info(fmt.Sprintf("Hello from offspring d, %s, %s", name, test))
 		},
 	}
 
