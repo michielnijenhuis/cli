@@ -67,6 +67,18 @@ func Execute() {
 				Name:        "test",
 				Description: "bro",
 				Required:    true,
+				Options:     []string{"broseph", "broheim"},
+			},
+			&cli.StringArg{
+				Name:        "test-2",
+				Description: "bro-2",
+				// Required:    true,
+				// Options: []string{"brosephino", "brochacho"},
+			},
+			&cli.ArrayArg{
+				Name:        "test-3",
+				Description: "bro-3",
+				Options:     []string{"brah", "bro", "bruh", "breh", "bruuuh"},
 			},
 		},
 		NativeFlags: []string{"help"},

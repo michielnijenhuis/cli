@@ -150,7 +150,7 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 
 	tokens := make([]string, 0, len(trimmedArgs))
 	for _, arg := range trimmedArgs {
-		if strings.TrimSpace(arg) != "" && arg != "__complete" {
+		if arg != "__complete" {
 			tokens = append(tokens, arg)
 		}
 	}
@@ -171,7 +171,6 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 	i.Bind(definition)
 	inspectable := make([]string, len(tokens))
 	copy(inspectable, tokens)
-	inspectable = append(inspectable, args[len(args)-1])
 	inspection, _ := i.Inspect(inspectable)
 
 	if (finalCmd.hasFlag(i, "help") && (inspection.Flags["help"] != nil || inspection.Flags["h"] != nil)) ||
@@ -284,27 +283,37 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 		return
 	}
 
+	optionalArg := false
 	if len(finalCmd.Arguments) > 0 {
 		j := 0
+
 		for i := 0; i < len(finalCmd.Arguments); i++ {
 			arg := finalCmd.Arguments[i]
 
+			if optionalArg {
+				break
+			}
+
 			switch arg.(type) {
 			case *StringArg:
+				hasToken := j < len(inspection.Args)
 				j++
+				if hasToken {
+					continue
+				}
 
-				if j >= len(inspection.Args) {
-					if len(arg.Opts()) > 0 {
-						completions = append(completions, arg.Opts()...)
-						return
-					}
-
+				hasOpts := len(arg.Opts()) > 0
+				if !hasOpts {
 					if arg.IsRequired() {
 						return
 					}
-				} else if arg.IsRequired() {
-					return
+
+					optionalArg = true
+					break
 				}
+
+				completions = append(completions, arg.Opts()...)
+				return
 			case *ArrayArg:
 				if opts := arg.Opts(); len(opts) > 0 {
 					availableOptions := make([]string, 0, len(opts))
@@ -318,6 +327,7 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 						directive = ShellCompDirectiveNoFileComp
 					} else {
 						completions = availableOptions
+						return
 					}
 				} else if arg.IsRequired() {
 					return
@@ -325,11 +335,6 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 			default:
 				return
 			}
-		}
-
-		if j >= len(finalCmd.Arguments) && !finalCmd.HasSubcommands() {
-			directive = ShellCompDirectiveNoFileComp
-			return
 		}
 	}
 
@@ -341,9 +346,12 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 				completions = append(completions, fmt.Sprintf("%s\t%s", cmd.Name, cmd.Description))
 			}
 		}
-	} else if len(finalCmd.Arguments) == 0 || len(inspection.Args) >= len(finalCmd.Arguments) {
-		directive = ShellCompDirectiveNoFileComp
-		return
+	} else {
+		if optionalArg {
+			directive = ShellCompDirectiveDefault
+		} else {
+			directive = ShellCompDirectiveNoFileComp
+		}
 	}
 
 	return
