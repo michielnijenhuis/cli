@@ -77,6 +77,23 @@ func (t Tmux) KillSessionCommand(session string) string {
 	return fmt.Sprintf("tmux kill-session -t %s", session)
 }
 
+func (t Tmux) CreateSplitWindowCommand(session string, window string, keys []string) string {
+	cmds := []string{
+		t.NewWindowCommand(session, window),
+		t.SplitWindowHorizontallyCommand(session, window),
+	}
+
+	if len(keys) > 0 {
+		cmds = append(cmds, t.SendKeysCommand(session, window+".1", keys[0]))
+	}
+
+	if len(keys) > 1 {
+		cmds = append(cmds, t.SendKeysCommand(session, window+".2", keys[1]))
+	}
+
+	return strings.Join(cmds, " && ")
+}
+
 func (t Tmux) Exec(cmd string) error {
 	return t.io.Zsh(cmd)
 }
