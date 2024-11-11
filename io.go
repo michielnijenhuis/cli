@@ -46,29 +46,42 @@ func (io *IO) Exec(cmd string, shell string, inherit bool) (string, error) {
 
 func (io *IO) printChildProcessCommand(cmd string) {
 	if io.IsVerbose() {
-		io.Writelnf("+ %s", cmd)
+		cmds := strings.Split(cmd, ";")
+		for _, cmd := range cmds {
+			chainedCmds := strings.Split(cmd, "&&")
+			for i, chainedCmd := range chainedCmds {
+				prefix := ""
+				if i == 0 {
+					prefix = "+ "
+				} else {
+					prefix = "\n   && "
+				}
+
+				io.Writef("%s%s", prefix, strings.TrimSpace(chainedCmd))
+			}
+
+			io.Write(";\n")
+		}
+
+		io.Write("\n")
 	}
 }
 
 func (io *IO) Zsh(cmd string) error {
-	io.printChildProcessCommand(cmd)
 	_, err := io.Exec(cmd, "zsh", true)
 	return err
 }
 
 func (io *IO) ZshPipe(cmd string) (string, error) {
-	io.printChildProcessCommand(cmd)
 	return io.Exec(cmd, "zsh", false)
 }
 
 func (io *IO) Sh(cmd string) error {
-	io.printChildProcessCommand(cmd)
 	_, err := io.Exec(cmd, "", true)
 	return err
 }
 
 func (io *IO) ShPipe(cmd string) (string, error) {
-	io.printChildProcessCommand(cmd)
 	return io.Exec(cmd, "", false)
 }
 
@@ -282,4 +295,8 @@ func (io *IO) TableFromSlices(headers []string, rows [][]any, options *TableOpti
 
 func (io *IO) TableFromMap(headers []string, rows []map[string]any, options *TableOptions) {
 	io.Output.TableFromMap(headers, rows, options)
+}
+
+func (io *IO) Tmux() Tmux {
+	return Tmux{io}
 }

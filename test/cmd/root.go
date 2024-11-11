@@ -12,7 +12,24 @@ func Execute() {
 		Name:        "child-a",
 		Description: "Child command A",
 		Run: func(io *cli.IO) {
-			io.Info("Hello from child A")
+			tmux := io.Tmux()
+			ses := "bro"
+			cmds := []string{
+				tmux.NewSessionCommand(ses, true),
+				tmux.RenameWindowCommand(ses, "1", "bruh"),
+				tmux.NewWindowCommand(ses, "brah"),
+				tmux.NewWindowCommand(ses, "broseph"),
+				tmux.NewWindowCommand(ses, "broheim"),
+				tmux.SplitWindowHorizontallyCommand(ses, "bruh"),
+				tmux.SplitWindowHorizontallyCommand(ses, "brah"),
+				tmux.SplitWindowHorizontallyCommand(ses, "broseph"),
+				tmux.SelectWindowCommand(ses, "bruh"),
+				tmux.SelectPaneCommand(ses, "bruh", 1),
+				tmux.SendKeysCommand(ses, "bruh", "echo 'Hello, bruh!'"),
+				tmux.AttachSessionCommand(ses),
+			}
+
+			tmux.ExecMultiple(cmds)
 		},
 	}
 
