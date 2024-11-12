@@ -58,9 +58,9 @@ func (d *TextDescriptor) DescribeCommand(command *Command, options *DescriptorOp
 
 	d.DescribeInputDefinition(definition, options)
 
-	commands := command.All()
+	if command.HasSubcommands() {
+		commands := command.All()
 
-	if len(commands) > 0 {
 		d.writeText(Eol)
 		d.writeText(Eol)
 		d.writeText("<primary>Available commands:</primary>")

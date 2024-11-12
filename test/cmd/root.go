@@ -43,9 +43,8 @@ func Execute() {
 	}
 
 	childB := &cli.Command{
-		Name:           "child-b",
-		Description:    "Child command B",
-		PromptForInput: true,
+		Name:        "child-b",
+		Description: "Child command B",
 		Run: func(io *cli.IO) {
 			io.Info("Hello from child C")
 		},
@@ -111,13 +110,15 @@ func Execute() {
 	childB.AddCommand(childD)
 
 	rootCmd := &cli.Command{
-		Name:           "omg",
-		Description:    "Beautiful CLI application",
-		Version:        "v1.0.0",
-		AutoExit:       true,
-		CatchErrors:    true,
-		PromptForInput: true,
-		NativeFlags:    []string{"help"},
+		Name:        "omg",
+		Description: "Beautiful CLI application",
+		Version:     "v1.0.0",
+		AutoExit:    true,
+		CatchErrors: true,
+		NativeFlags: []string{"help"},
+		Run: func(io *cli.IO) {
+			io.Writeln("test")
+		},
 	}
 
 	rootCmd.AddCommand(childA)

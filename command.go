@@ -129,7 +129,7 @@ func (c *Command) Subcommand(name string) *Command {
 }
 
 func (c *Command) HasSubcommands() bool {
-	return len(c.Commands) > 0 || len(c.commands) > 0
+	return c.VisibleSubcommandsCount() > 0
 }
 
 func (c *Command) execute(i *Input, o *Output) error {
@@ -271,6 +271,21 @@ func (c *Command) All() map[string]*Command {
 	}
 
 	return cmds
+}
+
+func (c *Command) VisibleSubcommandsCount() int {
+	if err := c.init(); err != nil {
+		return 0
+	}
+
+	count := 0
+	for _, cmd := range c.commands {
+		if !cmd.Hidden {
+			count++
+		}
+	}
+
+	return count
 }
 
 func (c *Command) version() string {
