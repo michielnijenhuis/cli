@@ -111,6 +111,7 @@ func (c *Command) initCompleteCmd(args []string) {
 				Description: "The command line to request completions for.",
 			},
 		},
+		NativeFlags: []string{},
 		Description: "Request shell completion choices for the specified command-line",
 		Help: fmt.Sprintf("%[2]s is a special command that is used by the shell completion logic\n%[1]s",
 			"to request completion choices for the specified command-line.", ShellCompRequestCmd),
@@ -150,7 +151,7 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 
 	tokens := make([]string, 0, len(trimmedArgs))
 	for _, arg := range trimmedArgs {
-		if arg != "__complete" {
+		if arg != ShellCompRequestCmd {
 			tokens = append(tokens, arg)
 		}
 	}
@@ -161,6 +162,11 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 	}
 
 	finalCmd.init()
+
+	if root.CascadeNativeFlags && finalCmd.NativeFlags == nil {
+		finalCmd.NativeFlags = root.NativeFlags
+		finalCmd.definition = nil
+	}
 
 	var definition *InputDefinition
 	definition, err = finalCmd.Definition()

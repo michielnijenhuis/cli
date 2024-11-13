@@ -15,7 +15,7 @@ func Execute() {
 			tmux := io.Tmux()
 			ses := "bro"
 			cmds := []string{
-				tmux.NewSessionCommand(ses, true),
+				tmux.NewDetachedSessionCommand(ses),
 				tmux.RenameWindowCommand(ses, "1", "bruh"),
 				tmux.NewWindowCommand(ses, "brah"),
 				tmux.NewWindowCommand(ses, "broseph"),
@@ -110,12 +110,13 @@ func Execute() {
 	childB.AddCommand(childD)
 
 	rootCmd := &cli.Command{
-		Name:        "omg",
-		Description: "Beautiful CLI application",
-		Version:     "v1.0.0",
-		AutoExit:    true,
-		CatchErrors: true,
-		NativeFlags: []string{"help"},
+		Name:               "omg",
+		Description:        "Beautiful CLI application",
+		Version:            "v1.0.0",
+		AutoExit:           true,
+		CatchErrors:        true,
+		NativeFlags:        []string{"help", "version", "quiet"},
+		CascadeNativeFlags: true,
 		Run: func(io *cli.IO) {
 			io.Writeln("test")
 		},

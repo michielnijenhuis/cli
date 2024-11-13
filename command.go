@@ -188,8 +188,9 @@ func (c *Command) execute(i *Input, o *Output) error {
 		}
 	}
 
-	if c.CascadeNativeFlags && command.NativeFlags != nil {
+	if c.CascadeNativeFlags && command.NativeFlags == nil {
 		command.NativeFlags = c.NativeFlags
+		command.definition = nil
 	}
 
 	def, err := command.Definition()
