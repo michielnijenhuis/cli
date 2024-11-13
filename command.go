@@ -197,6 +197,18 @@ func (c *Command) execute(i *Input, o *Output) error {
 		return err
 	}
 
+	wantsHelp := !command.Hidden && command.hasFlag(i, "help") && (i.HasParameterFlag("--help", true) || i.HasParameterFlag("-h", true))
+	if wantsHelp {
+		command.printHelp(o)
+		return nil
+	}
+
+	wantsVersion := !command.Hidden && command.hasFlag(i, "version") && (i.HasParameterFlag("--version", true) || i.HasParameterFlag("-V", true))
+	if wantsVersion {
+		o.Writeln(c.version(), 0)
+		return nil
+	}
+
 	err = i.Bind(def)
 	if err != nil && !command.IgnoreValidationErrors {
 		return err
@@ -231,11 +243,7 @@ func (c *Command) execute(i *Input, o *Output) error {
 		Args:       i.Args,
 	}
 
-	if !command.Hidden && command.hasFlag(i, "help") && io.Bool("help") {
-		command.printHelp(o)
-	} else if command.hasFlag(i, "version") && io.Bool("version") {
-		io.Writeln(c.version())
-	} else if command.RunE != nil {
+	if command.RunE != nil {
 		err = command.RunE(io)
 	} else if command.Run != nil {
 		command.Run(io)
