@@ -193,6 +193,7 @@ func (c *Command) execute(i *Input, o *Output) error {
 		command.definition = nil
 	}
 
+	command.configureIO(i, o)
 	def, err := command.Definition()
 	if err != nil {
 		return err
@@ -233,8 +234,6 @@ func (c *Command) execute(i *Input, o *Output) error {
 	}
 
 	c.runningCommand = command
-
-	command.configureIO(i, o)
 
 	io := &IO{
 		Command:    command,
