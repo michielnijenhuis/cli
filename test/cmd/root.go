@@ -118,7 +118,7 @@ func Execute() {
 		NativeFlags:        []string{"help", "version", "quiet"},
 		CascadeNativeFlags: true,
 		Run: func(io *cli.IO) {
-			io.Writeln("<fg=#ff0000>Hello</fg>")
+			io.Writeln("<fg=#93c5fd>Hello</fg> <fg=#fb7185>there</> <fg=#fdba74>champ!</>")
 		},
 	}
 

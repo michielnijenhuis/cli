@@ -262,7 +262,7 @@ func convertFromRGB(mode uint8, r int64, g int64, b int64) (string, error) {
 }
 
 func degradeHexColorToAnsi4(r int64, g int64, b int64) int {
-	return (int(math.Round(float64(b/255))) << 2) | (int(math.Round(float64(g/255))) << 1) | int(math.Round(float64(r/255)))
+	return (int(math.Round(float64(b)/255)) << 2) | (int(math.Round(float64(g)/255)) << 1) | int(math.Round(float64(r)/255))
 }
 
 func degradeHexColorToAnsi8(r int64, g int64, b int64) int {
