@@ -74,7 +74,7 @@ func (o *OutputFormatter) FormatAndWrap(message string, width int) string {
 	var output string
 	var currentLineLength int
 
-	re := regexp.MustCompile(`<\/?([a-z]+)(?:=([a-zA-Z-]+(?:;[a-zA-Z-]+=[a-zA-Z-]+)*))?>|<\/>`)
+	re := regexp.MustCompile(`<\/?([a-z]+)(?:=([a-zA-Z-]+|#[0-9a-fA-F]{6})(?:;[a-zA-Z-]+=[a-zA-Z-]+)*)?>|<\/>`)
 	matches := re.FindAllStringSubmatchIndex(message, -1)
 
 	for _, match := range matches {
@@ -188,7 +188,7 @@ func (o *OutputFormatter) createStyleFromString(s string) *OutputFormatterStyle 
 		return style
 	}
 
-	re := regexp.MustCompile(`([^;=]+)=([a-zA-Z-]+)(;|$)`)
+	re := regexp.MustCompile(`([^;=]+)=([a-zA-Z-]+|#[0-9a-fA-F]{6})(;|$)`)
 	matches := re.FindAllStringSubmatch(s, -1)
 	if matches == nil {
 		return nil
