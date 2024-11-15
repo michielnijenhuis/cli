@@ -460,6 +460,8 @@ func (c *Command) configureIO(i *Input, o *Output) {
 		} else if ok, err := i.Bool("no-ansi"); !ok && err == nil && i.FlagProvided("no-ansi") {
 			o.SetDecorated(false)
 		}
+	} else {
+		o.SetDecorated(HasColorSupport())
 	}
 
 	if c.hasFlag(i, "no-interaction") {
@@ -672,6 +674,7 @@ func (c *Command) defaultInputDefinition() (*InputDefinition, error) {
 			Name:        "ansi",
 			Negatable:   true,
 			Description: "Force (or disable --no-ansi) ANSI output",
+			Value:       HasColorSupport(),
 		}
 		flags = append(flags, ansiFlag)
 	}
