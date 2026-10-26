@@ -1,0 +1,190 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+
+    "$defs": {
+        "commands": {
+            "type": "object",            
+            "description": "The commands of the command",
+            "patternProperties": {
+                "^[a-z][a-z0-9_-]*(?::[a-z][a-z0-9_-]*)*$": {
+                    "type": "object",
+                    "description": "The command",
+                    "properties": {                        
+                        "description": {
+                            "type": "string",
+                            "description": "A description of the command"
+                        },
+                        "help": {
+                            "type": "string",
+                            "description": "The help text of the command"
+                        },
+                        "args": {
+                            "type": "object",
+                            "description": "The arguments of the command",
+                            "patternProperties": {
+                                "^[a-z][a-z-]*$": {
+                                    "type": "object",
+                                    "description": "The argument",
+                                    "properties": {
+                                        "description": {
+                                            "type": "string",
+                                            "description": "A description of the argument"
+                                        },
+                                        "value": {
+                                            "type": [
+                                                "string",
+                                                "number"
+                                            ],
+                                            "description": "The default value for the argument"
+                                        },
+                                        "required": {
+                                            "type": "boolean",
+                                            "description": "Whether the argument is required"
+                                        },
+                                        "options": {
+                                            "type": "array",
+                                            "description": "The options of the argument",
+                                            "items": {
+                                                "type": ["string", "number"]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "description"
+                                    ],
+                                    "additionalProperties": false
+                                }                                
+                            },
+                            "additionalProperties": false
+                        },
+                        "flags": {
+                            "type": "object",
+                            "description": "The flags of the command",
+                            "patternProperties": {
+                                "^[a-z][a-z-]*$": {
+                                    "type": "object",
+                                    "description": "The flag",
+                                    "properties": {
+                                        "description": {
+                                            "type": "string",
+                                            "description": "A description of the flag"
+                                        },
+                                        "default": {
+                                            "type": ["string", "number", "boolean"],
+                                            "description": "The default value of the flag"
+                                        },
+                                        "negatable": {
+                                            "type": "boolean",
+                                            "description": "Whether the flag can be negated"
+                                        },
+                                        "aliases": {
+                                            "type": "array",
+                                            "description": "The aliases of the flag",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "options": {
+                                            "type": "array",
+                                            "description": "The options of the flag",
+                                            "items": {
+                                                "type": ["string", "number"]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "description"
+                                    ],
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        },                        
+                        "aliases": {
+                            "type": "array",
+                            "description": "The aliases of the command",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "commands": {
+                            "$ref": "#/$defs/commands"
+                        }
+                    },
+                    "required": [
+                        "description"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            "additionalProperties": false
+        }
+    },
+
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string",
+            "description": "The name of the command"
+        },
+        "description": {
+            "type": "string",
+            "description": "A description of the command"
+        },
+        "version": {
+            "type": "string",
+            "description": "The version of the command"
+        },
+        "longVersion": {
+            "type": "string",
+            "description": "The long version of the command"
+        },
+        "intro": {
+            "type": "string",
+            "description": "The intro text of the command"
+        },
+        "theme": {
+            "type": "object",
+            "description": "The theme of the command",
+            "properties": {
+                "primary": {
+                    "type": "string",
+                    "description": "The primary color of the theme"
+                },
+                "secondary": {
+                    "type": "string",
+                    "description": "The secondary color of the theme"
+                },
+                "accent": {
+                    "type": "string",
+                    "description": "The accent color of the theme"
+                }
+            },
+            "additionalProperties": false
+        },
+        "noNativeFlags": {
+            "type": "boolean",
+            "description": "Whether the native flags should be disabled. Set to true to disable native flags, such as --quiet, --verbose, --ansi or --no-interaction"
+        },
+        "withoutNativeFlags": {
+            "type": "array",
+            "description": "List of native flags t",
+            "items": {
+                "type": "string",
+                "enum": [
+                    "quiet",
+                    "verbose",
+                    "ansi",
+                    "no-interaction"
+                ]
+            }
+        },
+        "commands": {
+            "$ref": "#/$defs/commands"
+        }
+    },
+    "required": [
+        "name",
+        "description"
+    ]
+}

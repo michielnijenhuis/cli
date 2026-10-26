@@ -1,0 +1,24 @@
+linters:
+  disable-all: true
+  enable:
+    - errcheck
+    - goconst
+    - gocritic
+    - gofmt
+    - goimports
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - nolintlint
+    - staticcheck
+    - stylecheck
+    - unconvert
+    - unused
+  fast: false
+  
+linters-settings:
+  gocritic:
+    disabled-checks:
+      - ifElseChain
