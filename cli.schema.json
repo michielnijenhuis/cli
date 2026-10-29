@@ -123,6 +123,10 @@
 
     "type": "object",
     "properties": {
+        "$schema": {
+            "type": "string"
+        },
+
         "name": {
             "type": "string",
             "description": "The name of the command"

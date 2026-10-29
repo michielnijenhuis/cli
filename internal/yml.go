@@ -51,6 +51,7 @@ type yamlTheme struct {
 }
 
 type yamlApplication struct {
+	Schema      string    `yaml:"$schema"`
 	Name        string    `yaml:"name"`
 	Version     string    `yaml:"version"`
 	LongVersion string    `yaml:"longVersion"`
@@ -82,7 +83,9 @@ func ParseApp(config string) (*yamlApplication, error) {
 	defer file.Close()
 
 	var yamlApp yamlApplication
-	err = yaml.NewDecoder(file).Decode(&yamlApp)
+	decoder := yaml.NewDecoder(file)
+	decoder.SetStrict(true)
+	err = decoder.Decode(&yamlApp)
 	if err != nil {
 		return nil, err
 	}

@@ -19,22 +19,60 @@ var InstallCmd = &cli.Command{
 			Shortcuts:   []string{"f"},
 			Description: "Overwrite the executable if it already exists",
 		},
+		&cli.BoolFlag{
+			Name:        "check",
+			Shortcuts:   []string{"c"},
+			Description: "Only check if the command has been installed already.",
+		},
 	},
 	Arguments: []cli.Arg{
 		&cli.StringArg{
 			Name:        "config",
-			Description: "The .yml/.yaml configuration file for the CLI app or command",
-			Required:    true,
-			Validator:   cli.IsFile,
+			Description: "The .y(a)ml configuration file for the CLI app or command",
 		},
 		&cli.StringArg{
 			Name:        "script",
 			Description: "The .sh script that provides the command implementations",
-			Validator:   cli.IsFile,
 		},
 	},
 	RunE: func(args []string, ctx *cli.CommandCtx) error {
+		check := ctx.IO.Bool("check")
 		config := ctx.IO.String("config")
+		script := ctx.IO.String("script")
+
+		if config == "" {
+			currentDir, err := os.Getwd()
+			if err != nil {
+				return err
+			}
+
+			ymlFiles, err := filepath.Glob(currentDir + "/*.yml")
+			if err != nil {
+				return err
+			}
+
+			if len(ymlFiles) == 0 {
+				ymlFiles, err = filepath.Glob(currentDir + "/*.yaml")
+			}
+
+			if err != nil {
+				return err
+			}
+
+			if len(ymlFiles) == 0 {
+				return fmt.Errorf("a .y(a)ml configuration file is required.")
+			}
+
+			if len(ymlFiles) > 1 {
+				return fmt.Errorf("multiple .y(a)ml files found. Please provide a configuration file yourself.")
+			}
+
+			config = ymlFiles[0]
+		}
+
+		if config == "" {
+			return fmt.Errorf("a .y(a)ml configuration file is required.")
+		}
 
 		configAbsPath, err := filepath.Abs(config)
 		if err != nil {
@@ -52,8 +90,13 @@ var InstallCmd = &cli.Command{
 		}
 
 		app, err := cli.ParseApp(config)
+		if err != nil {
+			if ctx.IO.IsVerbose() {
+				return fmt.Errorf("invalid configuration file:\n%w", err)
+			}
 
-		script := ctx.IO.String("script")
+			return fmt.Errorf("invalid configuration file")
+		}
 
 		if script == "" {
 			script = strings.TrimSuffix(configAbsPath, filepath.Ext(configAbsPath)) + ".sh"
@@ -71,11 +114,17 @@ var InstallCmd = &cli.Command{
 		commandExists := err == nil
 
 		if commandExists {
+			if check {
+				os.Exit(0)
+			}
+
 			if !ctx.IO.Bool("force") {
 				return fmt.Errorf("file %s already exists", commandPath)
 			} else if err = os.Remove(commandPath); err != nil {
 				return fmt.Errorf("failed to remove %q: %w", commandPath, err)
 			}
+		} else if check {
+			os.Exit(1)
 		}
 
 		var commandFmt = `
@@ -95,6 +144,10 @@ cli run %s %s "$@"
 
 		err = os.Chmod(commandPath, 0o755)
 		if err != nil {
+			return err
+		}
+
+		if err = os.Chmod(script, 0o755); err != nil {
 			return err
 		}
 
