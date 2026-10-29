@@ -9,10 +9,25 @@ import (
 	cli "github.com/michielnijenhuis/cli/internal"
 )
 
+var helpText = `In a directory with your .y(a)ml and .sh files, e.g. ./command.yml and ./command.sh:
+  <fg=gray>$ cli install</>
+  Now usable in the terminal as '<fg=gray>$</> <fg=bright-white>command</>'.
+  Make sure '<accent>$HOME/.local/bin</accent>' is added to your '<accent>$PATH</accent>'.
+  
+With a provided config file:
+  <fg=gray>$ cli install ./foo.yml</>
+  Here the existance of the file ./foo.sh is assumed.
+
+With a provided config and script file:
+  <fg=gray>$ cli install /home/dev/command.yml /home/dev/config/command-config.yml</>
+  Both relative and absolute paths are accepted.
+`
+
 var InstallCmd = &cli.Command{
 	Name:        "install",
 	Description: "Install a command as defined in a yaml file as an executable",
 	Aliases:     []string{"i"},
+	Help:        helpText + "",
 	Flags: []cli.Flag{
 		&cli.BoolFlag{
 			Name:        "force",
