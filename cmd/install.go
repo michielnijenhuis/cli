@@ -72,6 +72,8 @@ var InstallCmd = &cli.Command{
 
 		if config == "" {
 			return fmt.Errorf("a .y(a)ml configuration file is required.")
+		} else if err := cli.IsFile(config); err != nil {
+			return err
 		}
 
 		configAbsPath, err := filepath.Abs(config)
@@ -100,14 +102,18 @@ var InstallCmd = &cli.Command{
 
 		if script == "" {
 			script = strings.TrimSuffix(configAbsPath, filepath.Ext(configAbsPath)) + ".sh"
-		} else {
-			scriptAbsPath, err := filepath.Abs(script)
-			if err != nil {
-				return fmt.Errorf("failed to determine absolute path: %w", err)
-			}
-
-			script = scriptAbsPath
 		}
+
+		if err = cli.IsFile(script); err != nil {
+			return err
+		}
+
+		scriptAbsPath, err := filepath.Abs(script)
+		if err != nil {
+			return fmt.Errorf("failed to determine absolute path: %w", err)
+		}
+
+		script = scriptAbsPath
 
 		commandPath := filepath.Join(binDir, app.Name)
 		_, err = os.Stat(commandPath)
