@@ -1,0 +1,963 @@
+package cli
+
+import (
+	"errors"
+	"fmt"
+	"os"
+	"regexp"
+	"slices"
+	"sort"
+	"strconv"
+	"strings"
+
+	"github.com/michielnijenhuis/cli/internal/helper"
+	"github.com/michielnijenhuis/cli/internal/helper/array"
+	"github.com/michielnijenhuis/cli/internal/terminal"
+)
+
+type CommandHandle func(args []string, ctx *CommandCtx)
+type CommandHandleE func(args []string, ctx *CommandCtx) error
+
+type Command struct {
+	Name                   string
+	Description            string
+	Version                string
+	LongVersion            string
+	Intro                  string
+	Aliases                []string
+	Help                   string
+	Commands               []*Command
+	Flags                  []Flag
+	NoNativeFlags          bool
+	WithoutNativeFlags     []string
+	Arguments              []Arg
+	Run                    CommandHandle
+	RunE                   CommandHandleE
+	AutoExit               bool
+	CatchErrors            bool
+	Strict                 bool
+	IgnoreValidationErrors bool
+	Hidden                 bool
+	PrintHelpFunc          func(o *Output, command *Command)
+	definition             *InputDefinition
+	synopsis               map[string]string
+	usages                 []string
+	parent                 *Command
+	commands               map[string]*Command
+	runningCommand         *Command
+	initialized            bool
+	validated              bool
+	input                  *Input
+	output                 *Output
+}
+
+func (c *Command) Execute(args ...string) (err error) {
+	width, height := terminal.Size()
+	os.Setenv("LINES", fmt.Sprint(height))
+	os.Setenv("COLUMNS", fmt.Sprint(width))
+
+	i := NewInput(args...)
+	i.Strict = c.Strict
+	o := NewOutput(i)
+
+	c.input = i
+	c.output = o
+
+	var caughtError = false
+
+	if c.CatchErrors {
+		defer func() {
+			if r := recover(); r != nil {
+				recovered, ok := r.(error)
+				if ok {
+					err = recovered
+				} else {
+					str, ok := r.(string)
+					if ok {
+						err = errors.New(str)
+					} else {
+						err = fmt.Errorf("%v", r)
+					}
+				}
+
+				caughtError = true
+				c.handleError(o, err)
+			}
+		}()
+	}
+
+	c.configureIO(i, o)
+
+	if c.HasSubcommands() {
+		c.InitDefaultCompletionCmd(o.Stream)
+	}
+
+	c.initCompleteCmd(i.Args)
+
+	err = c.execute(i, o)
+
+	if !caughtError {
+		c.handleError(o, err)
+	}
+
+	return err
+}
+
+func (c *Command) handleError(o *Output, err error) {
+	if err != nil {
+		c.RenderError(o, err)
+	}
+
+	if c.AutoExit {
+		c.Exit(err)
+	}
+}
+
+func (c *Command) Exit(err error) {
+	if err != nil {
+		os.Exit(1)
+	} else {
+		os.Exit(0)
+	}
+}
+
+func (c *Command) Subcommand(name string) *Command {
+	if err := c.init(); err != nil {
+		return nil
+	}
+
+	return c.commands[name]
+}
+
+func (c *Command) HasSubcommands() bool {
+	return c.VisibleSubcommandsCount() > 0
+}
+
+func (c *Command) execute(i *Input, o *Output) error {
+	if err := c.validate(); err != nil {
+		return err
+	}
+
+	command, name, err := c.findCommand(i.Args, &i.tokens)
+
+	if err != nil {
+		notFound, ok := err.(*CommandNotFoundError)
+
+		var alternatives []string
+		if ok && !strings.HasPrefix(name, ":") && !strings.HasSuffix(name, ":") {
+			namespaceCommands := c.findNamespaceCommands(name)
+			if len(namespaceCommands) > 0 {
+				wantsHelp := !c.Hidden && c.hasFlag("help") && (i.HasParameterFlag("--help", true) || i.HasParameterFlag("-h", true))
+				if wantsHelp {
+					c.printHelp(o, namespaceCommands, name)
+					return nil
+				}
+			}
+		}
+
+		if ok {
+			alternatives = notFound.Alternatives()
+		}
+
+		for i, alt := range alternatives {
+			alternatives[i] = strings.TrimSpace(alt)
+		}
+
+		if ok && len(alternatives) == 1 {
+			return fmt.Errorf("command \"%s\" is ambiguous.\nDid you mean \"%s\"?", name, alternatives[0])
+		} else {
+			if len(alternatives) > 1 {
+				err = fmt.Errorf("command \"%s\" is ambiguous.\nDid you mean one of these?\n - %s", name, strings.Join(alternatives, "\n - "))
+			}
+
+			return err
+		}
+	}
+
+	def, err := command.Definition()
+	if err != nil {
+		return err
+	}
+
+	command.configureIO(i, o)
+
+	err = i.Bind(def)
+	if err != nil && !command.IgnoreValidationErrors {
+		return err
+	}
+
+	wantsHelp := !command.Hidden && command.hasFlag("help") && (i.HasParameterFlag("--help", true) || i.HasParameterFlag("-h", true))
+	if wantsHelp {
+		command.printHelp(o, nil, "")
+		return nil
+	}
+
+	wantsVersion := !command.Hidden && command.hasFlag("version") && (i.HasParameterFlag("--version", true) || i.HasParameterFlag("-V", true))
+	if wantsVersion {
+		o.Writeln(c.version(), 0)
+		return nil
+	}
+
+	err = i.Validate()
+	if err != nil && !command.IgnoreValidationErrors {
+		return err
+	}
+
+	c.runningCommand = command
+
+	ctx := &CommandCtx{
+		Command: command,
+		IO: &IO{
+			Input:      i,
+			Output:     o,
+			definition: def,
+		},
+	}
+
+	if command.RunE != nil {
+		err = command.RunE(i.Args, ctx)
+	} else if command.Run != nil {
+		command.Run(i.Args, ctx)
+	} else if command == c || command.HasSubcommands() {
+		command.printHelp(o, nil, "")
+	} else {
+		return errors.New("command must have a handle or subcommands")
+	}
+
+	c.runningCommand = nil
+
+	return err
+}
+
+func (c *Command) GetHelp() string {
+	version := c.version()
+
+	if version != "" {
+		return version
+	}
+
+	return "Console Tool"
+}
+
+func (c *Command) All() map[string]*Command {
+	if err := c.init(); err != nil {
+		return nil
+	}
+
+	cmds := make(map[string]*Command)
+	for _, cmd := range c.commands {
+		cmds[cmd.Name] = cmd
+	}
+
+	return cmds
+}
+
+func (c *Command) VisibleSubcommandsCount() int {
+	if err := c.init(); err != nil {
+		return 0
+	}
+
+	count := 0
+	for _, cmd := range c.commands {
+		if !cmd.Hidden {
+			count++
+		}
+	}
+
+	return count
+}
+
+func (c *Command) version() string {
+	if c.LongVersion != "" {
+		return c.LongVersion
+	}
+
+	var desc string
+	if c.Description != "" {
+		desc = c.Description
+	} else {
+		desc = c.Name
+	}
+
+	if c.Version != "" {
+		return fmt.Sprintf("%s <accent>%s</accent>", desc, c.Version)
+	} else if c.Parent() != nil {
+		return fmt.Sprintf("<primary>Description:</primary>\n  %s", desc)
+	}
+
+	return desc
+}
+
+func (c *Command) AddCommand(command *Command) error {
+	if command == c {
+		return errors.New("cannot add a command to itself")
+	}
+
+	if err := c.init(); err != nil {
+		return err
+	}
+
+	if command.Name == "" {
+		return errors.New("commands must have a name")
+	}
+
+	if _, exists := c.commands[command.Name]; exists {
+		return fmt.Errorf("command \"%s\" already exists", command.Name)
+	}
+
+	c.commands[command.Name] = command
+
+	for _, alias := range command.Aliases {
+		if _, exists := c.commands[alias]; exists {
+			return fmt.Errorf("command \"%s\" already exists", alias)
+		}
+
+		c.commands[alias] = command
+	}
+
+	command.SetParent(c)
+	return command.validate()
+}
+
+func (c *Command) Synopsis(short bool) string {
+	key := "long"
+	if short {
+		key = "short"
+	}
+
+	if c.synopsis == nil {
+		c.synopsis = make(map[string]string)
+	}
+
+	if c.synopsis[key] == "" {
+		d, err := c.Definition()
+		if err != nil {
+			return ""
+		}
+
+		c.synopsis[key] = strings.TrimSpace(fmt.Sprintf("<fg=gray>$</> %s %s", c.FullName(), d.Synopsis(short)))
+	}
+
+	return c.synopsis[key]
+}
+
+func (c *Command) AddUsage(usage string) {
+	if !strings.HasPrefix(usage, c.Name) {
+		usage = c.Name + " " + usage
+	}
+
+	if c.usages == nil {
+		c.usages = make([]string, 0)
+	}
+
+	c.usages = append(c.usages, usage)
+}
+
+func (c *Command) Usages() []string {
+	if c.usages == nil {
+		c.usages = make([]string, 0)
+	}
+
+	return c.usages
+}
+
+func (c *Command) ProcessedHelp() string {
+	name := c.Name
+	isSingleCommand := c.parent == nil && len(c.Commands) == 0 && len(c.commands) == 0
+
+	placeholders := []string{`%command.name%`, `%command.full_name%`}
+
+	var title string
+	if !isSingleCommand {
+		executable, err := os.Executable()
+		if err != nil {
+			title = executable + " " + name
+		} else {
+			title = os.Args[0]
+		}
+	}
+
+	replacements := []string{name, title}
+
+	help := c.Help
+	if help == "" && c.HasSubcommands() {
+		help = fmt.Sprintf("Use `<fg=gray>$</> %s <command> --help` for more information about a command", c.FullName())
+	}
+
+	for i, placeholder := range placeholders {
+		help = strings.ReplaceAll(help, placeholder, replacements[i])
+	}
+
+	return help
+}
+
+func (c *Command) validate() error {
+	if c.validated {
+		return nil
+	}
+	c.validated = true
+
+	re := regexp.MustCompile("^[^:]+(:[^:]+)*")
+	if !re.MatchString(c.Name) {
+		return fmt.Errorf("command name \"%s\" is invalid", c.Name)
+	}
+
+	for _, alias := range c.Aliases {
+		if !re.MatchString(alias) {
+			return fmt.Errorf("command alias \"%s\" is invalid", alias)
+		}
+	}
+
+	return nil
+}
+
+func (c *Command) RenderError(o *Output, err error) {
+	o.PrintByTheme("error", err, false)
+
+	if c.runningCommand != nil {
+		o.Stderr.Writeln(
+			fmt.Sprintf("<accent>%s</accent>", c.runningCommand.Synopsis(false)),
+			VerbosityQuiet,
+		)
+	}
+}
+
+func (c *Command) hasFlag(name string) bool {
+	d, err := c.Definition()
+	if err != nil {
+		return false
+	}
+
+	return d.HasFlag(name)
+}
+
+func (c *Command) configureIO(i *Input, o *Output) {
+	if c.hasFlag("ansi") {
+		if i.HasParameterFlag("--ansi", true) {
+			o.SetDecorated(true)
+			os.Setenv("CLI_ANSI", "1")
+		} else if i.HasParameterFlag("--no-ansi", true) {
+			o.SetDecorated(false)
+			os.Setenv("CLI_ANSI", "0")
+		} else {
+			env := os.Getenv("CLI_ANSI")
+
+			if env != "" {
+				o.SetDecorated(env == "1")
+			}
+		}
+	} else {
+		o.SetDecorated(HasColorSupport())
+	}
+
+	if c.hasFlag("no-interaction") {
+		if i.HasParameterFlag("--no-interaction", true) || i.HasParameterFlag("-n", true) {
+			i.SetInteractive(false)
+		} else if ok, err := i.Bool("no-interaction"); ok && err == nil {
+			i.SetInteractive(false)
+		}
+	}
+
+	shellVerbosity, err := strconv.Atoi(os.Getenv("SHELL_VERBOSITY"))
+	if err != nil {
+		shellVerbosity = 0
+	}
+
+	switch shellVerbosity {
+	case -1:
+		o.SetVerbosity(VerbosityQuiet)
+	case 1:
+		o.SetVerbosity(VerbosityVerbose)
+	case 2:
+		o.SetVerbosity(VerbosityVeryVerbose)
+	case 3:
+		o.SetVerbosity(VerbosityDebug)
+	default:
+		shellVerbosity = 0
+	}
+
+	var isQuiet = false
+	if c.hasFlag("quiet") {
+		if i.HasParameterFlag("--quiet", true) || i.HasParameterFlag("-q", true) {
+			isQuiet = true
+		} else {
+			ok, err := i.Bool("quiet")
+			if ok && err == nil {
+				isQuiet = true
+			}
+		}
+	}
+
+	if isQuiet {
+		o.SetVerbosity(VerbosityQuiet)
+		shellVerbosity = -1
+	} else if c.hasFlag("verbose") {
+		if i.HasParameterFlag("-vvv", true) {
+			o.SetVerbosity(VerbosityDebug)
+			shellVerbosity = 3
+		} else if i.HasParameterFlag("-vv", true) {
+			o.SetVerbosity(VerbosityVeryVerbose)
+			shellVerbosity = 2
+		} else if i.HasParameterFlag("-v", true) {
+			o.SetVerbosity(VerbosityVerbose)
+			shellVerbosity = 1
+		} else if ok, err := i.Bool("verbose"); ok && err == nil {
+			o.SetVerbosity(VerbosityVerbose)
+			shellVerbosity = 1
+		}
+	}
+
+	if shellVerbosity == -1 {
+		i.SetInteractive(false)
+	}
+
+	os.Setenv("SHELL_VERBOSITY", fmt.Sprint(shellVerbosity))
+}
+
+func (c *Command) SetParent(parent *Command) {
+	c.parent = parent
+}
+
+func (c *Command) Parent() *Command {
+	return c.parent
+}
+
+func (c *Command) findCommand(args []string, tokens *[]string) (command *Command, name string, err error) {
+	isOption := false
+	argc := len(args)
+	arguments := make([]string, 0)
+
+	current := c
+	definition, _ := current.Definition()
+	toRemove := make([]string, 0)
+
+	for idx, token := range args {
+		// Is option
+		if strings.HasPrefix(token, "-") {
+			// If we have arguments, we can't have options anymore,
+			// as the command arguments must be chained
+			if len(arguments) > 0 {
+				break
+			}
+
+			// Has value, or is last token
+			if strings.Contains(token, "=") || idx+1 >= argc {
+				continue
+			}
+
+			// If it's a long option, consider that everything after "--" is the option name.
+			// Otherwise, use the last char (if it's a short option set, only the last one can take a value with space separator)
+			var name string
+			if strings.HasPrefix(token, "--") {
+				name = token[2:]
+			} else {
+				name = token[len(token)-1:]
+			}
+
+			flag, _ := definition.Flag(name)
+			if flag == nil {
+				// Try again with the shortcut
+				flag, _ = definition.FlagForShortcut(name)
+
+				if flag == nil {
+					continue
+				}
+			}
+
+			// If flag accepts a value, check if the next token is not an option value
+			if FlagAcceptsValue(flag) && !strings.HasPrefix(args[idx+1], "-") {
+				isOption = true
+			}
+
+			continue
+		}
+
+		// Is value for option
+		if isOption {
+			isOption = false
+			continue
+		}
+
+		current.init()
+		cmd := current.commands[token]
+		if cmd != nil {
+			current = cmd
+			curDefinition, err := current.Definition()
+			if err != nil {
+				return nil, token, err
+			}
+			definition = curDefinition
+			toRemove = append(toRemove, token)
+		} else {
+			if len(definition.arguments) == 0 && current.HasSubcommands() {
+				alternatives := c.findAlternatives(token, array.SortedKeys(current.commands))
+
+				return nil, token, CommandNotFound(fmt.Sprintf("command \"%s\" does not exist", token), alternatives)
+			}
+		}
+	}
+
+	if tokens != nil {
+		for _, token := range toRemove {
+			*tokens = array.Remove(*tokens, token)
+		}
+	}
+
+	return current, current.Name, nil
+}
+
+func (c *Command) isNamespaced() bool {
+	return strings.Contains(c.Name, ":") && len(strings.Split(c.Name, ":")) > 1
+}
+
+func (c *Command) findNamespaceCommands(ns string) []*Command {
+	allCommands := c.All()
+	commands := make([]*Command, 0, len(allCommands))
+	for _, command := range allCommands {
+		if command.isNamespaced() && strings.HasPrefix(command.Name, ns) {
+			commands = append(commands, command)
+		}
+	}
+
+	return commands
+}
+
+func (c *Command) defaultInputDefinition() (*InputDefinition, error) {
+	definition := &InputDefinition{}
+	flags := make([]Flag, 0, 6)
+	root := c.Root()
+
+	var description string
+	if c.HasSubcommands() {
+		description = "Display help for a command or a given command"
+	} else {
+		description = "Display help for the command"
+	}
+
+	helpFlag := &BoolFlag{
+		Name:        "help",
+		Shortcuts:   []string{"h"},
+		Description: description,
+	}
+	flags = append(flags, helpFlag)
+
+	if root.Version != "" {
+		versionFlag := &BoolFlag{
+			Name:        "version",
+			Shortcuts:   []string{"V"},
+			Description: "Display the command version",
+		}
+		flags = append(flags, versionFlag)
+	}
+
+	if !root.NoNativeFlags {
+		if !slices.Contains(root.WithoutNativeFlags, "quiet") {
+			quietFlag := &BoolFlag{
+				Name:        "quiet",
+				Shortcuts:   []string{"q"},
+				Description: "Do not output any message",
+			}
+			flags = append(flags, quietFlag)
+		}
+
+		if !slices.Contains(root.WithoutNativeFlags, "verbose") {
+			verboseflag := &BoolFlag{
+				Name:        "verbose",
+				Shortcuts:   []string{"v", "vv", "vvv"},
+				Description: "Increase the verbosity of messages: normal, verbose or debug",
+			}
+			flags = append(flags, verboseflag)
+		}
+
+		if !slices.Contains(root.WithoutNativeFlags, "ansi") {
+			ansiFlag := &BoolFlag{
+				Name:        "ansi",
+				Negatable:   true,
+				Description: "Force (or disable --no-ansi) ANSI output",
+				Value:       HasColorSupport(),
+			}
+			flags = append(flags, ansiFlag)
+		}
+
+		if !slices.Contains(root.WithoutNativeFlags, "no-interaction") {
+			noInteractionFlag := &BoolFlag{
+				Name:        "no-interaction",
+				Shortcuts:   []string{"n"},
+				Description: "Do not ask any interactive question",
+			}
+			flags = append(flags, noInteractionFlag)
+		}
+	}
+
+	err := definition.SetFlags(flags)
+
+	return definition, err
+}
+
+func (c *Command) init() error {
+	if c.initialized {
+		return nil
+	}
+
+	c.initialized = true
+
+	if c.commands == nil {
+		c.commands = make(map[string]*Command)
+	}
+
+	for _, command := range c.Commands {
+		command.SetParent(c)
+		if err := c.AddCommand(command); err != nil {
+			return err
+		}
+	}
+
+	c.Commands = nil
+	return nil
+}
+
+func (c *Command) Definition() (*InputDefinition, error) {
+	if c.definition == nil {
+		nativeDefinition, err := c.defaultInputDefinition()
+		if err != nil {
+			return nil, err
+		}
+
+		c.definition = &InputDefinition{}
+		if err := c.definition.SetArguments(c.Arguments); err != nil {
+			return nil, err
+		}
+
+		if err := c.definition.SetFlags(c.Flags); err != nil {
+			return nil, err
+		}
+
+		if err := c.definition.AddArguments(nativeDefinition.GetArguments()); err != nil {
+			return nil, err
+		}
+
+		if err := c.definition.AddFlags(nativeDefinition.GetFlags()); err != nil {
+			return nil, err
+		}
+	}
+
+	return c.definition, nil
+}
+
+func (c *Command) printHelp(output *Output, namespacedCommands []*Command, namespace string) {
+	if c.PrintHelpFunc != nil {
+		c.PrintHelpFunc(output, c)
+		return
+	}
+
+	d := TextDescriptor{output}
+
+	totalWidth := calculateTotalWidthForFlags(c.definition.flags)
+
+	for _, argument := range c.definition.arguments {
+		totalWidth = max(totalWidth, helper.Width(argument.GetName()))
+	}
+
+	for _, cmd := range c.commands {
+		if !cmd.Hidden {
+			totalWidth = max(totalWidth, helper.Width(cmd.Name))
+		}
+	}
+
+	d.DescribeCommand(c, &DescriptorOptions{
+		totalWidth: totalWidth,
+	}, namespacedCommands, namespace)
+}
+
+func (c *Command) Root() *Command {
+	root := c
+	for root.parent != nil {
+		root = root.parent
+	}
+	return root
+}
+
+func (c *Command) Namespace() string {
+	names := make([]string, 0)
+
+	p := c.parent
+	for p != nil {
+		names = append(names, p.Name)
+		p = p.parent
+	}
+
+	slices.Reverse(names)
+
+	return strings.Join(names, " ")
+}
+
+func (c *Command) FullName() string {
+	ns := c.Namespace()
+	if ns == "" {
+		return c.Name
+	}
+
+	return ns + " " + c.Name
+}
+
+func (c *Command) findAlternatives(name string, collection []string) []string {
+	treshold := int(1e3)
+	alternatives := make(map[string]int)
+
+	for _, item := range collection {
+		_, exists := alternatives[item]
+		lev := levenshtein(name, item)
+		if lev <= len(name)/3 || (name != "" && strings.Contains(item, name)) {
+			if exists {
+				alternatives[item] += lev
+			} else {
+				alternatives[item] += treshold
+			}
+		} else if exists {
+			alternatives[item] += treshold
+		}
+	}
+
+	for _, item := range collection {
+		lev := levenshtein(name, item)
+		if lev <= len(name)/3 || strings.Contains(item, name) {
+			_, ok := alternatives[item]
+			if ok {
+				alternatives[item] -= lev
+			} else {
+				alternatives[item] = lev
+			}
+		}
+	}
+
+	filteredAlternatives := make([]string, 0, len(alternatives))
+	for k, v := range alternatives {
+		if v < 2*treshold {
+			filteredAlternatives = append(filteredAlternatives, k)
+		}
+	}
+
+	sort.Strings(filteredAlternatives)
+	return filteredAlternatives
+}
+
+func levenshtein(a string, b string) int {
+	aLen := len(a)
+	bLen := len(b)
+
+	if aLen == 0 {
+		return bLen
+	}
+
+	if bLen == 0 {
+		return aLen
+	}
+
+	matrix := make([][]int, 0, max(aLen, bLen))
+
+	for i := 0; i <= aLen; i++ {
+		s := make([]int, 0, bLen)
+		s = append(s, i)
+		matrix = append(matrix, s)
+	}
+
+	for j := 0; j <= bLen; j++ {
+		if j == 0 {
+			matrix[0][j] = j
+		} else {
+			matrix[0] = append(matrix[0], j)
+		}
+	}
+
+	for i := 1; i <= aLen; i++ {
+		for j := 1; j <= bLen; j++ {
+			var cost int
+			if a[i-1] != b[j-1] {
+				cost = 1
+			}
+
+			mLen := len(matrix)
+			if i >= mLen {
+				matrix = append(matrix, make([]int, 0))
+			}
+
+			v := min(matrix[i-1][j]+1, matrix[i][j-1]+1, matrix[i-1][j-1]+cost)
+
+			iLen := len(matrix[i])
+			if j >= iLen {
+				matrix[i] = append(matrix[i], v)
+			} else {
+				matrix[i][j] = v
+			}
+		}
+	}
+
+	return matrix[aLen][bLen]
+}
+
+func (c *Command) Subcommands() map[string]*Command {
+	if err := c.init(); err != nil {
+		return nil
+	}
+
+	cmds := make(map[string]*Command)
+	for _, cmd := range c.commands {
+		cmds[cmd.Name] = cmd
+	}
+
+	return cmds
+}
+
+func (c *Command) Flag(name string) (Flag, error) {
+	d, err := c.Definition()
+	if err != nil {
+		return nil, err
+	}
+
+	return d.Flag(name)
+}
+
+func (c *Command) Arg(name string) (Arg, error) {
+	d, err := c.Definition()
+	if err != nil {
+		return nil, err
+	}
+
+	return d.Argument(name)
+}
+
+func (c *Command) AddFlag(flag Flag) error {
+	if flag == nil {
+		return fmt.Errorf("flag cannot be nil")
+	}
+
+	if c.definition != nil {
+		return c.definition.AddFlag(flag)
+	}
+
+	if c.Flags == nil {
+		c.Flags = make([]Flag, 0)
+	}
+
+	c.Flags = append(c.Flags, flag)
+
+	return nil
+}
+
+func (c *Command) AddArg(arg Arg) error {
+	if arg == nil {
+		return fmt.Errorf("argument cannot be nil")
+	}
+
+	if c.definition != nil {
+		return c.definition.AddArgument(arg)
+	}
+
+	if c.Arguments == nil {
+		c.Arguments = make([]Arg, 0)
+	}
+
+	c.Arguments = append(c.Arguments, arg)
+
+	return nil
+}
