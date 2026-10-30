@@ -29,5 +29,9 @@ install_deps:
 	$(info ******************** downloading dependencies ********************)
 	go get -v ./...
 
+install:
+	$(info ******************** installing CLI command ********************)
+	go install ./cmd/cli
+
 clean:
 	rm -rf $(BIN)
