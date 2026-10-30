@@ -13,13 +13,6 @@ var FlagCmd = &cli.Command{
 	Name:        "flag",
 	Description: "Print the value of the given flag",
 	Aliases:     []string{"f"},
-	Flags: []cli.Flag{
-		&cli.BoolFlag{
-			Name:        "exit",
-			Shortcuts:   []string{"x"},
-			Description: "Exit with 1 if false, or 0 if true. Works for boolean flags only.",
-		},
-	},
 	Arguments: []cli.Arg{
 		&cli.StringArg{
 			Name:        "flag",
@@ -44,24 +37,17 @@ var FlagCmd = &cli.Command{
 			return err
 		}
 
-		exit := ctx.IO.Bool("exit")
 		flagValue := p.Flags[ctx.IO.String("flag")]
 		switch value := flagValue.(type) {
 		case string:
 			ctx.IO.Write(value)
 		case bool:
 			if value {
-				if exit {
-					os.Exit(0)
-				}
-
 				ctx.IO.Write("true")
+				os.Exit(0)
 			} else {
-				if exit {
-					os.Exit(1)
-				}
-
 				ctx.IO.Write("false")
+				os.Exit(1)
 			}
 		}
 
