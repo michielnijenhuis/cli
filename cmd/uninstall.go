@@ -1,11 +1,11 @@
-package cmd
+package main
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
 
-	cli "github.com/michielnijenhuis/cli/internal"
+	"github.com/michielnijenhuis/cli"
 )
 
 var UninstallCmd = &cli.Command{

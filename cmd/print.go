@@ -1,11 +1,11 @@
-package cmd
+package main
 
 import (
 	"fmt"
 	"strings"
 	"time"
 
-	cli "github.com/michielnijenhuis/cli/internal"
+	"github.com/michielnijenhuis/cli"
 )
 
 var PrintCmd = &cli.Command{

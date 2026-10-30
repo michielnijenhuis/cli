@@ -1,9 +1,9 @@
-package cmd
+package main
 
 import (
 	"os"
 
-	cli "github.com/michielnijenhuis/cli/internal"
+	"github.com/michielnijenhuis/cli"
 )
 
 var RunCmd = &cli.Command{

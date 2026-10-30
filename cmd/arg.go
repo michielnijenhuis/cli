@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"encoding/base64"
@@ -6,7 +6,7 @@ import (
 	"errors"
 	"os"
 
-	cli "github.com/michielnijenhuis/cli/internal"
+	"github.com/michielnijenhuis/cli"
 )
 
 var ArgCmd = &cli.Command{

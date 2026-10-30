@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	cli "github.com/michielnijenhuis/cli/internal"
+	"github.com/michielnijenhuis/cli"
 )
 
 var helpText = `In a directory with your .y(a)ml and .sh files, e.g. ./command.yml and ./command.sh:

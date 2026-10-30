@@ -1,14 +1,14 @@
-package cmd
+package main
 
 import (
-	cli "github.com/michielnijenhuis/cli/internal"
+	"github.com/michielnijenhuis/cli"
 )
 
 var RootCmd = &cli.Command{
 	Name:        "cli",
 	Description: "A CLI toolkit",
 	Aliases:     []string{"cli"},
-	Version:     "1.0.0",
+	Version:     "1.1.0",
 	AutoExit:    true,
 }
 
