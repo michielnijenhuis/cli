@@ -1,0 +1,56 @@
+$schema: https://raw.githubusercontent.com/michielnijenhuis/cli/refs/heads/main/cli.schema.json
+
+name: cmd
+description: An example command
+version: 1.0.0 # optional
+# longVersion: Optional long version, printed if the --version|-V flag is given
+
+intro: This intro could be some text, or ASCII art # optional
+
+theme: # optional
+  primary: yellow
+  secondary: bright-green
+  accent: "#fafafa"
+
+withoutNativeFlags:
+  - ansi
+  - quiet
+  # - no-interaction
+  # - verbose
+
+# noNativeFlags: true ### Or set to true to disable native flags entirely.
+# The help flag will always be provided, as well as the version flag (if a version is defined.)
+
+commands:
+  foo:
+    description: Example description for the `foo` command.
+    aliases: # optional
+      - f00
+    flags:
+      color:
+        description: The color the print the file contents in
+        aliases:
+          - c
+        default: white ### a string default value will turn a flag into a string flag that requires a value
+        options: ### optional list of options for the string value
+          - white
+          - blue
+          - red
+          - yellow
+      reverse:
+        description: Reverse the file contents when printed
+        aliases:
+          - r
+        default: false ### A boolean default means a boolean flag that expects no value. 
+        # negatable: true ### Would add a `no-reverse` flag as well
+    args:
+      file:
+        description: The path of the file to print the contents of
+        required: true # defaults to false
+        # value: ### default value for optional arguments
+        # options: ### list of optional values. Input will be evaluated against these options.
+          # - ./cmd.sh
+          # - ./cmd.yml
+    help: Optional helper text for the command
+    # commands: ### Commands can have subcommands
+      # ...

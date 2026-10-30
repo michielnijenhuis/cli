@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
-	"strings"
 
 	"github.com/michielnijenhuis/cli"
 )
@@ -18,7 +17,7 @@ var FlagCmd = &cli.Command{
 		&cli.BoolFlag{
 			Name:        "exit",
 			Shortcuts:   []string{"x"},
-			Description: "Exit with 1 if false, or 0 if true",
+			Description: "Exit with 1 if false, or 0 if true. Works for boolean flags only.",
 		},
 	},
 	Arguments: []cli.Arg{
@@ -49,15 +48,6 @@ var FlagCmd = &cli.Command{
 		flagValue := p.Flags[ctx.IO.String("flag")]
 		switch value := flagValue.(type) {
 		case string:
-			if exit {
-				switch strings.ToLower(value) {
-				case "true", "y", "yes", "1":
-					os.Exit(0)
-				default:
-					os.Exit(1)
-				}
-			}
-
 			ctx.IO.Write(value)
 		case bool:
 			if value {
