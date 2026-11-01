@@ -168,10 +168,6 @@ cli run %s %s "$@"
 			return err
 		}
 
-		if err = os.Chmod(script, 0o755); err != nil {
-			return err
-		}
-
 		ctx.IO.Writelnf("<fg=green>✓</> CLI application \"%s\" installed succesfully.", app.Name)
 		ctx.IO.Writelnf("<fg=gray>  * Config path:  %s</>", configAbsPath)
 		ctx.IO.Writelnf("<fg=gray>  * Script path:  %s</>", script)
