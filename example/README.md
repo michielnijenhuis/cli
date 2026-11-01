@@ -10,7 +10,7 @@ $ cli install
 ```
 Now callable as `$ cmd`
 
-**With explicit args:
+**With explicit args:**
 ```bash
 $ cli install ./cmd.yml /path/to/cmd.sh
 ```
