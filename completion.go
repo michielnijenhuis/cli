@@ -302,7 +302,8 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 					continue
 				}
 
-				hasOpts := len(arg.Opts()) > 0
+				opts := arg.Opts()
+				hasOpts := len(opts) > 0
 				if !hasOpts {
 					if arg.IsRequired() {
 						return
@@ -312,7 +313,7 @@ func (c *Command) getCompletions(i *Input, args []string) (finalCmd *Command, co
 					break
 				}
 
-				completions = append(completions, arg.Opts()...)
+				completions = append(completions, opts...)
 				return
 			case *ArrayArg:
 				if opts := arg.Opts(); len(opts) > 0 {

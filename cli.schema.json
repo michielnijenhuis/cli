@@ -1,15 +1,14 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-
     "$defs": {
         "commands": {
-            "type": "object",            
+            "type": "object",
             "description": "The commands of the command",
             "patternProperties": {
                 "^[a-z][a-z0-9_-]*(?::[a-z][a-z0-9_-]*)*$": {
                     "type": "object",
                     "description": "The command",
-                    "properties": {                        
+                    "properties": {
                         "description": {
                             "type": "string",
                             "description": "A description of the command"
@@ -45,7 +44,19 @@
                                             "type": "array",
                                             "description": "The options of the argument",
                                             "items": {
-                                                "type": ["string", "number"]
+                                                "type": [
+                                                    "string",
+                                                    "number"
+                                                ]
+                                            }
+                                        },
+                                        "optionsCommand": {
+                                            "type": "array",
+                                            "description": "The command to run to offer autocomplete options",
+                                            "items": {
+                                                "type": [
+                                                    "string"
+                                                ]
                                             }
                                         }
                                     },
@@ -53,7 +64,7 @@
                                         "description"
                                     ],
                                     "additionalProperties": false
-                                }                                
+                                }
                             },
                             "additionalProperties": false
                         },
@@ -70,7 +81,11 @@
                                             "description": "A description of the flag"
                                         },
                                         "default": {
-                                            "type": ["string", "number", "boolean"],
+                                            "type": [
+                                                "string",
+                                                "number",
+                                                "boolean"
+                                            ],
                                             "description": "The default value of the flag"
                                         },
                                         "negatable": {
@@ -88,7 +103,19 @@
                                             "type": "array",
                                             "description": "The options of the flag",
                                             "items": {
-                                                "type": ["string", "number"]
+                                                "type": [
+                                                    "string",
+                                                    "number"
+                                                ]
+                                            }
+                                        },
+                                        "optionsCommand": {
+                                            "type": "array",
+                                            "description": "The command to run to offer autocomplete options",
+                                            "items": {
+                                                "type": [
+                                                    "string"
+                                                ]
                                             }
                                         }
                                     },
@@ -99,7 +126,7 @@
                                 }
                             },
                             "additionalProperties": false
-                        },                        
+                        },
                         "aliases": {
                             "type": "array",
                             "description": "The aliases of the command",
@@ -120,13 +147,11 @@
             "additionalProperties": false
         }
     },
-
     "type": "object",
     "properties": {
         "$schema": {
             "type": "string"
         },
-
         "name": {
             "type": "string",
             "description": "The name of the command"

@@ -17,6 +17,7 @@ type StringArg struct {
 	Value       string
 	Required    bool
 	Options     []string
+	OptionsCmd  []string
 	Validator   ArgValidator[string]
 }
 
@@ -27,6 +28,7 @@ type ArrayArg struct {
 	Min         uint
 	Max         uint
 	Options     []string
+	OptionsCmd  []string
 	Validator   ArgValidator[[]string]
 }
 
@@ -55,7 +57,7 @@ func (a *StringArg) HasValue() bool {
 }
 
 func (a *StringArg) Opts() []string {
-	return a.Options
+	return GetOpts(a.Options, a.OptionsCmd)
 }
 
 func (a *ArrayArg) GetName() string {
@@ -75,7 +77,7 @@ func (a *ArrayArg) HasValue() bool {
 }
 
 func (a *ArrayArg) Opts() []string {
-	return a.Options
+	return GetOpts(a.Options, a.OptionsCmd)
 }
 
 func GetArgStringValue(arg Arg) string {

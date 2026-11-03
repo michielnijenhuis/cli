@@ -3,6 +3,7 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"os/exec"
 	"slices"
 	"strings"
 )
@@ -27,6 +28,7 @@ type StringFlag struct {
 	Value       string
 	Validator   func(string) error
 	Options     []string
+	OptionsCmd  []string
 	given       bool
 }
 
@@ -37,6 +39,7 @@ type BoolFlag struct {
 	Value       bool
 	Negatable   bool
 	Validator   func(bool) error
+	OptionsCmd  []string
 	given       bool
 }
 
@@ -47,6 +50,7 @@ type ArrayFlag struct {
 	Value       []string
 	Validator   func([]string) error
 	Options     []string
+	OptionsCmd  []string
 	given       bool
 }
 
@@ -58,6 +62,7 @@ type OptionalStringFlag struct {
 	Value       string
 	Validator   func(bool, string) error
 	Options     []string
+	OptionsCmd  []string
 	given       bool
 }
 
@@ -69,6 +74,7 @@ type OptionalArrayFlag struct {
 	Value       []string
 	Validator   func(bool, []string) error
 	Options     []string
+	OptionsCmd  []string
 	given       bool
 }
 
@@ -153,8 +159,30 @@ func (f *StringFlag) GetShortcuts() []string {
 	return f.Shortcuts
 }
 
+func GetOpts(opts []string, optsCmd []string) []string {
+	if len(optsCmd) > 0 {
+		var cmd *exec.Cmd
+		if len(optsCmd) == 1 {
+			cmd = exec.Command(optsCmd[0])
+		} else {
+			cmd = exec.Command(optsCmd[0], optsCmd[1:]...)
+		}
+
+		output, err := cmd.Output()
+		if err == nil {
+			str := strings.TrimSpace(string(output))
+
+			return strings.Split(str, "\n")
+		} else {
+			return []string{}
+		}
+	}
+
+	return opts
+}
+
 func (f *StringFlag) Opts() []string {
-	return f.Options
+	return GetOpts(f.Options, f.OptionsCmd)
 }
 
 func joinShortcuts(shortcuts []string) string {
@@ -226,7 +254,7 @@ func (f *ArrayFlag) HasValue() bool {
 }
 
 func (f *ArrayFlag) Opts() []string {
-	return f.Options
+	return GetOpts(f.Options, f.OptionsCmd)
 }
 
 func (f *OptionalStringFlag) GetName() string {
@@ -254,7 +282,7 @@ func (f *OptionalStringFlag) WasGiven() bool {
 }
 
 func (f *OptionalStringFlag) Opts() []string {
-	return f.Options
+	return GetOpts(f.Options, f.OptionsCmd)
 }
 
 func (f *OptionalArrayFlag) GetName() string {
@@ -282,7 +310,7 @@ func (f *OptionalArrayFlag) HasValue() bool {
 }
 
 func (f *OptionalArrayFlag) Opts() []string {
-	return f.Options
+	return GetOpts(f.Options, f.OptionsCmd)
 }
 
 const (

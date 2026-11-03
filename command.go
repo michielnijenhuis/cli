@@ -590,7 +590,14 @@ func (c *Command) findCommand(args []string, tokens *[]string) (command *Command
 			toRemove = append(toRemove, token)
 		} else {
 			if len(definition.arguments) == 0 && current.HasSubcommands() {
-				alternatives := c.findAlternatives(token, array.SortedKeys(current.commands))
+				alternativeOptions := make(map[string]*Command)
+				for name, cmd := range current.commands {
+					if !cmd.Hidden {
+						alternativeOptions[name] = cmd
+					}
+				}
+
+				alternatives := c.findAlternatives(token, array.SortedKeys(alternativeOptions))
 
 				return nil, token, CommandNotFound(fmt.Sprintf("command \"%s\" does not exist", token), alternatives)
 			}

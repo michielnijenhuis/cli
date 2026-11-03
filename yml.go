@@ -13,20 +13,22 @@ import (
 )
 
 type yamlFlag struct {
-	Aliases     []string `yaml:"aliases"`
-	Description string   `yaml:"description"`
-	Default     any      `yaml:"default"`
-	Negatable   bool     `yaml:"negatable"`
-	Options     []string `yaml:"options"`
+	Aliases        []string `yaml:"aliases"`
+	Description    string   `yaml:"description"`
+	Default        any      `yaml:"default"`
+	Negatable      bool     `yaml:"negatable"`
+	Options        []string `yaml:"options"`
+	OptionsCommand []string `yaml:"optionsCommand"`
 }
 
 type yamlFlagMap map[string]yamlFlag
 
 type yamlArg struct {
-	Description string   `yaml:"description"`
-	Value       string   `yaml:"value"`
-	Required    bool     `yaml:"required"`
-	Options     []string `yaml:"options"`
+	Description    string   `yaml:"description"`
+	Value          string   `yaml:"value"`
+	Required       bool     `yaml:"required"`
+	Options        []string `yaml:"options"`
+	OptionsCommand []string `yaml:"optionsCommand"`
 }
 
 type yamlArgMap map[string]yamlArg
@@ -144,6 +146,7 @@ func toCommand(name string, c yamlCommand, parent *Command) (*Command, error) {
 					Description: flag.Description,
 					Value:       fmt.Sprintf("%v", value),
 					Options:     flag.Options,
+					OptionsCmd:  flag.OptionsCommand,
 				}
 
 				err := cmd.AddFlag(f)
@@ -181,6 +184,7 @@ func toCommand(name string, c yamlCommand, parent *Command) (*Command, error) {
 				Required:    arg.Required,
 				Value:       arg.Value,
 				Options:     arg.Options,
+				OptionsCmd:  arg.OptionsCommand,
 			})
 
 			if err != nil {
