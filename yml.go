@@ -17,6 +17,7 @@ type yamlFlag struct {
 	Description    string   `yaml:"description"`
 	Default        any      `yaml:"default"`
 	Negatable      bool     `yaml:"negatable"`
+	Env            string   `yaml:"env"`
 	Options        []string `yaml:"options"`
 	OptionsCommand []string `yaml:"optionsCommand"`
 }
@@ -27,6 +28,7 @@ type yamlArg struct {
 	Description    string   `yaml:"description"`
 	Value          string   `yaml:"value"`
 	Required       bool     `yaml:"required"`
+	Env            string   `yaml:"env"`
 	Options        []string `yaml:"options"`
 	OptionsCommand []string `yaml:"optionsCommand"`
 }
@@ -145,6 +147,7 @@ func toCommand(name string, c yamlCommand, parent *Command) (*Command, error) {
 					Shortcuts:   flag.Aliases,
 					Description: flag.Description,
 					Value:       fmt.Sprintf("%v", value),
+					Env:         flag.Env,
 					Options:     flag.Options,
 					OptionsCmd:  flag.OptionsCommand,
 				}
@@ -164,6 +167,7 @@ func toCommand(name string, c yamlCommand, parent *Command) (*Command, error) {
 					Shortcuts:   flag.Aliases,
 					Description: flag.Description,
 					Negatable:   flag.Negatable,
+					Env:         flag.Env,
 					Value:       boolean,
 				}
 
@@ -183,6 +187,7 @@ func toCommand(name string, c yamlCommand, parent *Command) (*Command, error) {
 				Description: arg.Description,
 				Required:    arg.Required,
 				Value:       arg.Value,
+				Env:         arg.Env,
 				Options:     arg.Options,
 				OptionsCmd:  arg.OptionsCommand,
 			})

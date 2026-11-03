@@ -16,6 +16,7 @@ type StringArg struct {
 	Description string
 	Value       string
 	Required    bool
+	Env         string
 	Options     []string
 	OptionsCmd  []string
 	Validator   ArgValidator[string]
@@ -27,6 +28,7 @@ type ArrayArg struct {
 	Value       []string
 	Min         uint
 	Max         uint
+	Env         string
 	Options     []string
 	OptionsCmd  []string
 	Validator   ArgValidator[[]string]
@@ -38,6 +40,7 @@ type Arg interface {
 	IsRequired() bool
 	HasValue() bool
 	Opts() []string
+	GetEnvName() string
 }
 
 func (a *StringArg) GetName() string {
@@ -221,4 +224,12 @@ func ValidateMany[T any](fns ...ArgValidator[T]) ArgValidator[T] {
 
 		return nil
 	}
+}
+
+func (a *StringArg) GetEnvName() string {
+	return a.Env
+}
+
+func (a *ArrayArg) GetEnvName() string {
+	return a.Env
 }

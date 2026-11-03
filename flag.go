@@ -13,6 +13,7 @@ type Flag interface {
 	GetShortcuts() []string
 	GetShortcutString() string
 	GetDescription() string
+	GetEnvName() string
 	HasValue() bool
 	WasGiven() bool
 }
@@ -27,6 +28,7 @@ type StringFlag struct {
 	Description string
 	Value       string
 	Validator   func(string) error
+	Env         string
 	Options     []string
 	OptionsCmd  []string
 	given       bool
@@ -38,6 +40,7 @@ type BoolFlag struct {
 	Description string
 	Value       bool
 	Negatable   bool
+	Env         string
 	Validator   func(bool) error
 	OptionsCmd  []string
 	given       bool
@@ -48,6 +51,7 @@ type ArrayFlag struct {
 	Shortcuts   []string
 	Description string
 	Value       []string
+	Env         string
 	Validator   func([]string) error
 	Options     []string
 	OptionsCmd  []string
@@ -60,6 +64,7 @@ type OptionalStringFlag struct {
 	Description string
 	Boolean     bool
 	Value       string
+	Env         string
 	Validator   func(bool, string) error
 	Options     []string
 	OptionsCmd  []string
@@ -72,6 +77,7 @@ type OptionalArrayFlag struct {
 	Description string
 	Boolean     bool
 	Value       []string
+	Env         string
 	Validator   func(bool, []string) error
 	Options     []string
 	OptionsCmd  []string
@@ -496,4 +502,24 @@ func ArgSetValue(arg Arg, token string) {
 	default:
 		return
 	}
+}
+
+func (s *StringFlag) GetEnvName() string {
+	return s.Env
+}
+
+func (s *BoolFlag) GetEnvName() string {
+	return s.Env
+}
+
+func (s *OptionalStringFlag) GetEnvName() string {
+	return s.Env
+}
+
+func (s *OptionalArrayFlag) GetEnvName() string {
+	return s.Env
+}
+
+func (s *ArrayFlag) GetEnvName() string {
+	return s.Env
 }

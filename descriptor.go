@@ -189,6 +189,11 @@ func (d *TextDescriptor) DescribeArgument(argument Arg, options *DescriptorOptio
 		accent = fmt.Sprintf("<primary> [options: %s]</primary>", strings.Join(argument.Opts(), ", "))
 	}
 
+	env := argument.GetEnvName()
+	if env != "" {
+		env = fmt.Sprintf("<accent> ($%s)</accent>", env)
+	}
+
 	name := argument.GetName()
 
 	var totalWidth int
@@ -198,7 +203,7 @@ func (d *TextDescriptor) DescribeArgument(argument Arg, options *DescriptorOptio
 		totalWidth = helper.Width(name)
 	}
 
-	finalDescription := d.Output.Format(argument.GetDescription() + accent)
+	finalDescription := d.Output.Format(argument.GetDescription() + accent + env)
 	wrappedDescriptionLines := helper.WrapToSlice(finalDescription, d.Output.lineLength-totalWidth, Eol, false)
 	indent := strings.Repeat(" ", totalWidth+4)
 
@@ -352,7 +357,12 @@ func (d *TextDescriptor) DescribeFlag(flag Flag, options *DescriptorOptions) {
 		arr = "<accent> (multiple values allowed)</accent>"
 	}
 
-	finalDescription := d.Output.Format(flag.GetDescription() + defaultValue + arr)
+	env := flag.GetEnvName()
+	if env != "" {
+		env = fmt.Sprintf("<accent> ($%s)</accent>", env)
+	}
+
+	finalDescription := d.Output.Format(flag.GetDescription() + defaultValue + arr + env)
 	wrappedDescriptionLines := helper.WrapToSlice(finalDescription, d.Output.lineLength-totalWidth, Eol, false)
 	indent := strings.Repeat(" ", totalWidth+4)
 

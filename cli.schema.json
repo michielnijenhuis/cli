@@ -40,6 +40,10 @@
                                             "type": "boolean",
                                             "description": "Whether the argument is required"
                                         },
+                                        "env": {
+                                            "type": "string",
+                                            "description": "Name of the env variable to prepopulate the flag value with, if set"
+                                        },
                                         "options": {
                                             "type": "array",
                                             "description": "The options of the argument",
@@ -98,6 +102,10 @@
                                             "items": {
                                                 "type": "string"
                                             }
+                                        },
+                                        "env": {
+                                            "type": "string",
+                                            "description": "Name of the env variable to prepopulate the flag value with, if set"
                                         },
                                         "options": {
                                             "type": "array",

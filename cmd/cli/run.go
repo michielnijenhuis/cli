@@ -62,7 +62,5 @@ var RunCmd = &cli.Command{
 		}
 
 		return cmd.Execute(forwardedArgs...)
-
-		// return nil
 	},
 }

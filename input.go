@@ -96,25 +96,24 @@ func (i *Input) Bind(definition *InputDefinition) error {
 	i.givenArguments = make([]string, 0)
 	i.flags = make(map[string]Flag)
 	i.definition = definition
+	i.setEnvValues()
+
 	return i.parse(i.tokens, nil)
 }
 
 func (i *Input) Validate() error {
 	definition := i.definition
-	givenArguments := i.arguments
 
 	arguments := definition.arguments
 	if arguments != nil {
 		missingArguments := make([]string, 0, len(arguments))
 		for _, arg := range arguments {
-			name := arg.GetName()
-			if givenArguments[name] != nil {
-				continue
+			if !arg.IsRequired() {
+				break
 			}
 
-			argument, _ := definition.Argument(name)
-			if argument != nil && argument.IsRequired() {
-				missingArguments = append(missingArguments, name)
+			if !arg.HasValue() {
+				missingArguments = append(missingArguments, arg.GetName())
 			}
 		}
 
@@ -293,6 +292,38 @@ func (i *Input) EscapeToken(token string) string {
 	}
 	re2 := regexp.MustCompile(`'`)
 	return re2.ReplaceAllString(token, "'\\''")
+}
+
+func (i *Input) setEnvValues() {
+	for _, flag := range i.definition.GetFlags() {
+		envName := flag.GetEnvName()
+		if envName == "" {
+			continue
+		}
+
+		envValue := os.Getenv(envName)
+		if envValue != "" {
+			boolValue := false
+			switch strings.ToLower(envValue) {
+			case "true", "1", "yes", "y":
+				boolValue = true
+			}
+
+			SetFlagValue(flag, envValue, boolValue)
+		}
+	}
+
+	for _, arg := range i.definition.GetArguments() {
+		envName := arg.GetEnvName()
+		if envName == "" {
+			continue
+		}
+
+		envValue := os.Getenv(envName)
+		if envValue != "" {
+			ArgSetValue(arg, envValue)
+		}
+	}
 }
 
 func (i *Input) parse(tokens []string, inspector *InputInspector) error {
