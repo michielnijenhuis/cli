@@ -5,7 +5,7 @@ CLI Toolkit inspired by PHP's symfony/console and Golang's spf13/cobra.
 ## Installation
 
 ```bash
-$ go install github.com/michielnijenhuis/cli/cmd
+$ go install github.com/michielnijenhuis/cli/cmd@latest
 ```
 
 ## Documentation

@@ -37,7 +37,12 @@ var FlagCmd = &cli.Command{
 			return err
 		}
 
-		flagValue := p.Flags[ctx.IO.String("flag")]
+		flag := ctx.IO.String("flag")
+		flagValue, ok := p.Flags[flag]
+		if !ok {
+			flagValue = false
+		}
+
 		switch value := flagValue.(type) {
 		case string:
 			ctx.IO.Write(value)
