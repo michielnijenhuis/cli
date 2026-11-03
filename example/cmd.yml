@@ -38,6 +38,8 @@ commands:
           - blue
           - red
           - yellow
+        # optionsCommand: ### Optional command args to a command of which the output will be used in the completion script.
+          # - ...
       reverse:
         description: Reverse the file contents when printed
         aliases:
@@ -53,6 +55,14 @@ commands:
         # options: ### List of optional values. Input will be evaluated against these options.
           # - ./cmd.sh
           # - ./cmd.yml
+        optionsCommand: ### Optional command args to a command of which the output will be used in the completion script.
+          - find
+          - .
+          - -maxdepth
+          - 1
+          - -not
+          - -type
+          - d
     help: Optional helper text for the command
     # commands: ### Commands can have subcommands.
       # ...

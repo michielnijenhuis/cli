@@ -59,7 +59,8 @@
                                             "description": "The command to run to offer autocomplete options",
                                             "items": {
                                                 "type": [
-                                                    "string"
+                                                    "string",
+                                                    "number"
                                                 ]
                                             }
                                         }
@@ -122,7 +123,8 @@
                                             "description": "The command to run to offer autocomplete options",
                                             "items": {
                                                 "type": [
-                                                    "string"
+                                                    "string",
+                                                    "number"
                                                 ]
                                             }
                                         }
