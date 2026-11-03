@@ -3,7 +3,7 @@ $schema: https://raw.githubusercontent.com/michielnijenhuis/cli/refs/heads/main/
 name: cmd
 description: An example command
 version: 1.0.0 # optional
-# longVersion: Optional long version, printed if the --version|-V flag is given
+# longVersion: Optional long version, printed if the --version|-V flag is given.
 
 intro: This intro could be some text, or ASCII art # optional
 
@@ -12,14 +12,14 @@ theme: # optional
   secondary: bright-green
   accent: "#fafafa"
 
-withoutNativeFlags:
+nativeFlags:
   - ansi
-  - quiet
+  - verbose
+  # - quiet
   # - no-interaction
-  # - verbose
 
-# noNativeFlags: true ### Or set to true to disable native flags entirely.
-# The help flag will always be provided, as well as the version flag (if a version is defined.)
+# withNativeFlags: true ### Or set to true to enable all native flags.
+# The help flag will always be provided, as well as the version flag (if a version is defined).
 
 commands:
   foo:
@@ -31,8 +31,9 @@ commands:
         description: The color the print the file contents in
         aliases:
           - c
-        default: white ### a string default value will turn a flag into a string flag that requires a value
-        options: ### optional list of options for the string value
+        default: white ### A string default value will turn a flag into a string flag that requires a value.
+        env: FOO_COLOR ### If the FOO_COLOR env variable is set, it's used to prepopulate the flag value. 
+        options: ### Optional list of options for the string value.
           - white
           - blue
           - red
@@ -42,15 +43,16 @@ commands:
         aliases:
           - r
         default: false ### A boolean default means a boolean flag that expects no value. 
-        # negatable: true ### Would add a `no-reverse` flag as well
+        # negatable: true ### Would add a `no-reverse` flag as well.
+        env: FOO_REVERSE ### If the FOO_REVERSE env variable is set to "true", "1", "yes" or "y", toggle the default value to true.
     args:
       file:
         description: The path of the file to print the contents of
-        required: true # defaults to false
-        # value: ### default value for optional arguments
-        # options: ### list of optional values. Input will be evaluated against these options.
+        required: true # Defaults to false.
+        # value: ### Default value for optional arguments.
+        # options: ### List of optional values. Input will be evaluated against these options.
           # - ./cmd.sh
           # - ./cmd.yml
     help: Optional helper text for the command
-    # commands: ### Commands can have subcommands
+    # commands: ### Commands can have subcommands.
       # ...
