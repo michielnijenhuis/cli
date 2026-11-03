@@ -28,8 +28,8 @@ type Command struct {
 	Help                   string
 	Commands               []*Command
 	Flags                  []Flag
-	NoNativeFlags          bool
-	WithoutNativeFlags     []string
+	WithNativeFlags        bool
+	NativeFlags            []string
 	Arguments              []Arg
 	Run                    CommandHandle
 	RunE                   CommandHandleE
@@ -657,43 +657,41 @@ func (c *Command) defaultInputDefinition() (*InputDefinition, error) {
 		flags = append(flags, versionFlag)
 	}
 
-	if !root.NoNativeFlags {
-		if !slices.Contains(root.WithoutNativeFlags, "quiet") {
-			quietFlag := &BoolFlag{
-				Name:        "quiet",
-				Shortcuts:   []string{"q"},
-				Description: "Do not output any message",
-			}
-			flags = append(flags, quietFlag)
+	if root.WithNativeFlags || slices.Contains(root.NativeFlags, "quiet") {
+		quietFlag := &BoolFlag{
+			Name:        "quiet",
+			Shortcuts:   []string{"q"},
+			Description: "Do not output any message",
 		}
+		flags = append(flags, quietFlag)
+	}
 
-		if !slices.Contains(root.WithoutNativeFlags, "verbose") {
-			verboseflag := &BoolFlag{
-				Name:        "verbose",
-				Shortcuts:   []string{"v", "vv", "vvv"},
-				Description: "Increase the verbosity of messages: normal, verbose or debug",
-			}
-			flags = append(flags, verboseflag)
+	if root.WithNativeFlags || slices.Contains(root.NativeFlags, "verbose") {
+		verboseflag := &BoolFlag{
+			Name:        "verbose",
+			Shortcuts:   []string{"v", "vv", "vvv"},
+			Description: "Increase the verbosity of messages: normal, verbose or debug",
 		}
+		flags = append(flags, verboseflag)
+	}
 
-		if !slices.Contains(root.WithoutNativeFlags, "ansi") {
-			ansiFlag := &BoolFlag{
-				Name:        "ansi",
-				Negatable:   true,
-				Description: "Force (or disable --no-ansi) ANSI output",
-				Value:       HasColorSupport(),
-			}
-			flags = append(flags, ansiFlag)
+	if root.WithNativeFlags || slices.Contains(root.NativeFlags, "ansi") {
+		ansiFlag := &BoolFlag{
+			Name:        "ansi",
+			Negatable:   true,
+			Description: "Force (or disable --no-ansi) ANSI output",
+			Value:       HasColorSupport(),
 		}
+		flags = append(flags, ansiFlag)
+	}
 
-		if !slices.Contains(root.WithoutNativeFlags, "no-interaction") {
-			noInteractionFlag := &BoolFlag{
-				Name:        "no-interaction",
-				Shortcuts:   []string{"n"},
-				Description: "Do not ask any interactive question",
-			}
-			flags = append(flags, noInteractionFlag)
+	if root.WithNativeFlags || slices.Contains(root.NativeFlags, "no-interaction") {
+		noInteractionFlag := &BoolFlag{
+			Name:        "no-interaction",
+			Shortcuts:   []string{"n"},
+			Description: "Do not ask any interactive question",
 		}
+		flags = append(flags, noInteractionFlag)
 	}
 
 	err := definition.SetFlags(flags)

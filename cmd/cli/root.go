@@ -5,11 +5,12 @@ import (
 )
 
 var RootCmd = &cli.Command{
-	Name:        "cli",
-	Description: "A CLI toolkit",
-	Aliases:     []string{"cli"},
-	Version:     "1.2.0",
-	AutoExit:    true,
+	Name:            "cli",
+	Description:     "A CLI toolkit",
+	Aliases:         []string{"cli"},
+	Version:         "1.3.0",
+	AutoExit:        true,
+	WithNativeFlags: true,
 }
 
 func init() {

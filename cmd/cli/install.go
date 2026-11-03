@@ -109,10 +109,10 @@ var InstallCmd = &cli.Command{
 		app, err := cli.ParseApp(config)
 		if err != nil {
 			if ctx.IO.IsVerbose() {
-				return fmt.Errorf("invalid configuration file:\n%w", err)
+				return fmt.Errorf("invalid configuration file [%s]:\n%s", config, err)
 			}
 
-			return fmt.Errorf("invalid configuration file")
+			return fmt.Errorf("invalid configuration file [%s]", config)
 		}
 
 		if script == "" {

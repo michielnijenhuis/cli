@@ -36,14 +36,14 @@ type yamlArgMap map[string]yamlArg
 type yamlCommandMap map[string]yamlCommand
 
 type yamlCommand struct {
-	Aliases            []string       `yaml:"aliases"`
-	Description        string         `yaml:"description"`
-	Help               string         `yaml:"help"`
-	Flags              yamlFlagMap    `yaml:"flags"`
-	Args               yamlArgMap     `yaml:"args"`
-	Commands           yamlCommandMap `yaml:"commands"`
-	NoNativeFlags      bool           `yaml:"noNativeFlags"`
-	WithoutNativeFlags []string       `yaml:"withoutNativeFlags"`
+	Aliases         []string       `yaml:"aliases"`
+	Description     string         `yaml:"description"`
+	Help            string         `yaml:"help"`
+	Flags           yamlFlagMap    `yaml:"flags"`
+	Args            yamlArgMap     `yaml:"args"`
+	Commands        yamlCommandMap `yaml:"commands"`
+	WithNativeFlags bool           `yaml:"withNativeFlags"`
+	NativeFlags     []string       `yaml:"nativeFlags"`
 }
 
 type yamlTheme struct {
@@ -127,12 +127,12 @@ func Parse(fileName string) (*Command, error) {
 
 func toCommand(name string, c yamlCommand, parent *Command) (*Command, error) {
 	cmd := &Command{
-		Name:               name,
-		Aliases:            c.Aliases,
-		Description:        c.Description,
-		Help:               c.Help,
-		NoNativeFlags:      c.NoNativeFlags,
-		WithoutNativeFlags: c.WithoutNativeFlags,
+		Name:            name,
+		Aliases:         c.Aliases,
+		Description:     c.Description,
+		Help:            c.Help,
+		WithNativeFlags: c.WithNativeFlags,
+		NativeFlags:     c.NativeFlags,
 	}
 
 	if len(c.Flags) > 0 {

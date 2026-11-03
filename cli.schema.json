@@ -191,13 +191,13 @@
             },
             "additionalProperties": false
         },
-        "noNativeFlags": {
+        "withNativeFlags": {
             "type": "boolean",
-            "description": "Whether the native flags should be disabled. Set to true to disable native flags, such as --quiet, --verbose, --ansi or --no-interaction"
+            "description": "Whether the native flags should be enabled. Set to true to enabled native flags, such as --quiet, --verbose, --ansi or --no-interaction"
         },
-        "withoutNativeFlags": {
+        "nativeFlags": {
             "type": "array",
-            "description": "List of native flags t",
+            "description": "List of native flags to enable",
             "items": {
                 "type": "string",
                 "enum": [
