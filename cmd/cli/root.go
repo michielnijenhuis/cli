@@ -8,7 +8,7 @@ var RootCmd = &cli.Command{
 	Name:            "cli",
 	Description:     "A CLI toolkit",
 	Aliases:         []string{"cli"},
-	Version:         "1.4.0",
+	Version:         "1.5.0",
 	AutoExit:        true,
 	WithNativeFlags: true,
 }
@@ -21,6 +21,7 @@ func init() {
 		PrintCmd,
 		ArgCmd,
 		FlagCmd,
+		CursorCmd,
 	}
 
 	for _, cmd := range subCommands {

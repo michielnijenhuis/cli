@@ -132,7 +132,11 @@ var PrintCmd = &cli.Command{
 			symbol := ctx.IO.String("symbol")
 			color := ctx.IO.String("color")
 
-			if symbol != "" && color != "" {
+			if symbol != "" {
+				if color == "" {
+					color = "default"
+				}
+
 				ctx.IO.Symbol(symbol, color, lines)
 			} else {
 				ctx.IO.Writeln(lines)
