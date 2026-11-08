@@ -125,9 +125,9 @@ var PrintCmd = &cli.Command{
 		} else if ctx.IO.Bool("ok") || mode == "ok" {
 			ctx.IO.Ok(lines)
 		} else if ctx.IO.Bool("check") || mode == "check" {
-			ctx.IO.Symbol("✓", "green", lines)
+			ctx.IO.Symbol(cli.IconTick, "green", lines)
 		} else if ctx.IO.Bool("alert") || mode == "alert" {
-			ctx.IO.Symbol("⚠︎", "red", lines)
+			ctx.IO.Symbol(cli.IconWarning, "red", lines)
 		} else {
 			symbol := ctx.IO.String("symbol")
 			color := ctx.IO.String("color")
