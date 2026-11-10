@@ -8,7 +8,7 @@ var RootCmd = &cli.Command{
 	Name:            "cli",
 	Description:     "A CLI toolkit",
 	Aliases:         []string{"cli"},
-	Version:         "1.5.0",
+	Version:         "1.5.1",
 	AutoExit:        true,
 	WithNativeFlags: true,
 }

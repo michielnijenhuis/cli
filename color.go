@@ -6,6 +6,7 @@ import (
 	"math"
 	"os"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -45,6 +46,7 @@ const (
 
 const (
 	ColorOptionBold       = "bold"
+	ColorOptionDim        = "dimmmed"
 	ColorOptionItalic     = "italic"
 	ColorOptionUnderscore = "underscore"
 	ColorOptionBlink      = "blink"
@@ -77,6 +79,7 @@ var BrightColors = map[string]int{
 
 var availableOptions = map[string]AvailableOption{
 	ColorOptionBold:       {set: 1, unset: 22},
+	ColorOptionDim:        {set: 2, unset: 22},
 	ColorOptionItalic:     {set: 3, unset: 23},
 	ColorOptionUnderscore: {set: 4, unset: 24},
 	ColorOptionBlink:      {set: 5, unset: 25},
@@ -100,7 +103,13 @@ func (c *Color) parse() {
 func (c *Color) Apply(text string) string {
 	c.parse()
 
-	return c.Set() + text + c.Unset()
+	applied := c.Set() + text + c.Unset()
+
+	if slices.Contains(c.Options, ColorOptionDim) {
+		applied = Dim(applied)
+	}
+
+	return applied
 }
 
 func (c *Color) Set() string {

@@ -57,6 +57,10 @@ var PrintCmd = &cli.Command{
 			Name:        "alert",
 			Description: "Print with alert symbol",
 		},
+		&cli.BoolFlag{
+			Name:        "dimmed",
+			Description: "Print as dimmed text",
+		},
 		&cli.StringFlag{
 			Name:        "symbol",
 			Description: "The symbol to print with",
@@ -89,10 +93,17 @@ var PrintCmd = &cli.Command{
 			return
 		}
 
+		mode := ctx.IO.String("mode")
+		dim := ctx.IO.Bool("dimmed") || mode == "dimmed"
+
 		timestamp := ""
 		if ctx.IO.Bool("timestamp") {
 			timestamp = time.Now().Format("15:04:05")
-			printArgs[0] = fmt.Sprintf("<fg=gray>%s</> %s", timestamp, printArgs[0])
+			if dim {
+				printArgs[0] = timestamp + " " + printArgs[0]
+			} else {
+				printArgs[0] = fmt.Sprintf("<fg=gray>%s</> %s", timestamp, printArgs[0])
+			}
 		}
 
 		linesSlice := make([]string, 0, len(printArgs))
@@ -103,8 +114,6 @@ var PrintCmd = &cli.Command{
 		}
 
 		lines := strings.Join(linesSlice, "\n")
-
-		mode := ctx.IO.String("mode")
 
 		if ctx.IO.Bool("critical") || mode == "critical" {
 			ctx.IO.Critical(lines)
@@ -129,6 +138,10 @@ var PrintCmd = &cli.Command{
 		} else if ctx.IO.Bool("alert") || mode == "alert" {
 			ctx.IO.Symbol(cli.IconWarning, "red", lines)
 		} else {
+			if dim {
+				lines = cli.Dim(lines)
+			}
+
 			symbol := ctx.IO.String("symbol")
 			color := ctx.IO.String("color")
 

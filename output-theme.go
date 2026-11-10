@@ -98,24 +98,12 @@ var themes = map[string]map[string]*Theme{
 		"accent": {
 			Foreground: "bright-white",
 		},
+		"dimmed": {
+			Foreground: ColorDefault,
+			Background: ColorDefault,
+			Options:    []string{ColorOptionDim},
+		},
 	},
-}
-
-func init() {
-	envPrimary := os.Getenv("CLI_THEME_PRIMARY")
-	if envPrimary != "" {
-		themes["default"]["primary"].Foreground = envPrimary
-	}
-
-	envSecondary := os.Getenv("CLI_THEME_SECONDARY")
-	if envSecondary != "" {
-		themes["default"]["secondary"].Foreground = envSecondary
-	}
-
-	envAccent := os.Getenv("CLI_THEME_ACCENT")
-	if envAccent != "" {
-		themes["default"]["accent"].Foreground = envAccent
-	}
 }
 
 var styleTags []string
