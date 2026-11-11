@@ -351,11 +351,6 @@ func (i *Input) parse(tokens []string, inspector *InputInspector) error {
 		}
 
 		token = helper.Shift(&i.parsed)
-		if parseFlags && token == "--" {
-			parseFlags = false
-			continue
-		}
-
 		parseFlags, err, keepParsing = i.parseToken(inspector, token, parseFlags)
 		if err != nil {
 			return err
@@ -367,38 +362,26 @@ func (i *Input) parse(tokens []string, inspector *InputInspector) error {
 	return nil
 }
 
-// TODO: refactor? way too hard to understand now
 func (i *Input) parseToken(inspector *InputInspector, token string, parseFlags bool) (keepParsingFlags bool, err error, keepParsing bool) {
-	if parseFlags && token == "" {
-		err, keepParsing := i.parseArgument(inspector, token)
+	if parseFlags && strings.HasPrefix(token, "-") {
+		if token == "--" {
+			return false, nil, true
+		}
 
-		if err != nil {
-			return false, err, true
-		} else if !keepParsing {
-			return false, nil, false
+		if strings.HasPrefix(token, "--") {
+			err, keepParsing = i.parseLongFlag(inspector, token)
+
+			return parseFlags, err, keepParsing
 		}
-	} else if parseFlags && token == "" {
-		return false, nil, true
-	} else if parseFlags && strings.HasPrefix(token, "--") && IsValidFlagName(token[2:]) {
-		err := i.parseLongFlag(inspector, token)
-		if err != nil {
-			return false, err, true
-		}
-	} else if parseFlags && strings.HasPrefix(token, "-") && token != "-" && IsValidFlagName(token[1:]) {
-		err := i.parseShortFlag(inspector, token)
-		if err != nil {
-			return false, err, true
-		}
-	} else {
-		err, keepParsing := i.parseArgument(inspector, token)
-		if err != nil {
-			return false, err, keepParsing
-		} else if !keepParsing {
-			return false, nil, false
-		}
+
+		err, keepParsing = i.parseShortFlag(inspector, token)
+
+		return parseFlags, err, keepParsing
 	}
 
-	return parseFlags, nil, true
+	err, keepParsing = i.parseArgument(inspector, token)
+
+	return parseFlags, err, keepParsing
 }
 
 func (i *Input) parseArgument(inspector *InputInspector, token string) (error, bool) {
@@ -490,7 +473,7 @@ func (i *Input) parseArgument(inspector *InputInspector, token string) (error, b
 	}
 }
 
-func (i *Input) parseLongFlag(inspector *InputInspector, token string) error {
+func (i *Input) parseLongFlag(inspector *InputInspector, token string) (error, bool) {
 	name := token[2:]
 	pos := strings.Index(name, "=")
 
@@ -504,22 +487,35 @@ func (i *Input) parseLongFlag(inspector *InputInspector, token string) error {
 
 		if inspector != nil {
 			inspector.AddFlag(flagName, value)
-			return nil
+			return nil, true
 		}
 
-		return i.addLongFlag(flagName, value)
+		return i.addLongFlag(flagName, value), true
 	} else {
 		if inspector != nil {
 			inspector.AddFlag(name, "")
-			return nil
+			return nil, true
 		}
 
-		return i.addLongFlag(name, "")
+		return i.addLongFlag(name, ""), true
 	}
 }
 
-func (i *Input) parseShortFlag(inspector *InputInspector, token string) error {
+func (i *Input) parseShortFlag(inspector *InputInspector, token string) (error, bool) {
 	name := token[1:]
+
+	isNumeric := false
+	for _, c := range name {
+		if c >= '0' && c <= '9' {
+			isNumeric = true
+			break
+		}
+	}
+
+	// ignore negative numbers as short flags
+	if isNumeric {
+		return i.parseArgument(inspector, token)
+	}
 
 	if len(name) > 1 {
 		short := name[0:1]
@@ -527,31 +523,31 @@ func (i *Input) parseShortFlag(inspector *InputInspector, token string) error {
 			flag, err := i.definition.FlagForShortcut(short)
 			if err != nil {
 				if !i.Strict {
-					return nil
+					return nil, true
 				}
 
-				return err
+				return err, true
 			}
 
 			if FlagAcceptsValue(flag) {
 				if inspector != nil {
 					inspector.AddFlag(short, name[1:])
-					return nil
+					return nil, true
 				}
 
 				// a flag with a value (with no space)
-				return i.addShortFlag(short, name[1:])
+				return i.addShortFlag(short, name[1:]), true
 			}
 		}
 
-		return i.parseShortFlagSet(inspector, name)
+		return i.parseShortFlagSet(inspector, name), true
 	} else {
 		if inspector != nil {
 			inspector.AddFlag(name, "")
-			return nil
+			return nil, true
 		}
 
-		return i.addShortFlag(name, "")
+		return i.addShortFlag(name, ""), true
 	}
 }
 
