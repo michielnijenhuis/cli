@@ -9,7 +9,7 @@ import (
 var RootCmd = &cli.Command{
 	Name:            "cli",
 	Description:     "A CLI toolkit",
-	Version:         "1.6.1",
+	Version:         cli.Version,
 	AutoExit:        true,
 	WithNativeFlags: true,
 }
