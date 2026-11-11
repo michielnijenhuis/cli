@@ -1,0 +1,21 @@
+package main
+
+import (
+	"github.com/michielnijenhuis/cli"
+)
+
+var Cmd = &cli.Command{
+	Name:        "",
+	Description: "",
+	Flags:       []cli.Flag{},
+	Arguments: []cli.Arg{
+		&cli.StringArg{
+			Name:        "input",
+			Description: "",
+			Required:    true,
+		},
+	},
+	Run: func(args []string, ctx *cli.CommandCtx) {
+		input := ctx.IO.String("input")
+	},
+}

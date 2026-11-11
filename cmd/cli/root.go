@@ -1,14 +1,15 @@
 package main
 
 import (
+	"log"
+
 	"github.com/michielnijenhuis/cli"
 )
 
 var RootCmd = &cli.Command{
 	Name:            "cli",
 	Description:     "A CLI toolkit",
-	Aliases:         []string{"cli"},
-	Version:         "1.5.1",
+	Version:         "1.6.0",
 	AutoExit:        true,
 	WithNativeFlags: true,
 }
@@ -27,7 +28,7 @@ func init() {
 	for _, cmd := range subCommands {
 		err := RootCmd.AddCommand(cmd)
 		if err != nil {
-			panic(err)
+			log.Fatalln(err)
 		}
 	}
 }

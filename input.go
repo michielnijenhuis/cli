@@ -3,6 +3,7 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"regexp"
@@ -47,14 +48,22 @@ func (e *errMissingArguments) MissingArguments() []string {
 }
 
 func NewInput(args ...string) *Input {
-	if len(args) == 1 {
-		// accept single string that includes all args
-		args = StringToInputArgs(args[0])
-	} else if args == nil {
+	if args == nil {
 		args = os.Args[1:]
 	}
 
 	tokens := make([]string, len(args))
+
+	info, err := os.Stdin.Stat()
+	if err == nil && info.Mode()&os.ModeCharDevice == 0 {
+		input, _ := io.ReadAll(os.Stdin)
+		inputStr := strings.TrimSpace(string(input))
+
+		if inputStr != "" {
+			tokens = append(tokens, inputStr)
+		}
+	}
+
 	copy(tokens, args)
 
 	i := &Input{
@@ -342,6 +351,11 @@ func (i *Input) parse(tokens []string, inspector *InputInspector) error {
 		}
 
 		token = helper.Shift(&i.parsed)
+		if parseFlags && token == "--" {
+			parseFlags = false
+			continue
+		}
+
 		parseFlags, err, keepParsing = i.parseToken(inspector, token, parseFlags)
 		if err != nil {
 			return err
@@ -353,6 +367,7 @@ func (i *Input) parse(tokens []string, inspector *InputInspector) error {
 	return nil
 }
 
+// TODO: refactor? way too hard to understand now
 func (i *Input) parseToken(inspector *InputInspector, token string, parseFlags bool) (keepParsingFlags bool, err error, keepParsing bool) {
 	if parseFlags && token == "" {
 		err, keepParsing := i.parseArgument(inspector, token)
@@ -364,12 +379,12 @@ func (i *Input) parseToken(inspector *InputInspector, token string, parseFlags b
 		}
 	} else if parseFlags && token == "" {
 		return false, nil, true
-	} else if parseFlags && strings.HasPrefix(token, "--") {
+	} else if parseFlags && strings.HasPrefix(token, "--") && IsValidFlagName(token[2:]) {
 		err := i.parseLongFlag(inspector, token)
 		if err != nil {
 			return false, err, true
 		}
-	} else if parseFlags && strings.HasPrefix(token, "-") && token != "-" {
+	} else if parseFlags && strings.HasPrefix(token, "-") && token != "-" && IsValidFlagName(token[1:]) {
 		err := i.parseShortFlag(inspector, token)
 		if err != nil {
 			return false, err, true

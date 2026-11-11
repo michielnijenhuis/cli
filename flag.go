@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"regexp"
 	"slices"
 	"strings"
 )
@@ -522,4 +523,10 @@ func (s *OptionalArrayFlag) GetEnvName() string {
 
 func (s *ArrayFlag) GetEnvName() string {
 	return s.Env
+}
+
+var nameRegexp = regexp.MustCompile("^[a-z][a-z-_]*$")
+
+func IsValidFlagName(name string) bool {
+	return nameRegexp.MatchString(name)
 }

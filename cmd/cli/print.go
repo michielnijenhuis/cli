@@ -60,6 +60,7 @@ var PrintCmd = &cli.Command{
 		&cli.BoolFlag{
 			Name:        "dimmed",
 			Description: "Print as dimmed text",
+			Shortcuts:   []string{"d"},
 		},
 		&cli.StringFlag{
 			Name:        "symbol",

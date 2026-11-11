@@ -174,6 +174,9 @@ func (d *InputDefinition) AddFlag(flag Flag) error {
 	}
 
 	name := flag.GetName()
+	if !IsValidFlagName(name) {
+		return fmt.Errorf("invalid flag name \"%s\"", name)
+	}
 
 	if d.HasFlag(name) {
 		return fmt.Errorf("a flag named \"%s\" already exists", name)
