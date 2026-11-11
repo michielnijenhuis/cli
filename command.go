@@ -194,7 +194,7 @@ func (c *Command) execute(i *Input, o *Output) error {
 
 	wantsVersion := !command.Hidden && command.hasFlag("version") && (i.HasParameterFlag("--version", true) || i.HasParameterFlag("-V", true))
 	if wantsVersion {
-		o.Writeln(c.version(), 0)
+		o.Writeln(c.version(true), 0)
 		return nil
 	}
 
@@ -230,7 +230,7 @@ func (c *Command) execute(i *Input, o *Output) error {
 }
 
 func (c *Command) GetHelp() string {
-	version := c.version()
+	version := c.version(false)
 
 	if version != "" {
 		return version
@@ -267,8 +267,8 @@ func (c *Command) VisibleSubcommandsCount() int {
 	return count
 }
 
-func (c *Command) version() string {
-	if c.LongVersion != "" {
+func (c *Command) version(long bool) string {
+	if long && c.LongVersion != "" {
 		return c.LongVersion
 	}
 
@@ -648,7 +648,7 @@ func (c *Command) defaultInputDefinition() (*InputDefinition, error) {
 	}
 	flags = append(flags, helpFlag)
 
-	if root.Version != "" {
+	if root.Version != "" || root.LongVersion != "" {
 		versionFlag := &BoolFlag{
 			Name:        "version",
 			Shortcuts:   []string{"V"},

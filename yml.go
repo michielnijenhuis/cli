@@ -112,10 +112,7 @@ func Parse(fileName string) (*Command, error) {
 		root.Version = yamlApp.Version
 	}
 
-	versionAppendix := ""
-	if root.Version != "" {
-		versionAppendix = fmt.Sprintf("Built on %s\n  with CLI v%s, by %s", Repository, Version, Author)
-	}
+	versionAppendix := fmt.Sprintf("Built on %s\n  with CLI v%s, by %s", Repository, Version, Author)
 
 	if yamlApp.LongVersion != "" {
 		root.LongVersion = yamlApp.LongVersion
@@ -123,8 +120,15 @@ func Parse(fileName string) (*Command, error) {
 		if versionAppendix != "" {
 			root.LongVersion += Eol + versionAppendix
 		}
-	} else if versionAppendix != "" {
+	} else if root.Version != "" {
 		root.LongVersion = fmt.Sprintf("%s <accent>%s</accent>", root.Name, root.Version) + Eol + versionAppendix
+	} else {
+		description := ""
+		if root.Description != "" {
+			description = Eol + root.Description
+		}
+
+		root.LongVersion = fmt.Sprintf("<primary>%s</primary>%s", root.Name, description) + Eol + versionAppendix
 	}
 
 	if yamlApp.Intro != "" {
